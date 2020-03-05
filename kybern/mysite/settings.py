@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     'concord.resources',
     'concord.permission_resources',
     'concord.conditionals',
+    # kybern apps
+    'accounts',
 ]
 
 MIDDLEWARE = [
