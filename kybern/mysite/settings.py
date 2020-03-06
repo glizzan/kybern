@@ -31,8 +31,6 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
@@ -46,6 +44,11 @@ INSTALLED_APPS = [
     'concord.conditionals',
     # kybern apps
     'accounts',
+    # third party apps
+    'django_registration',
+    # django contrib stuff needs to be here so accounts can override default logout page
+    'django.contrib.auth',
+    'django.contrib.admin',
 ]
 
 MIDDLEWARE = [
