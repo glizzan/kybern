@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'concord.conditionals',
     # kybern apps
     'accounts',
+    'groups',
     # third party apps
     'django_registration',
     # django contrib stuff needs to be here so accounts can override default logout page
