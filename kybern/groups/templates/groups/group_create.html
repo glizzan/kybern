@@ -2,6 +2,9 @@
 
 {% block content %}
 
+<div class="col-2"></div>
+<div class="col-8">
+
     <h5>Create your group</h5>
 
     <form method="post">
@@ -21,7 +24,7 @@
         </div>
 
         <div class="form-check">
-            <input class="form-check-input" type="checkbox" value= "" id="id_governing_permission_enabled"
+            <input class="form-check-input" type="checkbox" value="True" name="governing_permission_enabled" id="id_governing_permission_enabled"
                 {% if form.governing_permission_enabled.value %} checked {% endif %}>
             <label class="form-check-label" for="id_governing_permission_enabled">
             Enable governing permission?
@@ -29,7 +32,7 @@
         </div>
 
         <div class="form-check">
-            <input class="form-check-input" type="checkbox" value="" id="id_foundational_permission_enabled"
+            <input class="form-check-input" type="checkbox" value="True" name="foundational_permission_enabled" id="id_foundational_permission_enabled"
                 {% if form.foundational_permission_enabled.value %} checked {% endif %}>
             <label class="form-check-label" for="id_foundational_permission_enabled">
             Enable foundational permission?
@@ -39,5 +42,8 @@
         <button type="submit" class="btn btn-primary">Submit</button>
     
     </form>
+
+</div>
+
 
 {% endblock %}

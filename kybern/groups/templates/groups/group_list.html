@@ -2,40 +2,30 @@
 
 {% block content %}
 
-    <h3>Groups</h3>
+<div class="col-2"></div>
+<div class="col-8">
 
-    <b-button class="p-2 mb-3" href="{% url 'group_create' %}">Create a group</b-button>
+        <h3>Groups</h3>
 
-    <b-list-group>
-
-        {% for group in object_list %}
-
-            <b-list-group-item href="{% url 'group_detail' pk=group.pk %}" class="flex-column align-items-start">
-                <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1">{{ group.name }}</h5>
-                </div>
-                <p class="mb-1">
-                    {{ group.group_description }}
-                </p>
-            </b-list-group-item>
-
-        {% endfor %}
-
-
-    </b-list-group>
-
-
+        <a class="btn btn-secondary mb-3" href="{% url 'group_create' %}">Create a group</a>
     
-        
+        <div class="list-group">
     
- 
+            {% for group in object_list %}
     
-        
-      
-
-
+                <a href="{% url 'group_detail' pk=group.pk %}" 
+                    class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ group.name }}</h5>
+                    </div>
+                    <p class="mb-1">
+                        {{ group.group_description }}
+                    </p>
+                </a>
     
+            {% endfor %}
 
-
+        </div>
+</div>
 
 {% endblock %}

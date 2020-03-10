@@ -2,11 +2,16 @@
 
 {% block content %}
 
-    <h3>Your Profile:</h3>
+<div class="col-1"></div>
+<div class="col-10">
 
-    <h6><b>username:</b> {{ profile.user.username }}</h6>
-    <h6><b>email:</b> {{ profile.user.email }}</h6>
-    <h6><b>user id:</b> {{ profile.user.pk }}</h6>
-    <h6><b>profile_id:</b> {{ profile.pk }}</h6>
+        <h3>Your Profile</h3>
+
+        <h6><b>username:</b> {{ profile.user.username }}</h6>
+        <h6><b>email:</b> {{ profile.user.email }}</h6>
+        <h6><b>user id:</b> {{ profile.user.pk }}</h6>
+        <h6><b>profile_id:</b> {{ profile.pk }}</h6>
+
+</div>
 
 {% endblock %}
