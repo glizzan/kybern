@@ -1,0 +1,67 @@
+<script type="text/x-template" id="add_role_modal_template">
+
+    <b-modal id="add_role_modal" title="Add a new role" @ok="submitRoleName($event)">
+
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text" id="role_name_prompt">Role Name</span>
+            </div>
+            <input type="text" class="form-control" aria-label="role_name" 
+                aria-describedby="role_name_prompt" v-model="role_name">
+        </div>
+
+        <div class="mb-3" v-if="error_message">
+            [[ error_message ]]
+        </div>
+
+        <template v-slot:modal-footer="{ ok }">
+            <b-button size="sm" variant="success" @click="ok()">Save</b-button>
+        </template>
+
+    </b-modal>
+
+</script>
+
+
+<script type="application/javascript">
+
+
+    addRoleComponent = Vue.component('add-role-modal', {
+        delimiters: ['[[', ']]'],
+        template: '#add_role_modal_template',
+        data: function() {
+            return {
+                error_message: '',
+                role_name: '',
+            }
+        },
+        methods: {
+            submitRoleName(bvModalEvt) {
+                bvModalEvt.preventDefault();
+                axios.defaults.xsrfCookieName = 'csrftoken';
+                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
+                url = "http://127.0.0.1:8000/groups/add_role/{{ object.pk}}/";
+                params = { role_name: this.role_name }
+                headers =  { "headers": { 'Content-Type': "application/json" } }
+                axios.post(url, params, headers)
+                .then(response => { 
+                    if (response.data.action_status == "success") {
+                        this.$emit('add-new-role', this.role_name )
+                        this.role_name = '';
+                    } else {
+                        this.error_message = response.data.action_log;
+                    }
+                })
+                .catch(error => {
+                    console.log("ERROR: ", error.status);
+                    if (error.response.status == 500) {
+                        this.error_message = "We're sorry, there was a problem with our server."
+                    } else {
+                        this.error_message = error;
+                    }
+                })
+            }
+        }
+    });
+
+</script>

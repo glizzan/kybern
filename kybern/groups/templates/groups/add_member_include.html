@@ -1,0 +1,94 @@
+<script type="text/x-template" id="member_modal_template">
+
+    <b-modal id="add_member_modal" title="Add new members" @ok="submitMembers($event)">
+    
+        <b>Current Members:</b><b-badge v-for="member in current_member_display" v-bind:key="member.id" 
+            pill variant="info" class="mx-1">[[ member ]]</b-badge>
+
+        <template><div class="mt-3">
+            <b-form-select v-model="members_selected" :options="member_options" multiple :select-size="6">
+            </b-form-select>
+        </div></template>
+
+        <div class="mb-3" v-if="error_message"> [[ error_message ]] </div>
+
+        <template v-slot:modal-footer="{ ok }">
+            <b-button size="sm" variant="success" @click="ok()">Save</b-button>
+        </template>
+
+    </b-modal>
+
+</script>
+
+
+<script type="application/javascript">
+
+    // Note that for now, this modal only allows us to add members, not delete them. 
+
+    memberComponent = Vue.component('member-modal', {
+        delimiters: ['[[', ']]'],
+        template: '#member_modal_template',
+        data: function() {
+            return {
+                error_message: '',
+                current_members: {{ current_members|safe }},
+                potential_members: {{ potential_members|safe }},
+                members_selected: [],
+            }
+        },
+        created() { this.send_member_data_to_parent() },
+        computed: {
+            member_options: function() {
+                return this.$parent.reformat_to_options(this.potential_members)
+            },
+            current_member_display: function() {
+                member_display = []
+                for (index in this.current_members) {
+                    member_display.push(this.$parent.username_map[this.current_members[index]])
+                }
+                return member_display
+            }
+        },
+        watch: {
+            current_members: function() { this.send_member_data_to_parent() }
+        },
+        methods: {
+            send_member_data_to_parent() {
+                members_as_options = this.$parent.reformat_to_options(this.current_members)  // reformat
+                this.$emit('update-members', members_as_options )
+            },
+            submitMembers(bvModalEvt) {
+                    bvModalEvt.preventDefault();
+                    axios.defaults.xsrfCookieName = 'csrftoken';
+                    axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
+                    url = "http://127.0.0.1:8000/groups/add_members/{{ object.pk}}/";
+                    params = { people_pks : this.members_selected }
+                    headers =  { "headers": { 'Content-Type': "application/json" } }
+                    axios.post(url, params, headers)
+                    .then(response => { 
+                        if (response.data.action_status == "success") {
+                            for (index in this.members_selected) {
+                                // remove from potential_members
+                                index_in_potential_members = this.potential_members.indexOf(this.members_selected[index]);
+                                this.potential_members.splice(index_in_potential_members, 1)
+                                // add to current_members
+                                this.current_members.push(this.members_selected[index])
+                            }
+                            this.members_selected = []
+                        } else {
+                            this.add_member_error_message = response.data.action_log;
+                        }
+                    })
+                    .catch(error => {
+                        console.log("ERROR: ", error);
+                        if (error.response.status == 500) {
+                            this.add_role_error_message = "We're sorry, there was a problem with our server."
+                        } else {
+                            this.add_role_error_message = error;
+                        }
+                    })
+                }
+        }
+    });
+
+</script>

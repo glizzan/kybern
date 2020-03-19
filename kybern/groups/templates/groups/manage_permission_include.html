@@ -1,0 +1,126 @@
+<script type="text/x-template" id="manage_permission_template">
+
+    <span v-if="mode == 'permission create' || mode == 'permission update'">
+
+        <span v-if="mode == 'permission create'">
+            <h5>Add a new permission:</h5>
+            <template><div>
+                <b-form-select v-model="permission_selected" :options="permission_options" :select-size="4">
+                </b-form-select>
+            </div></template>
+        </span>
+
+        <span v-if="permission_selected || permission_to_edit">
+            <h5 v-if="permission_configuration_fields.length > 0" class="my-3">Configure your permission</h5>
+            <div class="input-group mb-3" v-for="(field, index) in permission_configuration_fields">        
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="field.name label">[[ field.name ]]</span>
+                </div>
+                <input type="text" class="form-control" aria-label="field.name" 
+                    aria-describedby="field.name label" v-model="permission_configuration_fields[index]['value']">
+            </div>
+        </span>
+
+        <b-button v-if="permission_selected && mode =='permission create'" size="sm" 
+            class="mt-5" variant="success" @click="addPermission()">Save permission</b-button>
+
+        <b-button v-if="permission_to_edit && mode == 'permission update'" size="sm" 
+            class="mt-5" variant="success"  @click="updatePermission()">Save changes</b-button>
+
+    </span>
+
+</script>
+
+
+<script type="application/javascript">
+
+    managePermissionComponent = Vue.component('manage-permission', {
+        delimiters: ['[[', ']]'],
+        template: '#manage_permission_template',
+        props: ['mode', 'role_to_edit', 'permission_to_edit', 'permissions', 'permission_options', 'permission_configuration_options'],
+        data: function() {
+            return {
+                permission_selected: '',
+            }
+        },
+        computed: {
+            permission_configuration_fields: function () {
+                // If permission is selected, checks for configuration fields. If updating, get
+                // existing values for the fields from existing permissions.
+
+                if (this.permission_selected || this.permission_to_edit ) {
+                    if (this.mode == 'permission create') {
+                        console.log("Generating fields for ", this.permission_selected)
+                        console.log(this.permission_configuration_options)
+                        return this.permission_configuration_options[this.permission_selected]
+                    }
+                    if (this.mode == 'permission update') {
+                        for (index in this.permissions) {
+                            console.log("Generating fields for ", this.permission_to_edit)
+                            if (this.permissions[index]['id'] == this.permission_to_edit) {
+                                console.log(this.permissions[index]['configuration'])
+                                 return this.permissions[index]['configuration']
+                            }
+                        }
+                    }
+                } 
+                return []
+            }
+        },
+        methods: {
+            addPermission() {
+                axios.defaults.xsrfCookieName = 'csrftoken';
+                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
+                url = "http://127.0.0.1:8000/groups/add_permission/{{ object.pk}}/";
+                params = { permission_type : this.permission_selected, 
+                    permission_roles : [this.role_to_edit],
+                    permission_configuration : this.permission_configuration_fields }
+                headers =  { "headers": { 'Content-Type': "application/json" } }
+                axios.post(url, params, headers)
+                .then(response => {              
+                    if (response.data.action_status == "success") {
+                        this.permissions.push(response.data.permission_info);
+                        this.permission_selected = '';
+                        this.$emit('clear-state', {} )
+                    } else {
+                        console.log("Error creating permission: ", response.data.ection_log)
+                        this.$parent.error_message = response.data.action_log
+                    }
+                })
+                .catch(error => {
+                    console.log("Sever error: ", error)
+                    this.$parent.error_message = "We're sorry, there was an error adding the permission."
+                })
+            },
+            updatePermission() {
+                // change configuration
+                axios.defaults.xsrfCookieName = 'csrftoken';
+                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
+                url = "http://127.0.0.1:8000/groups/update_permission/{{ object.pk}}/";
+                params = { permission_id : this.permission_to_edit, 
+                           permission_configuration : this.permission_configuration_fields}
+                headers =  { "headers": { 'Content-Type': "application/json" } }
+                axios.post(url, params, headers)
+                .then(response => {              
+                    if (response.data.action_status == "success") {
+                        for (permission_index in this.permissions) {
+                            if (this.permissions[permission_index]['id'] == this.permission_to_edit) {
+                                this.permissions[permission_index]["display"] = response.data.new_display_name
+                            }
+                            this.permission_selected = '';
+                            this.$emit('clear-state', {} )
+                        }
+                    } else {
+                        console.log("Error creating permission: ", response.data.ection_log)
+                        this.$parent.error_message = response.data.action_log
+                    }
+                })
+                .catch(error => {
+                    console.log("Server error: ", error)
+                    this.$parent.error_message = "We're sorry, there was an error updating the permission."
+                })    
+            }
+        }
+    });
+
+</script>

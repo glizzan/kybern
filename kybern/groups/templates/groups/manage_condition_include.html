@@ -1,0 +1,131 @@
+<script type="text/x-template" id="manage_condition_template">
+
+    <span v-if="mode == 'condition create' || mode == 'condition update'">
+
+        <span v-if="mode == 'condition create'">
+            <h5>Select condition to add:</h5>
+            <template><div>
+                <b-form-select v-model="condition_selected" :options="condition_options" :select-size="4">
+                </b-form-select>
+            </div></template>
+        </span>
+
+        <span v-if="condition_selected || condition_to_edit">
+            <h5 v-if="condition_configuration_fields.length > 0" class="mb-3">Configure your condition</h5>
+            <div class="input-group mb-3" v-for="(field, index) in condition_configuration_fields">   
+
+                <div v-if="field.type=='CharField'" class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text" id="field.name label">[[ field.name ]]</span>
+                    </div>
+                    <input type="text" class="form-control" aria-label="field.name" aria-describedby="field.name label" 
+                        v-model="condition_configuration_fields[index]['value']" 
+                        :required="condition_configuration_fields[index]['required']">
+                </div>
+
+                <span v-if="field.type=='BooleanField'">
+                    <b-form-checkbox v-model="condition_configuration_fields[index]['value']" 
+                        name="checkbox-1" value="true" unchecked-value="false">
+                    [[ field.name]] </b-form-checkbox>
+                </span>
+
+                <div v-if="field.type=='FloatField'" class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text" id="field.name label">[[ field.name ]]</span>
+                    </div>
+                    <input type="number" class="form-control" aria-label="field.name" aria-describedby="field.name label" 
+                        v-model="condition_configuration_fields[index]['value']"
+                        :required="condition_configuration_fields[index]['required']">
+                </div>
+
+            </div>
+        </span>
+
+        <b-button v-if="condition_selected && mode == 'condition create'" size="sm" 
+            class="mt-2" variant="success" @click="addCondition()">Save condition</b-button>
+        <b-button v-if="condition_to_edit && mode == 'condition update'" size="sm" 
+            class="mt-2" variant="success" @click="updateCondition()">Save changes</b-button>
+
+    </span>
+
+</script>
+
+
+<script type="application/javascript">
+
+    manageConditionComponent = Vue.component('manage-condition', {
+        delimiters: ['[[', ']]'],
+        template: '#manage_condition_template',
+        props: ['mode', 'condition_to_edit', 'permission_to_condition', 'conditions', 'condition_options', 'condition_configuration_options'],
+        data: function() {
+            return {
+                condition_selected: '',
+            }
+        },
+        computed: {
+            condition_configuration_fields: function () {
+                // RETURNS: an array of dictionaries, one for each field, with keys: name, type
+                // default, required, and value
+                if (this.condition_selected || this.condition_to_edit) {
+                    if (this.mode == 'condition create') {
+                        return this.condition_configuration_options[this.condition_selected]["configuration"]
+                    }
+                    if (this.mode == 'condition update') {
+                        return this.conditions[this.permission_to_condition]['configuration']
+                    }
+                }
+                return []
+            }
+        },
+        methods: {
+            addCondition() {
+                axios.defaults.xsrfCookieName = 'csrftoken';
+                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
+                url = "http://127.0.0.1:8000/groups/add_condition/{{ object.pk}}/";
+                // What to submit?
+                params = { condition_type: this.condition_selected, 
+                    condition_data: JSON.stringify(this.condition_configuration_fields),
+                    permission_data: null, target_permission_id: this.permission_to_condition }
+                headers =  { "headers": { 'Content-Type': "application/json" } }
+                axios.post(url, params, headers)
+                .then(response => { 
+                    if (response.data.action_status == "success") {
+                        Vue.set(this.conditions, this.permission_to_condition, response.data.condition_info)
+                        this.condition_selected = '';
+                        this.$emit('clear-state', {} )
+                    } else {
+                        this.$parent.error_message = response.data.action_log
+                    }
+                })
+                .catch(error => {
+                    console.log("ERROR: ", error)
+                    this.$parent.error_message = "We're sorry, there was an error adding the condition."
+                })
+            },
+            updateCondition() {
+                // change configuration
+                axios.defaults.xsrfCookieName = 'csrftoken';
+                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
+                url = "http://127.0.0.1:8000/groups/update_condition/{{ object.pk}}/";
+                params = { condition_id : this.condition_to_edit, 
+                           permission_id : this.permission_to_condition,
+                           condition_configuration : this.condition_configuration_fields}
+                headers =  { "headers": { 'Content-Type': "application/json" } }
+                axios.post(url, params, headers)
+                .then(response => {              
+                    if (response.data.action_status == "success") {
+                        this.conditions[this.permission_to_condition]["display"] = response.data.new_display_name
+                        this.condition_selected = ''
+                        this.$emit('clear-state', {} )
+                    } else {
+                        this.$parent.error_message = response.data.action_log
+                    }
+                })
+                .catch(error => {
+                    this.$parent.error_message = "We're sorry, there was an error changing the condition."
+                })    
+            }
+        }
+    });
+
+</script>

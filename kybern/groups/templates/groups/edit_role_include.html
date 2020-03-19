@@ -1,0 +1,143 @@
+<script type="text/x-template" id="edit_role_modal_template">
+
+    <b-modal id="edit_role_modal" :title="title_string" @hide="clearState()">
+
+        <h5>People with this role can: </h5>
+
+        <b-list-group v-for="permission in permissions" v-bind:key="permission.id">
+            <b-list-group-item>
+                <div class="btn-group" role="group" aria-label="Basic example">
+                    <button type="button" class="btn btn-primary"> 
+                        <small>[[ permission.display ]]</small>
+                        <span v-on:click="edit_permission(permission.id)" class="badge badge-light ml-1"  >🖉</span>
+                    </button>
+                    <button v-if="conditions[permission.id]" type="button" class="btn btn-warning">
+                        <small>[[ conditions[permission.id].name ]]</small>
+                        <span v-on:click="edit_condition(permission.id)" class="badge badge-light ml-1">🖉</span>
+                    </button>
+                    <button v-else v-on:click="add_condition(permission.id)" type="button" class="btn btn-warning" >
+                        <small>add condition</small>
+                    </button>   
+                </div>
+                <span class="badge badge-secondary badge-pill" >
+                    
+                </span>
+                </b-list-group-item>
+        </b-list-group>
+
+        <p v-if="!permissions.length">This role has no permissions yet.</p>
+
+        <button v-if="mode != 'permission create'" type="button" class="btn btn-primary"> 
+            <span v-on:click="add_permission()" class="badge badge-light ml-1"  >Add a permission</span>
+        </button>
+
+        <div class="mb-3" v-if="error_message">
+                [[ error_message ]]
+        </div>
+
+        <!-- Insert interfaces for managing permissions and conditions -->
+        <manage-permission @clear-state="clearState" :role_to_edit=role_to_edit 
+            :mode=mode :permissions=permissions :permission_options=permission_options 
+            :permission_configuration_options=permission_configuration_options
+            :permission_to_edit=permission_to_edit>
+        </manage-permission>
+        <manage-condition @clear-state="clearState" 
+            :mode=mode :conditions=conditions :condition_options=condition_options 
+            :condition_configuration_options=condition_configuration_options
+            :permission_to_condition=permission_to_condition
+            :condition_to_edit=condition_to_edit>
+        </manage-condition>
+
+        <!-- Footer -->
+        <template v-slot:modal-footer="{ hide }">
+            <b-button size="sm" variant="outline-secondary" @click="hide()">Done</b-button>
+        </template>
+
+    </b-modal>
+
+</script>
+
+{% include 'groups/manage_permission_include.html' %}
+{% include 'groups/manage_condition_include.html' %}
+
+
+<script type="application/javascript">
+
+    addRoleComponent = Vue.component('edit-role-modal', {
+        delimiters: ['[[', ']]'],
+        template: '#edit_role_modal_template',
+        props: ['role_to_edit'],
+        data: function() {
+            return {                
+                error_message: '',
+                mode: '',
+                permissions: [], // intitially from server, list of dicts, { id, name, display, change_type, configuration }
+                conditions: {},  // initially from server, { perm.id : { 'name': X, 'config': { }}}
+                // get passed as props down to child components
+                permission_options: [],
+                permission_configuration_options: {},
+                permission_to_edit: '',
+                condition_options: [],
+                condition_configuration_options: {},
+                condition_to_edit: '',
+                permission_to_condition: '',
+            }
+        },
+        computed: {
+            title_string: function () {
+                return "Edit role '" + this.role_to_edit + "'"
+            }
+        },
+        watch: {
+            role_to_edit: function() { this.prepEditRole() }
+        },
+        methods: {
+            add_permission() {
+                this.clearState()  // clear previous state
+                this.mode = "permission create"
+            },
+            add_condition(permission_id) {
+                this.clearState()  // clear previous state
+                this.mode = "condition create"
+                this.permission_to_condition = permission_id
+            },
+            edit_condition(permission_id) {
+                this.clearState()  // clear previous state
+                this.mode = "condition update"
+                this.permission_to_condition = permission_id
+                this.condition_to_edit = this.conditions[permission_id].id
+            },
+            edit_permission(permission_id) {
+                this.clearState()  // clear previous state
+                this.mode = "permission update"
+                this.permission_to_edit = permission_id
+            },
+            prepEditRole() {
+                axios.defaults.xsrfCookieName = 'csrftoken';
+                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
+                url = "http://127.0.0.1:8000/groups/get_permissions_given_role/{{ object.pk}}/";
+                params = { role_name: this.role_to_edit }
+                headers =  { "headers": { 'Content-Type': "application/json" } }
+                axios.post(url, params, headers)
+                .then(response => { 
+                    this.permissions = response.data.existing_permissions
+                    this.permission_options = response.data.permission_options
+                    this.permission_configuration_options = response.data.permission_configuration
+                    this.conditions = response.data.existing_conditions
+                    this.condition_options = response.data.condition_options
+                    this.condition_configuration_options = response.data.condition_configuration
+                })
+                .catch(error => {
+                    this.edit_role_error_message = "We're sorry, there was an issue getting permissions data from the server."
+                })
+            },
+            clearState() {
+                this.mode = ''
+                this.permission_to_edit = ''
+                this.permission_to_condition = ''
+                this.condition_to_edit = ''
+            }
+        }
+    });
+
+</script>
