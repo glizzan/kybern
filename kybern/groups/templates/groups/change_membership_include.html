@@ -1,0 +1,220 @@
+<script type="text/x-template" id="change_membership_modal_template">
+
+    <b-modal id="change_membership_modal" :title="title_string">
+
+            <b>Current Members:</b><b-badge v-for="member in current_members_display" v-bind:key="member.value" 
+                pill variant="info" class="mx-1">[[ member.text ]]
+                <span v-on:click="removeMember(member.value)" class="badge badge-light ml-1"  >➖</span>
+            </b-badge>
+
+            <template><div class="my-3">
+                <b-form-select v-model="people_selected" :options="member_options" multiple :select-size="6">
+                </b-form-select>
+            </div></template>
+
+        <div class="mb-3" v-if="error_message">
+            [[ error_message ]]
+        </div>
+
+        <template v-slot:modal-footer="{ ok }">
+            <b-button size="sm" variant="success" @click="addMembers()">Save</b-button>
+        </template>
+
+    </b-modal>
+
+</script>
+
+
+<script type="application/javascript"> 
+
+
+    changeMembershipComponent = Vue.component('change-membership-modal', {
+        delimiters: ['[[', ']]'],
+        template: '#change_membership_modal_template',
+        data: function() {
+            return {
+                error_message: '',
+                people_selected: [],
+                current_members: {{ current_members|safe }},
+                potential_members: {{ potential_members|safe }},
+            }
+        },
+        computed: {
+            title_string: function() {
+                return "Add people to role '" + this.$parent.role_to_change_membership + "'"
+            },
+            current_members_display: function() {
+                if (this.$parent.role_to_change_membership == "members") {
+                    members = this.current_members
+                } else {
+                    members = this.get_current_members_in_a_role()
+                }
+                return this.$parent.reformat_to_options(members)
+            },
+            member_options: function() {
+                if (this.$parent.role_to_change_membership == "members") {
+                    potential_members = this.potential_members
+                } else {
+                    potential_members = this.get_group_members_not_in_a_role()
+                }
+                return this.$parent.reformat_to_options(potential_members)
+            }
+        },
+        created() { this.send_member_data_to_parent() },
+        methods: {
+            send_member_data_to_parent() {
+                members_as_options = this.$parent.reformat_to_options(this.current_members)  // reformat
+                this.$emit('update-members', members_as_options )
+            },
+            get_current_members_in_a_role() {
+                for (index in this.$parent.roles) {
+                    if (this.$parent.roles[index].role_name == this.$parent.role_to_change_membership) {
+                        return this.$parent.roles[index].current_members
+                    }
+                }
+                return []
+            },
+            get_group_members_not_in_a_role() {
+                all_members = this.current_members
+                role_members = this.get_current_members_in_a_role()
+                remaining = []
+                for (member_index in all_members) {
+                    if (role_members.indexOf(all_members[member_index]) == -1) {
+                        remaining.push(all_members[member_index])
+                    }
+                }
+                return remaining
+            },
+            // Eventually will refactor this & views.py so that we can use the same methods for both
+            // group members and role members.
+            addMembers() {
+                if (this.$parent.role_to_change_membership == 'members') {
+                    this.addGroupMembers()
+                } else {
+                    this.addRoleMembers()
+                }
+            },
+            addRoleMembers() {
+                axios.defaults.xsrfCookieName = 'csrftoken';
+                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
+                url = "http://127.0.0.1:8000/groups/add_people_to_role/{{ object.pk}}/";
+                params = { role_name: this.$parent.role_to_change_membership, 
+                    people_pks: this.people_selected }
+                headers =  { "headers": { 'Content-Type': "application/json" } }
+                axios.post(url, params, headers)
+                .then(response => { 
+                    if (response.data.action_status == "success") {
+                        // Send data to parent so vue is updated
+                        this.$emit('update-role-members', {
+                            role_name : this.$parent.role_to_change_membership, 
+                            add_or_remove : 'add',
+                            people_selected : this.people_selected
+                        })
+                    } else {
+                        this.error_message = response.data.action_log;
+                    }
+                })
+                .catch(error => {
+                    if (error.response.status == 500) {
+                        this.error_message = "We're sorry, there was a problem with our server."
+                    } else {
+                        this.error_message = error;
+                    }
+                    console.log("ERROR: ", error.status);
+                })
+            },
+            addGroupMembers() {
+                axios.defaults.xsrfCookieName = 'csrftoken';
+                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
+                url = "http://127.0.0.1:8000/groups/add_members/{{ object.pk}}/";
+                params = { people_pks : this.people_selected }
+                headers =  { "headers": { 'Content-Type': "application/json" } }
+                axios.post(url, params, headers)
+                .then(response => { 
+                    if (response.data.action_status == "success") {
+                        for (index in this.people_selected) {
+                            // remove from potential_members
+                            index_in_potential_members = this.potential_members.indexOf(this.people_selected[index]);
+                            this.potential_members.splice(index_in_potential_members, 1)
+                            // add to current_members
+                            this.current_members.push(this.people_selected[index])
+                        }
+                        this.people_selected = []
+                    } else {
+                        this.error_message = response.data.action_log;
+                    }
+                })
+                .catch(error => {
+                    console.log("ERROR: ", error);
+                    if (error.response.status == 500) {
+                        this.error_message = "We're sorry, there was a problem with our server."
+                    } else {
+                        this.error_message = error;
+                    }
+                })
+            },
+            removeMember(member_id) {
+                if (this.$parent.role_to_change_membership == 'members') {
+                    this.removeGroupMember(member_id)
+                } else {
+                    this.removeRoleMember(member_id)
+                }
+            },       
+            removeRoleMember(member_id) {
+                axios.defaults.xsrfCookieName = 'csrftoken';
+                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
+                url = "http://127.0.0.1:8000/groups/remove_person_from_role/{{ object.pk}}/";
+                params = { role_name: this.$parent.role_to_change_membership, 
+                    person_to_remove: [member_id] }
+                headers =  { "headers": { 'Content-Type': "application/json" } }
+                axios.post(url, params, headers)
+                .then(response => { 
+                    if (response.data.action_status == "success") {
+                        // Send data to parent so vue is updated
+                        this.$emit('update-role-members', {
+                            role_name : this.$parent.role_to_change_membership, 
+                            add_or_remove : 'remove',
+                            people_selected : [member_id]
+                        })
+                    } else {
+                        this.error_message = response.data.action_log;
+                    }
+                })
+                .catch(error => {
+                    if (error.response.status == 500) {
+                        this.error_message = "We're sorry, there was a problem with our server."
+                    } else {
+                        this.error_message = error;
+                    }
+                    console.log("ERROR: ", error.status);
+                })
+            },
+            removeGroupMember(member_id) {
+                axios.defaults.xsrfCookieName = 'csrftoken';
+                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
+                url = "http://127.0.0.1:8000/groups/remove_member/{{ object.pk}}/";
+                params = { person_to_remove: [member_id] }
+                headers =  { "headers": { 'Content-Type': "application/json" } }
+                axios.post(url, params, headers)
+                .then(response => { 
+                    if (response.data.action_status == "success") {
+                        this.potential_members.push(member_id)
+                        member_index = this.current_members.indexOf(member_id)
+                        this.current_members.splice(member_index, 1)
+                    } else {
+                        this.error_message = response.data.action_log;
+                    }
+                })
+                .catch(error => {
+                    if (error.response.status == 500) {
+                        this.error_message = "We're sorry, there was a problem with our server."
+                    } else {
+                        this.error_message = error;
+                    }
+                    console.log("ERROR: ", error.status);
+                })
+            }
+        }
+    });
+
+</script>

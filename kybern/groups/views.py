@@ -90,6 +90,20 @@ def add_members(request, target):
                         "action_log": action.resolution.log })
 
 
+def remove_member(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+
+    communityClient = CommunityClient(actor=request.user)
+    target = communityClient.get_community(community_pk=target)
+    communityClient.set_target(target=target)
+
+    action, result = communityClient.remove_member(request_data['person_to_remove'])
+
+    return JsonResponse({ "action_status": "success" if action.resolution.status == "implemented" else "error",
+                          "action_log": action.resolution.log })
+
+
 def add_people_to_role(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -103,6 +117,43 @@ def add_people_to_role(request, target):
 
     return JsonResponse({ "action_status": "success" if action.resolution.status == "implemented" else "error",
                           "action_log": action.resolution.log })
+
+
+def remove_person_from_role(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+
+    communityClient = CommunityClient(actor=request.user)
+    target = communityClient.get_community(community_pk=target)
+    communityClient.set_target(target=target)
+
+    action, result = communityClient.remove_people_from_role(role_name=request_data['role_name'], 
+        people_to_remove=request_data['person_to_remove'])
+
+    return JsonResponse({ "action_status": "success" if action.resolution.status == "implemented" else "error",
+                          "action_log": action.resolution.log })
+
+
+def update_membership(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+
+    communityClient = CommunityClient(actor=request.user)
+    target = communityClient.get_community(community_pk=target)
+    communityClient.set_target(target=target)
+
+    actions = communityClient.update_role_membership(
+        role_data={ 'rolename': request_data['role_name'], 'members': request_data['members']})
+
+    action_errors = []
+    for action in actions:
+        if action.resolution.status != "implemented":
+            action_errors.append(action.resolution.log)
+    
+    if action_erors:
+        return JsonResponse({ "action_status": "error", "action_log": ", ".join(action_errors)})
+    return JsonResponse({ "action_status": "success" })
+
 
 
 ###########################
@@ -275,6 +326,34 @@ def update_permission(request, target):
         "new_display_name" : permission.full_description() })
 
 
+def delete_permission(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    permission_id = request_data.get("permission_id", None)
+
+    communityClient = CommunityClient(actor=request.user)
+    target = communityClient.get_community(community_pk=target)
+    permissionClient = PermissionResourceClient(actor=request.user, target=target)
+    permission_target = permissionClient.get_permission(pk=permission_id)
+    conditionalClient = PermissionConditionalClient(actor=request.user, target=permission_target)
+
+    # try to remove condition
+    condition = conditionalClient.get_condition_template()
+    if condition:
+        action, result = conditionalClient.remove_condition(condition=condition)
+        if action.resolution.status != "implemented":
+            message = """In order to delete a permission, any conditions set on the permission must first be 
+                deleted. The following condition on this permission could not be deleted: %s 
+                It could not be deleted because: %s""" % (condition.get_name(), action.resolution.log)
+            return JsonResponse({ "action_status": "failure", "action_log" : message })
+
+    # now remove permission
+    action, result = permissionClient.remove_permission(item_pk=permission_id)
+
+    return JsonResponse({ "action_status": "success" if action.resolution.status == "implemented" else "error",
+                          "action_log": action.resolution.log })
+
+                          
 def reformat_condition_data(condition_data):
     if type(condition_data) == str:
         condition_data = json.loads(condition_data)
@@ -317,7 +396,6 @@ def add_condition(request, target):
                           "condition_info": condition_info })
 
 
-
 def update_condition(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -338,3 +416,21 @@ def update_condition(request, target):
 
     return JsonResponse({ "action_status": action.resolution.status, "action_log": action.resolution.log,
         "new_display_name" : result.get_condition_type_class().descriptive_name })
+
+
+def delete_condition(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    permission_id = request_data.get("permission_id", None)
+
+    communityClient = CommunityClient(actor=request.user)
+    target = communityClient.get_community(community_pk=target)
+    permissionClient = PermissionResourceClient(actor=request.user, target=target)
+    permission_target = permissionClient.get_permission(pk=permission_id)
+    conditionalClient = PermissionConditionalClient(actor=request.user, target=permission_target)
+
+    condition = conditionalClient.get_condition_template()
+    action, result = conditionalClient.remove_condition(condition=condition)
+
+    return JsonResponse({ "action_status": "success" if action.resolution.status == "implemented" else "error",
+                          "action_log": action.resolution.log })

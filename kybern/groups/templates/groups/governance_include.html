@@ -30,8 +30,9 @@
                                 <b-badge variant="primary" pill v-b-modal.edit_role_modal
                                     v-on:click="role_to_edit = 'members'">
                                     edit role</b-badge>
-                                <b-badge variant="secondary" pill v-b-modal.add_member_modal>
-                                    add people</b-badge>
+                                <b-badge variant="secondary" pill v-b-modal.change_membership_modal
+                                    v-on:click="role_to_change_membership = 'members'">
+                                    change members</b-badge>
                             </div>
                     </b-list-group-item>
 
@@ -45,9 +46,9 @@
                                 <b-badge variant="primary" pill v-b-modal.edit_role_modal
                                     v-on:click="role_to_edit = role.role_name">
                                     edit role</b-badge>
-                                <b-badge variant="secondary" pill v-b-modal.add_people_to_role_modal
-                                    v-on:click="role_to_add_people_to = role.role_name">
-                                    add people</b-badge>
+                                <b-badge variant="secondary" pill v-b-modal.change_membership_modal
+                                    v-on:click="role_to_change_membership = role.role_name">
+                                    change members</b-badge>
                             </div>
                     </b-list-group-item>
                     
@@ -58,16 +59,18 @@
     </b-card-group>
 
     <add-role-modal @add-new-role="update_roles"></add-role-modal>
-    <member-modal @update-members="update_members"></member-modal>
-    <add-people-to-role-modal @update-role-members="update_role_members"></add-people-to-role-modal>
+    <change-membership-modal @update-members="update_members" @update-role-members="update_role_members">
+        </change-membership-modal>
+    <!-- <member-modal @update-members="update_members"></member-modal>
+    <add-people-to-role-modal @update-role-members="update_role_members"></add-people-to-role-modal> -->
     <edit-role-modal :role_to_edit=role_to_edit></edit-role-modal>
+
 
 </div>
 
 
 {% include 'groups/add_role_include.html' %}
-{% include 'groups/add_member_include.html' %}
-{% include 'groups/add_people_to_role_include.html' %}
+{% include 'groups/change_membership_include.html' %}
 {% include 'groups/edit_role_include.html' %}
 
 
@@ -81,7 +84,7 @@
         data: {
 
             // Data for components
-            role_to_add_people_to: '',                  // for add-people-to-role-modal
+            role_to_change_membership: '',                  // for add-people-to-role-modal
             role_to_edit: '',                           // for edit-role-modal
             
             // Data from components
@@ -95,7 +98,7 @@
         methods: {
             // handle data passed from members component
             update_members(current_members) {
-                this.members_as_options = current_members
+                this.members_as_options = this.reformat_to_options(current_members)
             },
             update_roles(new_role_name) {
                 this.roles.push({ 'role_name': new_role_name, 'current_members': [] })
@@ -103,9 +106,19 @@
             update_role_members(data) {
                 for (index in this.roles) {
                     if (this.roles[index]['role_name'] == data.role_name) {
-                        for (person_index in data.people_selected) {
-                            this.roles[index]['current_members'].push(data.people_selected[person_index])
+
+                        if (data.add_or_remove == 'add') {
+                            for (person_index in data.people_selected) {
+                                this.roles[index]['current_members'].push(data.people_selected[person_index])
+                            }   
+                        } else if (data.add_or_remove == 'remove') {
+                            for (person_index in data.people_selected) {
+                                removal_index = this.roles[index]['current_members'].indexOf(data.people_selected[person_index])
+                                this.roles[index]['current_members'].splice(removal_index, 1);
+                            }
                         }
+                        // I miss python :(
+
                     }
                 }
             },

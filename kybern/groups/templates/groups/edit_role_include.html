@@ -10,10 +10,12 @@
                     <button type="button" class="btn btn-primary"> 
                         <small>[[ permission.display ]]</small>
                         <span v-on:click="edit_permission(permission.id)" class="badge badge-light ml-1"  >🖉</span>
+                        <span v-on:click="delete_permission(permission.id)" class="badge badge-light ml-1"  >🗑</span>
                     </button>
                     <button v-if="conditions[permission.id]" type="button" class="btn btn-warning">
                         <small>[[ conditions[permission.id].name ]]</small>
                         <span v-on:click="edit_condition(permission.id)" class="badge badge-light ml-1">🖉</span>
+                        <span v-on:click="delete_condition(permission.id)" class="badge badge-light ml-1"  >🗑</span>
                     </button>
                     <button v-else v-on:click="add_condition(permission.id)" type="button" class="btn btn-warning" >
                         <small>add condition</small>
@@ -112,6 +114,52 @@
                 this.mode = "permission update"
                 this.permission_to_edit = permission_id
             },
+            delete_permission(permission_id) {
+                axios.defaults.xsrfCookieName = 'csrftoken';
+                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
+                url = "http://127.0.0.1:8000/groups/delete_permission/{{ object.pk}}/";
+                params = { permission_id : permission_id }
+                headers =  { "headers": { 'Content-Type': "application/json" } }
+                axios.post(url, params, headers)
+                .then(response => { 
+                    if (response.data.action_status == "success") {
+                        // Delete condition if set on this permission
+                        if (Object.keys(this.conditions).includes(permission_id)) {
+                            Vue.delete(this.conditions, permission_id);
+                        }
+                        // Delete permission from this.permissions
+                        for (permission_index in this.permissions) {
+                            if (this.permissions[permission_index].id == permission_id) {
+                                this.permissions.splice(permission_index, 1);
+                                break;
+                            }
+                        }
+                    } else {
+                        this.error_message = response.data.action_log
+                    }
+                })
+                .catch(error => {
+                    this.error_message = "We're sorry, there was a problem with our server."
+                })
+            },
+            delete_condition(permission_id) {
+                axios.defaults.xsrfCookieName = 'csrftoken';
+                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
+                url = "http://127.0.0.1:8000/groups/delete_condition/{{ object.pk}}/";
+                params = { permission_id : permission_id }
+                headers =  { "headers": { 'Content-Type': "application/json" } }
+                axios.post(url, params, headers)
+                .then(response => { 
+                    if (response.data.action_status == "success") {
+                        Vue.delete(this.conditions, permission_id);
+                    } else {
+                        this.error_message = response.data.action_log
+                    }
+                })
+                .catch(error => {
+                    this.error_message = "We're sorry, there was a problem with our server."
+                })
+            },
             prepEditRole() {
                 axios.defaults.xsrfCookieName = 'csrftoken';
                 axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
@@ -128,7 +176,7 @@
                     this.condition_configuration_options = response.data.condition_configuration
                 })
                 .catch(error => {
-                    this.edit_role_error_message = "We're sorry, there was an issue getting permissions data from the server."
+                    this.error_message = "We're sorry, there was an issue getting permissions data from the server."
                 })
             },
             clearState() {
