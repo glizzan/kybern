@@ -10,13 +10,15 @@
             </div></template>
         </span>
 
-        <span v-if="condition_selected || condition_to_edit">
-            <h5 v-if="condition_configuration_fields.length > 0" class="mb-3">Configure your condition</h5>
-            <div class="input-group mb-3" v-for="(field, index) in condition_configuration_fields">   
+        <span v-if="condition_configuration_fields.length > 0">
+
+            <p class="mt-3"><b>Configure your condition</b></p>
+
+            <div class="input-group my-1" v-for="(field, index) in condition_configuration_fields">   
 
                 <div v-if="field.type=='CharField'" class="input-group mb-3">
                     <div class="input-group-prepend">
-                        <span class="input-group-text" id="field.name label">[[ field.name ]]</span>
+                        <span class="input-group-text" id="field.name label">[[ field.display ]]</span>
                     </div>
                     <input type="text" class="form-control" aria-label="field.name" aria-describedby="field.name label" 
                         v-model="condition_configuration_fields[index]['value']" 
@@ -26,15 +28,35 @@
                 <span v-if="field.type=='BooleanField'">
                     <b-form-checkbox v-model="condition_configuration_fields[index]['value']" 
                         name="checkbox-1" value="true" unchecked-value="false">
-                    [[ field.name]] </b-form-checkbox>
+                    [[ field.display ]] </b-form-checkbox>
                 </span>
 
-                <div v-if="field.type=='FloatField'" class="input-group mb-3">
+                <div v-if="field.type=='IntegerField'" class="input-group mb-3">
                     <div class="input-group-prepend">
-                        <span class="input-group-text" id="field.name label">[[ field.name ]]</span>
+                        <span class="input-group-text" id="field.name label">[[ field.display ]]</span>
                     </div>
                     <input type="number" class="form-control" aria-label="field.name" aria-describedby="field.name label" 
                         v-model="condition_configuration_fields[index]['value']"
+                        :required="condition_configuration_fields[index]['required']">
+                </div>
+                
+                <!-- Should be a choice field populated by current roles -->
+                <div v-if="field.type=='PermissionRoleField'" class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text" id="field.name label">[[ field.display ]]</span>
+                    </div>
+                    <input type="text" class="form-control" aria-label="field.name" aria-describedby="field.name label" 
+                        v-model="condition_configuration_fields[index]['value']" 
+                        :required="condition_configuration_fields[index]['required']">
+                </div>
+
+                <!-- Should be a choice field populated by current members -->
+                <div v-if="field.type=='PermissionActorField'" class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text" id="field.name label">[[ field.display ]]</span>
+                    </div>
+                    <input type="text" class="form-control" aria-label="field.name" aria-describedby="field.name label" 
+                        v-model="condition_configuration_fields[index]['value']" 
                         :required="condition_configuration_fields[index]['required']">
                 </div>
 
@@ -42,9 +64,9 @@
         </span>
 
         <b-button v-if="condition_selected && mode == 'condition create'" size="sm" 
-            class="mt-2" variant="success" @click="addCondition()">Save condition</b-button>
+            class="mt-3" @click="addCondition()">Save condition</b-button>
         <b-button v-if="condition_to_edit && mode == 'condition update'" size="sm" 
-            class="mt-2" variant="success" @click="updateCondition()">Save changes</b-button>
+            class="mt-3" @click="updateCondition()">Save changes</b-button>
 
     </span>
 
@@ -84,8 +106,8 @@
                 url = "http://127.0.0.1:8000/groups/add_condition/{{ object.pk}}/";
                 // What to submit?
                 params = { condition_type: this.condition_selected, 
-                    condition_data: JSON.stringify(this.condition_configuration_fields),
-                    permission_data: null, target_permission_id: this.permission_to_condition }
+                    condition_configuration: JSON.stringify(this.condition_configuration_fields),
+                    target_permission_id: this.permission_to_condition }
                 headers =  { "headers": { 'Content-Type': "application/json" } }
                 axios.post(url, params, headers)
                 .then(response => { 

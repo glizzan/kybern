@@ -1,25 +1,26 @@
 <script type="text/x-template" id="edit_role_modal_template">
 
-    <b-modal id="edit_role_modal" :title="title_string" @hide="clearState()">
+    <b-modal id="edit_role_modal" :title="title_string" size="md" hide-footer @hide="clearState()">
 
-        <h5>People with this role can: </h5>
+        <b>People with this role can...</b>
 
         <b-list-group v-for="permission in permissions" v-bind:key="permission.id">
             <b-list-group-item>
                 <div class="btn-group" role="group" aria-label="Basic example">
-                    <button type="button" class="btn btn-primary"> 
+
+                    <b-button variant="light">
                         <small>[[ permission.display ]]</small>
                         <span v-on:click="edit_permission(permission.id)" class="badge badge-light ml-1"  >🖉</span>
                         <span v-on:click="delete_permission(permission.id)" class="badge badge-light ml-1"  >🗑</span>
-                    </button>
-                    <button v-if="conditions[permission.id]" type="button" class="btn btn-warning">
-                        <small>[[ conditions[permission.id].name ]]</small>
-                        <span v-on:click="edit_condition(permission.id)" class="badge badge-light ml-1">🖉</span>
-                        <span v-on:click="delete_condition(permission.id)" class="badge badge-light ml-1"  >🗑</span>
-                    </button>
-                    <button v-else v-on:click="add_condition(permission.id)" type="button" class="btn btn-warning" >
-                        <small>add condition</small>
-                    </button>   
+                    </b-button>
+                    <b-button v-if="conditions[permission.id]" variant="secondary">
+                        <small>on the condition that [[ conditions[permission.id].display ]]</small>
+                        <span v-on:click="edit_condition(permission.id)" class="badge badge-secondary ml-1">🖉</span>
+                        <span v-on:click="delete_condition(permission.id)" class="badge badge-secondary ml-1"  >🗑</span>
+                    </b-button>
+                    <b-button v-else v-on:click="add_condition(permission.id)" variant="secondary"
+                        ><small>add condition</small></b-button>
+
                 </div>
                 <span class="badge badge-secondary badge-pill" >
                     
@@ -29,12 +30,11 @@
 
         <p v-if="!permissions.length">This role has no permissions yet.</p>
 
-        <button v-if="mode != 'permission create'" type="button" class="btn btn-primary"> 
-            <span v-on:click="add_permission()" class="badge badge-light ml-1"  >Add a permission</span>
-        </button>
+        <b-button v-if="mode != 'permission create'" v-on:click="add_permission()" class="btn-sm my-3">
+            Add a permission</b-button>
 
-        <div class="mb-3" v-if="error_message">
-                [[ error_message ]]
+        <div class="mb-3 text-danger" v-if="error_message">
+            [[ error_message ]]
         </div>
 
         <!-- Insert interfaces for managing permissions and conditions -->
@@ -49,11 +49,6 @@
             :permission_to_condition=permission_to_condition
             :condition_to_edit=condition_to_edit>
         </manage-condition>
-
-        <!-- Footer -->
-        <template v-slot:modal-footer="{ hide }">
-            <b-button size="sm" variant="outline-secondary" @click="hide()">Done</b-button>
-        </template>
 
     </b-modal>
 

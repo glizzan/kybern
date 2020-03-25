@@ -98,7 +98,7 @@ def remove_member(request, target):
     target = communityClient.get_community(community_pk=target)
     communityClient.set_target(target=target)
 
-    action, result = communityClient.remove_member(request_data['person_to_remove'])
+    action, result = communityClient.remove_members(request_data['person_to_remove'])
 
     return JsonResponse({ "action_status": "success" if action.resolution.status == "implemented" else "error",
                           "action_log": action.resolution.log })
@@ -161,26 +161,6 @@ def update_membership(request, target):
 ###########################
 
 
-def ready_condition_fields_for_display(condition):
-
-    # NOTE: object type for non-existing data is Condition (as in ApprovalCondition) class not instance
-    existing_data = True if condition.__class__.__name__ == "ConditionTemplate" else False
-    condition_fields = condition.get_condition_type_class().get_configurable_fields() if existing_data else condition.get_configurable_fields()
-
-    field_dict = []
-    for field_name, field in condition_fields.items():
-        # field.field syntax is because field object is actually DeferredAttribute wrapper
-        required_text = "required" if field.field.blank else ""
-        if existing_data:
-            value = json.loads(condition.condition_data)[field_name]
-        else:
-            value = field.field.default
-        field_dict.append({ 'name': field_name, 'type': field.field.__class__.__name__, 
-            'required': required_text,  'value': value })
-
-    return field_dict
-
-
 def ready_permission_fields_for_display(permission):
 
     # NOTE: object type for none-existing data is State Change Object class not instance
@@ -241,7 +221,8 @@ def get_permissions_given_role(request, target):
     for obj in existing_conditions:
         serialized_existing_conditions.update({ obj.conditioned_object_id : 
             { 'name' : obj.get_condition_type_class().descriptive_name, 'id': obj.pk,
-            'configuration': ready_condition_fields_for_display(obj) } })
+            'display': obj.get_condition_description(),
+            'configuration': obj.get_configurable_fields_with_data() } })
 
     # Get condition options
     settable_conditions = conditionalClient.get_possible_conditions()
@@ -250,9 +231,10 @@ def get_permissions_given_role(request, target):
     # Create condition configuration 
     condition_configuration = { }
     for condition in settable_conditions:
+        configurable_fields = [ field_data for field_name, field_data in condition.get_configurable_fields().items()]
         condition_configuration.update({ condition.__name__ : 
             { 'condition_name' : condition.descriptive_name, 
-            'configuration': ready_condition_fields_for_display(condition) }  })
+            'configuration': configurable_fields }  })
      
     return JsonResponse({ 
         "existing_permissions": serialized_existing_permissions,
@@ -353,41 +335,39 @@ def delete_permission(request, target):
     return JsonResponse({ "action_status": "success" if action.resolution.status == "implemented" else "error",
                           "action_log": action.resolution.log })
 
+
+def process_configuration_data(configuration_data):
+    """Splits configuration data into condition_data and permission_data."""
+    configuration_data = json.loads(configuration_data) if type(configuration_data) == str else configuration_data
+    condition_data = []
+    permission_data = []
+    for field_name, field_data in configuration_data.items():
+        if field_data["type"] in ["PermissionRoleField", "PermissionActorField"]:
+            permission_data.append(configuration_data[field_name])
+        else:
+            condition_data.append(configuration_data[field_name])
+    return condition_data, permission_data
+
                           
-def reformat_condition_data(condition_data):
-    if type(condition_data) == str:
-        condition_data = json.loads(condition_data)
-    reformatted_condition_data = {}
-    for item in condition_data:
-        if item['type'] == "BooleanField":
-            item['value'] = True if item['value'] == "true" else item['value']
-            item['value'] = False if item['value'] == "false" else item['value']
-        if item['type'] in ["FloatField", "IntegerField"]: # Should probably treat floatfield differently
-            item['value'] = int(item['value'])  # FIXME: implement try/catch and return as error?
-        reformatted_condition_data.update({ item['name'] : item['value'] })
-    print(json.dumps(reformatted_condition_data))
-    return json.dumps(reformatted_condition_data)
-
-
 def add_condition(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
-    condition_type = request_data.get("condition_type", None)
-    condition_data = request_data.get("condition_data", None)
-    permission_data = request_data.get("permission_data", None)   
     target_permission_id = request_data.get("target_permission_id", None)
+    condition_type = request_data.get("condition_type", None)
+    configuration_data = request_data.get("condition_configuration", None)
 
-    reformatted_condition_data = reformat_condition_data(condition_data)
+    condition_data, permission_data = process_configuration_data(configuration_data)
 
     target_permission = PermissionResourceClient(actor=request.user).get_permission(pk=target_permission_id)
     conditionalClient = PermissionConditionalClient(actor=request.user, target=target_permission)
 
     action, result = conditionalClient.add_condition(condition_type=condition_type.lower(),
-        condition_data=reformatted_condition_data, permission_data=permission_data)
+        condition_data=condition_data, permission_data=permission_data)
 
     if action.resolution.status == "implemented":
         condition_info = {"name": result.get_condition_type_class().descriptive_name, 
-            "configuration": ready_condition_fields_for_display(result), "id": result.pk }
+            "display": result.get_condition_description(),
+            "configuration": result.get_configurable_fields_with_data(), "id": result.pk }
     else:
         condition_info = None 
 
@@ -403,16 +383,15 @@ def update_condition(request, target):
     condition_id = request_data.get("condition_id", None)
     configuration_data = request_data.get("condition_configuration", None)
 
-    reformatted_condition_data = reformat_condition_data(configuration_data)
+    condition_data, permission_data = process_configuration_data(configuration_data)
 
     #FIXME: the client call below doesn't require target
     permissionClient = PermissionResourceClient(actor=request.user)
     target_permission = permissionClient.get_permission(pk=permission_id)
 
     conditionClient = PermissionConditionalClient(actor=request.user, target=target_permission)
-    action, result = conditionClient.change_condition(condition_pk=condition_id, permission_data=None, 
-        condition_data=reformatted_condition_data)
-    # FIXME: need to actually handle permission data
+    action, result = conditionClient.change_condition(condition_pk=condition_id,
+        condition_data=condition_data, permission_data=permission_data)
 
     return JsonResponse({ "action_status": action.resolution.status, "action_log": action.resolution.log,
         "new_display_name" : result.get_condition_type_class().descriptive_name })

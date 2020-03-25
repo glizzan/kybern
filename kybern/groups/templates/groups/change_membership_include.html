@@ -1,24 +1,25 @@
 <script type="text/x-template" id="change_membership_modal_template">
 
-    <b-modal id="change_membership_modal" :title="title_string">
+    <b-modal id="change_membership_modal" :title="title_string" hide-footer @hidden="clear_state">
 
             <b>Current Members:</b><b-badge v-for="member in current_members_display" v-bind:key="member.value" 
                 pill variant="info" class="mx-1">[[ member.text ]]
                 <span v-on:click="removeMember(member.value)" class="badge badge-light ml-1"  >➖</span>
             </b-badge>
 
+            <p class="my-3">Remove members by clicking the minus sign next to their names, or add new 
+                members below:</p>
+            
             <template><div class="my-3">
-                <b-form-select v-model="people_selected" :options="member_options" multiple :select-size="6">
+                <b-form-select v-model="people_selected" :options="member_options" multiple>
                 </b-form-select>
             </div></template>
+
+            <b-button class="btn-sm" @click="addMembers()">Add selected members</b-button>
 
         <div class="mb-3" v-if="error_message">
             [[ error_message ]]
         </div>
-
-        <template v-slot:modal-footer="{ ok }">
-            <b-button size="sm" variant="success" @click="addMembers()">Save</b-button>
-        </template>
 
     </b-modal>
 
@@ -41,7 +42,11 @@
         },
         computed: {
             title_string: function() {
-                return "Add people to role '" + this.$parent.role_to_change_membership + "'"
+                if ( this.$parent.role_to_change_membership == "members") {
+                    return "Add or remove members from group"
+                } else {
+                    return "Change members with role '" + this.$parent.role_to_change_membership + "'"
+                }
             },
             current_members_display: function() {
                 if (this.$parent.role_to_change_membership == "members") {
@@ -62,6 +67,11 @@
         },
         created() { this.send_member_data_to_parent() },
         methods: {
+            clear_state (e) {
+                console.log("Clearing state?")
+                // On modal close, no one should be selected
+                this.people_selected = []
+            },
             send_member_data_to_parent() {
                 members_as_options = this.$parent.reformat_to_options(this.current_members)  // reformat
                 this.$emit('update-members', members_as_options )
@@ -140,6 +150,7 @@
                             this.current_members.push(this.people_selected[index])
                         }
                         this.people_selected = []
+                        this.send_member_data_to_parent()
                     } else {
                         this.error_message = response.data.action_log;
                     }
@@ -201,6 +212,8 @@
                         this.potential_members.push(member_id)
                         member_index = this.current_members.indexOf(member_id)
                         this.current_members.splice(member_index, 1)
+                        this.send_member_data_to_parent()
+                        this.$emit('remove-member-from-all-roles', { 'member_id': member_id })
                     } else {
                         this.error_message = response.data.action_log;
                     }

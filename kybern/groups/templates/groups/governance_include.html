@@ -10,14 +10,14 @@
                 structure is: {{ X }.
             </p>
 
-            <b-button class="p-2 mb-3">Change leadership</b-button>
+            <b-button class="btn-sm mb-3">Change leadership</b-button>
 
             <p class="card-text mt-2">
                 Each group also has a variety of roles which different people can be assigned to. Each 
                 role has different rights and responsibilities within the community.
             </p>
 
-            <b-button class="p-2 mb-3" v-b-modal.add_role_modal>Add a role</b-button>
+            <b-button class="btn-sm mb-3" v-b-modal.add_role_modal>Add a role</b-button>
 
             <b-list-group>
 
@@ -59,10 +59,8 @@
     </b-card-group>
 
     <add-role-modal @add-new-role="update_roles"></add-role-modal>
-    <change-membership-modal @update-members="update_members" @update-role-members="update_role_members">
-        </change-membership-modal>
-    <!-- <member-modal @update-members="update_members"></member-modal>
-    <add-people-to-role-modal @update-role-members="update_role_members"></add-people-to-role-modal> -->
+    <change-membership-modal @update-members="update_members" @update-role-members="update_role_members"
+        @remove-member-from-all-roles="remove_member_from_all_roles"></change-membership-modal>
     <edit-role-modal :role_to_edit=role_to_edit></edit-role-modal>
 
 
@@ -118,7 +116,15 @@
                             }
                         }
                         // I miss python :(
-
+                    }
+                }
+            },
+            remove_member_from_all_roles(data) {
+                // Called when a member is removed from the group, this removes them from any role they're in
+                for (index in this.roles) {
+                    removal_index = this.roles[index]['current_members'].indexOf(data.member_id)
+                    if (removal_index != -1) {
+                        this.roles[index]['current_members'].splice(removal_index, 1)
                     }
                 }
             },
