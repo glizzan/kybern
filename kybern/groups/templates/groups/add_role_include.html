@@ -38,28 +38,13 @@
         methods: {
             submitRoleName(bvModalEvt) {
                 bvModalEvt.preventDefault();
-                axios.defaults.xsrfCookieName = 'csrftoken';
-                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
-                url = "http://127.0.0.1:8000/groups/add_role/{{ object.pk}}/";
+                url = "http://127.0.0.1:8000/groups/add_role/{{ object.pk}}/"
                 params = { role_name: this.role_name }
-                headers =  { "headers": { 'Content-Type': "application/json" } }
-                axios.post(url, params, headers)
-                .then(response => { 
-                    if (response.data.action_status == "success") {
-                        this.$emit('add-new-role', this.role_name )
-                        this.role_name = '';
-                    } else {
-                        this.error_message = response.data.action_log;
-                    }
-                })
-                .catch(error => {
-                    console.log("ERROR: ", error.status);
-                    if (error.response.status == 500) {
-                        this.error_message = "We're sorry, there was a problem with our server."
-                    } else {
-                        this.error_message = error;
-                    }
-                })
+                implementationCallback = () => {
+                    this.$emit('add-new-role', this.role_name )
+                    this.role_name = '';
+                }
+                this.submit_standard_axios_action_call(url, params, implementationCallback)
             }
         }
     });

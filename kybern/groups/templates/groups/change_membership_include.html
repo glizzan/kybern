@@ -68,21 +68,19 @@
         created() { this.send_member_data_to_parent() },
         methods: {
             clear_state (e) {
-                console.log("Clearing state?")
-                // On modal close, no one should be selected
-                this.people_selected = []
+                this.people_selected = []   // On modal close, no one should be selected
             },
             send_member_data_to_parent() {
                 members_as_options = this.$parent.reformat_to_options(this.current_members)  // reformat
                 this.$emit('update-members', members_as_options )
             },
             get_current_members_in_a_role() {
-                for (index in this.$parent.roles) {
-                    if (this.$parent.roles[index].role_name == this.$parent.role_to_change_membership) {
-                        return this.$parent.roles[index].current_members
-                    }
-                }
-                return []
+                role = this.$parent.role_to_change_membership
+                result = []
+                this.$parent.roles.forEach(function(item) {
+                    if (item.role_name == role) { result = item.current_members }
+                })
+                return result
             },
             get_group_members_not_in_a_role() {
                 all_members = this.current_members
@@ -105,64 +103,34 @@
                 }
             },
             addRoleMembers() {
-                axios.defaults.xsrfCookieName = 'csrftoken';
-                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
-                url = "http://127.0.0.1:8000/groups/add_people_to_role/{{ object.pk}}/";
+                url = "http://127.0.0.1:8000/groups/add_people_to_role/{{ object.pk}}/"
                 params = { role_name: this.$parent.role_to_change_membership, 
                     people_pks: this.people_selected }
-                headers =  { "headers": { 'Content-Type': "application/json" } }
-                axios.post(url, params, headers)
-                .then(response => { 
-                    if (response.data.action_status == "success") {
-                        // Send data to parent so vue is updated
-                        this.$emit('update-role-members', {
-                            role_name : this.$parent.role_to_change_membership, 
-                            add_or_remove : 'add',
-                            people_selected : this.people_selected
-                        })
-                    } else {
-                        this.error_message = response.data.action_log;
-                    }
-                })
-                .catch(error => {
-                    if (error.response.status == 500) {
-                        this.error_message = "We're sorry, there was a problem with our server."
-                    } else {
-                        this.error_message = error;
-                    }
-                    console.log("ERROR: ", error.status);
-                })
+                implementationCallback = () => {    
+                    // Send data to parent so vue is updated
+                    this.$emit('update-role-members', {
+                        role_name : this.$parent.role_to_change_membership, 
+                        add_or_remove : 'add',
+                        people_selected : this.people_selected
+                    })
+                }
+                this.submit_standard_axios_action_call(url, params, implementationCallback)
             },
             addGroupMembers() {
-                axios.defaults.xsrfCookieName = 'csrftoken';
-                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
-                url = "http://127.0.0.1:8000/groups/add_members/{{ object.pk}}/";
+                url = "http://127.0.0.1:8000/groups/add_members/{{ object.pk}}/"
                 params = { people_pks : this.people_selected }
-                headers =  { "headers": { 'Content-Type': "application/json" } }
-                axios.post(url, params, headers)
-                .then(response => { 
-                    if (response.data.action_status == "success") {
-                        for (index in this.people_selected) {
-                            // remove from potential_members
-                            index_in_potential_members = this.potential_members.indexOf(this.people_selected[index]);
-                            this.potential_members.splice(index_in_potential_members, 1)
-                            // add to current_members
-                            this.current_members.push(this.people_selected[index])
-                        }
-                        this.people_selected = []
-                        this.send_member_data_to_parent()
-                    } else {
-                        this.error_message = response.data.action_log;
+                implementationCallback = () => {
+                    for (index in this.people_selected) {
+                        // remove from potential_members
+                        index_in_potential_members = this.potential_members.indexOf(this.people_selected[index]);
+                        this.potential_members.splice(index_in_potential_members, 1)
+                        // add to current_members
+                        this.current_members.push(this.people_selected[index])
                     }
-                })
-                .catch(error => {
-                    console.log("ERROR: ", error);
-                    if (error.response.status == 500) {
-                        this.error_message = "We're sorry, there was a problem with our server."
-                    } else {
-                        this.error_message = error;
-                    }
-                })
+                    this.people_selected = []
+                    this.send_member_data_to_parent()    
+                }
+                this.submit_standard_axios_action_call(url, params, implementationCallback)
             },
             removeMember(member_id) {
                 if (this.$parent.role_to_change_membership == 'members') {
@@ -172,60 +140,30 @@
                 }
             },       
             removeRoleMember(member_id) {
-                axios.defaults.xsrfCookieName = 'csrftoken';
-                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
-                url = "http://127.0.0.1:8000/groups/remove_person_from_role/{{ object.pk}}/";
+                url = "http://127.0.0.1:8000/groups/remove_person_from_role/{{ object.pk}}/"
                 params = { role_name: this.$parent.role_to_change_membership, 
                     person_to_remove: [member_id] }
-                headers =  { "headers": { 'Content-Type': "application/json" } }
-                axios.post(url, params, headers)
-                .then(response => { 
-                    if (response.data.action_status == "success") {
-                        // Send data to parent so vue is updated
-                        this.$emit('update-role-members', {
-                            role_name : this.$parent.role_to_change_membership, 
-                            add_or_remove : 'remove',
-                            people_selected : [member_id]
-                        })
-                    } else {
-                        this.error_message = response.data.action_log;
-                    }
-                })
-                .catch(error => {
-                    if (error.response.status == 500) {
-                        this.error_message = "We're sorry, there was a problem with our server."
-                    } else {
-                        this.error_message = error;
-                    }
-                    console.log("ERROR: ", error.status);
-                })
+                implementationCallback = () => {
+                    // Send data to parent so vue is updated
+                    this.$emit('update-role-members', {
+                        role_name : this.$parent.role_to_change_membership, 
+                        add_or_remove : 'remove',
+                        people_selected : [member_id]
+                    })
+                }
+                this.submit_standard_axios_action_call(url, params, implementationCallback)
             },
             removeGroupMember(member_id) {
-                axios.defaults.xsrfCookieName = 'csrftoken';
-                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
-                url = "http://127.0.0.1:8000/groups/remove_member/{{ object.pk}}/";
+                url = "http://127.0.0.1:8000/groups/remove_member/{{ object.pk}}/"
                 params = { person_to_remove: [member_id] }
-                headers =  { "headers": { 'Content-Type': "application/json" } }
-                axios.post(url, params, headers)
-                .then(response => { 
-                    if (response.data.action_status == "success") {
-                        this.potential_members.push(member_id)
-                        member_index = this.current_members.indexOf(member_id)
-                        this.current_members.splice(member_index, 1)
-                        this.send_member_data_to_parent()
-                        this.$emit('remove-member-from-all-roles', { 'member_id': member_id })
-                    } else {
-                        this.error_message = response.data.action_log;
-                    }
-                })
-                .catch(error => {
-                    if (error.response.status == 500) {
-                        this.error_message = "We're sorry, there was a problem with our server."
-                    } else {
-                        this.error_message = error;
-                    }
-                    console.log("ERROR: ", error.status);
-                })
+                implementationCallback = () => {
+                    this.potential_members.push(member_id)
+                    member_index = this.current_members.indexOf(member_id)
+                    this.current_members.splice(member_index, 1)
+                    this.send_member_data_to_parent()
+                    this.$emit('remove-member-from-all-roles', { 'member_id': member_id })
+                }
+                this.submit_standard_axios_action_call(url, params, implementationCallback)
             }
         }
     });

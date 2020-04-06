@@ -65,56 +65,32 @@
         },
         methods: {
             addPermission() {
-                axios.defaults.xsrfCookieName = 'csrftoken';
-                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
-                url = "http://127.0.0.1:8000/groups/add_permission/{{ object.pk}}/";
+                url = "http://127.0.0.1:8000/groups/add_permission/{{ object.pk}}/"
                 params = { permission_type : this.permission_selected, 
                     permission_roles : [this.role_to_edit],
                     permission_configuration : this.permission_configuration_fields }
-                headers =  { "headers": { 'Content-Type': "application/json" } }
-                axios.post(url, params, headers)
-                .then(response => {              
-                    if (response.data.action_status == "success") {
-                        this.permissions.push(response.data.permission_info);
-                        this.permission_selected = '';
-                        this.$emit('clear-state', {} )
-                    } else {
-                        console.log("Error creating permission: ", response.data.ection_log)
-                        this.$parent.error_message = response.data.action_log
-                    }
-                })
-                .catch(error => {
-                    console.log("Sever error: ", error)
-                    this.$parent.error_message = "We're sorry, there was an error adding the permission."
-                })
+                implementationCallback = () => {
+                    this.permissions.push(response.data.permission_info);
+                    this.permission_selected = '';
+                    this.$emit('clear-state', {});
+                }
+                this.submit_standard_axios_action_call(url, params, implementationCallback)
             },
             updatePermission() {
-                // change configuration
-                axios.defaults.xsrfCookieName = 'csrftoken';
-                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
-                url = "http://127.0.0.1:8000/groups/update_permission/{{ object.pk}}/";
+                url = "http://127.0.0.1:8000/groups/update_permission/{{ object.pk}}/"
                 params = { permission_id : this.permission_to_edit, 
-                           permission_configuration : this.permission_configuration_fields}
-                headers =  { "headers": { 'Content-Type': "application/json" } }
-                axios.post(url, params, headers)
-                .then(response => {              
-                    if (response.data.action_status == "success") {
-                        for (permission_index in this.permissions) {
-                            if (this.permissions[permission_index]['id'] == this.permission_to_edit) {
-                                this.permissions[permission_index]["display"] = response.data.new_display_name
-                            }
-                            this.permission_selected = '';
-                            this.$emit('clear-state', {} )
+                           permission_configuration : this.permission_configuration_field }
+                implementationCallback = () => {
+                    for (permission_index in this.permissions) {
+                        if (this.permissions[permission_index]['id'] == this.permission_to_edit) {
+                            this.permissions[permission_index]["display"] = response.data.new_display_name
                         }
-                    } else {
-                        console.log("Error creating permission: ", response.data.ection_log)
-                        this.$parent.error_message = response.data.action_log
+                        break
                     }
-                })
-                .catch(error => {
-                    console.log("Server error: ", error)
-                    this.$parent.error_message = "We're sorry, there was an error updating the permission."
-                })    
+                    this.permission_selected = '';
+                    this.$emit('clear-state', {} )
+                }
+                this.submit_standard_axios_action_call(url, params, implementationCallback)
             }
         }
     });

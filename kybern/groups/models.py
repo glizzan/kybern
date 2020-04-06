@@ -2,10 +2,10 @@ import importlib, inspect
 
 from django.db import models
 
-from concord.communities.models import Community
+from concord.communities.models import BaseCommunityModel
 
 
-class Group(Community):
+class Group(BaseCommunityModel):
     group_description = models.CharField(max_length=500)
 
     @classmethod

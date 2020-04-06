@@ -131,3 +131,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+
+# Custom configurations
+
+ALTERNATIVE_COMMUNITY_MODELS = [
+    { 'app_name': 'groups', 'model_name': 'group' }
+]

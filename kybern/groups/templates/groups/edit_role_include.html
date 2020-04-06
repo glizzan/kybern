@@ -14,7 +14,7 @@
                         <span v-on:click="delete_permission(permission.id)" class="badge badge-light ml-1"  >🗑</span>
                     </b-button>
                     <b-button v-if="conditions[permission.id]" variant="secondary">
-                        <small>on the condition that [[ conditions[permission.id].display ]]</small>
+                        <small>[[ conditions[permission.id].display ]]</small>
                         <span v-on:click="edit_condition(permission.id)" class="badge badge-secondary ml-1">🖉</span>
                         <span v-on:click="delete_condition(permission.id)" class="badge badge-secondary ml-1"  >🗑</span>
                     </b-button>
@@ -110,58 +110,36 @@
                 this.permission_to_edit = permission_id
             },
             delete_permission(permission_id) {
-                axios.defaults.xsrfCookieName = 'csrftoken';
-                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
                 url = "http://127.0.0.1:8000/groups/delete_permission/{{ object.pk}}/";
                 params = { permission_id : permission_id }
-                headers =  { "headers": { 'Content-Type': "application/json" } }
-                axios.post(url, params, headers)
-                .then(response => { 
-                    if (response.data.action_status == "success") {
-                        // Delete condition if set on this permission
-                        if (Object.keys(this.conditions).includes(permission_id)) {
-                            Vue.delete(this.conditions, permission_id);
-                        }
-                        // Delete permission from this.permissions
-                        for (permission_index in this.permissions) {
-                            if (this.permissions[permission_index].id == permission_id) {
-                                this.permissions.splice(permission_index, 1);
-                                break;
-                            }
-                        }
-                    } else {
-                        this.error_message = response.data.action_log
+                implementationCallback = () => {
+                    // Delete condition if set on this permission
+                    if (Object.keys(this.conditions).includes(permission_id)) {
+                        Vue.delete(this.conditions, permission_id);
                     }
-                })
-                .catch(error => {
-                    this.error_message = "We're sorry, there was a problem with our server."
-                })
+                    // Delete permission from this.permissions
+                    for (permission_index in this.permissions) {
+                        if (this.permissions[permission_index].id == permission_id) {
+                            this.permissions.splice(permission_index, 1);
+                            break;
+                        }
+                    }
+                }
+                this.submit_standard_axios_action_call(url, params, implementationCallback)
             },
             delete_condition(permission_id) {
-                axios.defaults.xsrfCookieName = 'csrftoken';
-                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
                 url = "http://127.0.0.1:8000/groups/delete_condition/{{ object.pk}}/";
                 params = { permission_id : permission_id }
-                headers =  { "headers": { 'Content-Type': "application/json" } }
-                axios.post(url, params, headers)
-                .then(response => { 
-                    if (response.data.action_status == "success") {
-                        Vue.delete(this.conditions, permission_id);
-                    } else {
-                        this.error_message = response.data.action_log
-                    }
-                })
-                .catch(error => {
-                    this.error_message = "We're sorry, there was a problem with our server."
-                })
+                implementationCallback = () => {
+                    Vue.delete(this.conditions, permission_id);
+                }
+                this.submit_standard_axios_action_call(url, params, implementationCallback)
             },
             prepEditRole() {
-                axios.defaults.xsrfCookieName = 'csrftoken';
-                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
+                axios = this.prep_axios()
                 url = "http://127.0.0.1:8000/groups/get_permissions_given_role/{{ object.pk}}/";
                 params = { role_name: this.role_to_edit }
-                headers =  { "headers": { 'Content-Type': "application/json" } }
-                axios.post(url, params, headers)
+                axios.post(url, params)
                 .then(response => { 
                     this.permissions = response.data.existing_permissions
                     this.permission_options = response.data.permission_options

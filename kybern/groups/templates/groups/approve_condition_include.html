@@ -1,0 +1,102 @@
+<script type="text/x-template" id="approve_condition_template">
+    <span>
+
+    <!-- "condition_pk": 1, 
+
+    "action_details": { "description": "buckybarnes added role ears to on target TeamCap", 
+        "created": "2020-04-03 18:10:59.869442+00:00", "display_date": "Apr 03 2020 06:10PM", 
+        "actor": "buckybarnes", "status": "implemented", "resolution passed by": "specific", 
+        "display": "At Apr 03 2020 06:10PM, buckybarnes added role ears to TeamCap. They did so 
+            because they have the permission specific.", 
+        "has_condition": { "exists": true, "pk": 1, "type": "ApprovalCondition" } }, 
+    
+    "permission_details": { "concord.conditionals.state_changes.ApproveStateChange": [ true, "members" ] },
+    
+    "condition_details": { "status": "approved", "display_status": "approved", 
+        "fields": [ { "field_name": "self_approval_allowed", "field_value": true, "hidden": false }  -->
+
+
+        <!-- If action is waiting -->
+        <span v-if="condition_status == 'waiting' && !user_has_taken_action" class="my-5">
+
+            <!-- If user can approve -->
+            <span v-if="can_approve">
+                <!-- BUG: we're letting people reject here as well without handling it functionally -->
+                <p class="mb-3"><b>Please approve or reject this action.</b></p>
+                <b-form-radio-group id="btn-radios-1" v-model="button_selected" :options="button_options"
+                    buttons name="radios-btn-default" button-variant="outline-primary">
+                </b-form-radio-group>
+                <b-button @click="update_condition">Save</b-button>
+            </span>
+
+            <span v-else>
+                <p class="mb-3"><b>You do not have permission to approve or reject this action.</b></p>
+            </span>
+
+        </span>
+
+        <!-- If user has just approved or rejected condition.-->
+        <span v-if="user_has_taken_action">
+            <span v-if="condition_status == 'approved' || condition_status == 'rejected'" class="my-5">
+                You have [[ condition_status ]] [[ condition_data.action_details.actor ]]'s action.  Nothing further is needed from you.
+            </span>
+        </span>
+
+        <!-- If condition was already closed before the user opened this modal, so they haven't taken action. -->
+        <span v-if="!user_has_taken_action">
+            <span v-if="condition_status == 'approved' || condition_status == 'rejected'" class="my-5"> 
+                [[ condition_data.action_details.actor ]]'s action has already been [[ condition_status ]].
+            </span>
+        </span>
+
+        <span v-if="error_message" class="text-danger">[[ error_message ]]</span> 
+
+</span>
+</script>
+
+
+<script type="application/javascript"> 
+
+approvalConditionComponent = Vue.component('approve-condition-ui', {
+    delimiters: ['[[', ']]'],
+    template: '#approve_condition_template',
+    props: ['condition_type', 'condition_data'],
+    data: function() {
+        return {
+            user_has_taken_action: false,
+            condition_status: this.condition_data.condition_details.status,
+            button_options: ["approve", "reject"],
+            button_selected: null,
+            error_message: null
+        }
+    },
+    computed: {
+        can_approve: function() {
+            return this.condition_data.permission_details["concord.conditionals.state_changes.ApproveStateChange"][0]
+        }
+    },
+    methods: {
+        update_condition() {
+            url = "http://127.0.0.1:8000/groups/update_approval_condition/{{ object.pk}}/"
+            params = { 
+                condition_pk: this.condition_data.condition_pk,
+                action_to_take: this.button_selected
+            }
+            implementationCallback = () => {    // using an arrow function here to pass surrounding context's this
+                // Call get_condition_data method to get updated condition data & adjust local vars
+                this.get_condition_data(this.condition_data.condition_pk, this.condition_type)
+                .then(response=> {
+                    this.condition_status = response.data.condition_details.status 
+                    // If condition status has changed to a 'resolved' state, emit notification.
+                    if (this.condition_status == "approved" || this.condition_status == "rejected" ) {
+                        EventBus.$emit('action-changed', this.condition_data.action_pk );
+                    }  
+                })
+                this.user_has_taken_action = true
+            }
+            this.submit_standard_axios_action_call(url, params, implementationCallback)
+        }
+    }
+})
+
+</script>

@@ -13,9 +13,62 @@ from concord.conditionals.client import PermissionConditionalClient
 from .models import Group
 
 
+# FIXME: this probably doesn't belong here
+class GroupClient(CommunityClient):
+    """Easy way to replace the default community model with the one we want to use here, group."""
+    community_model = Group
+
+
 class GroupListView(generic.ListView):
     model = Group
     template_name = 'groups/group_list.html'
+
+
+def process_action(action):
+
+    if action.resolution.status == "implemented":
+        action_verb = ""
+        action_description = action.change.description_past_tense() + " " + action.target.get_name()
+        follow_up = "They did so because they have the permission %s." % action.resolution.resolved_through
+    else:
+        action_verb = "tried to "
+        action_description = action.change.description_present_tense() + " " + action.target.get_name()
+        follow_up = "The current status is weird, do something here."
+
+    action_string = "At %s, %s %s%s. %s" % (action.created_at.strftime("%b %d %Y %I:%M%p"), 
+        action.actor.username, action_verb, action_description, follow_up)
+
+    # Check for condition  ( FIXME: we need a much more performant way of doing this )
+    pcc = PermissionConditionalClient(actor="system")
+    condition = pcc.get_condition_item_given_action(action_pk=action.pk)
+
+    return {
+        "action_pk": action.pk,
+        "description": action.get_description(),
+        "created": str(action.created_at),
+        "display_date": action.created_at.strftime("%b %d %Y %I:%M%p"),
+        "actor": action.actor.username,
+        "status": action.resolution.status,
+        "resolution passed by": action.resolution.resolved_through,
+        "display": action_string,
+        "has_condition": {
+            "exists": True if condition else False,
+            "pk": condition.pk if condition else None,
+            "type": condition.__class__.__name__ if condition else None,
+            "status": condition.condition_status() if condition else None
+        }
+    }
+
+
+def process_actions(action_queryset):
+    """Helper method, gets action data and saves it as list of dicts for Vue to use."""
+
+    actions = []
+    
+    for action in action_queryset:
+        actions.append(process_action(action))
+
+    return json.dumps(actions)
 
 
 class GroupDetailView(generic.DetailView):
@@ -25,11 +78,12 @@ class GroupDetailView(generic.DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Actions
-        actionClient = ActionClient(actor=self.request.user, 
-            target=self.object)
-        context['actions'] = actionClient.get_action_history_given_target()
+        actions = ActionClient(actor=self.request.user, 
+            target=self.object).get_action_history_given_target()
+        context['actions'] = process_actions(actions)
+        context['recent_actions'] = process_actions(actions.order_by('updated_at')[:5])
         # Role/Member info
-        communityClient = CommunityClient(actor=self.request.user, target=self.object)
+        communityClient = GroupClient(actor=self.request.user, target=self.object)
         context['username_map'] = { person.pk : person.username for person in User.objects.all() }
         context['current_members'] = [member.pk for member in communityClient.get_members()]
         context['potential_members'] = list(set(context['username_map'].keys()).difference(set(context['current_members'])))
@@ -60,100 +114,80 @@ class GroupCreateView(generic.edit.CreateView):
 #####################################################
 
 
+def get_action_dict(action):
+    return { 
+        "action_created": True if action.resolution.status in ["implemented", "approved", "waiting", "rejected"] else False,
+        "action_status": action.resolution.status,
+        "action_log": action.resolution.log, 
+        "action_pk": action.pk,
+    }
+
+
 def add_role(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
 
-    communityClient = CommunityClient(actor=request.user)
+    communityClient = GroupClient(actor=request.user)
     target = communityClient.get_community(community_pk=target)
     communityClient.set_target(target=target)
     
     action, result = communityClient.add_role(role_name=request_data['role_name'])
     
-    return JsonResponse({
-        "action_status": "success" if action.resolution.status == "implemented" else "error",
-        "action_log": action.resolution.log
-    })
+    return JsonResponse(get_action_dict(action))
 
 
 def add_members(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
 
-    communityClient = CommunityClient(actor=request.user)
+    communityClient = GroupClient(actor=request.user)
     target = communityClient.get_community(community_pk=target)
     communityClient.set_target(target=target)
 
     action, result = communityClient.add_members(member_pk_list=request_data["people_pks"])
 
-    return JsonResponse({ "action_status": "success" if action.resolution.status == "implemented" else "error",
-                        "action_log": action.resolution.log })
+    return JsonResponse(get_action_dict(action))
 
 
 def remove_member(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
 
-    communityClient = CommunityClient(actor=request.user)
+    communityClient = GroupClient(actor=request.user)
     target = communityClient.get_community(community_pk=target)
     communityClient.set_target(target=target)
 
     action, result = communityClient.remove_members(request_data['person_to_remove'])
 
-    return JsonResponse({ "action_status": "success" if action.resolution.status == "implemented" else "error",
-                          "action_log": action.resolution.log })
+    return JsonResponse(get_action_dict(action))
 
 
 def add_people_to_role(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
 
-    communityClient = CommunityClient(actor=request.user)
+    communityClient = GroupClient(actor=request.user)
     target = communityClient.get_community(community_pk=target)
     communityClient.set_target(target=target)
 
     action, result = communityClient.add_people_to_role(role_name=request_data['role_name'], 
         people_to_add=request_data['people_pks'])
 
-    return JsonResponse({ "action_status": "success" if action.resolution.status == "implemented" else "error",
-                          "action_log": action.resolution.log })
+    return JsonResponse(get_action_dict(action))
 
 
 def remove_person_from_role(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
 
-    communityClient = CommunityClient(actor=request.user)
+    communityClient = GroupClient(actor=request.user)
     target = communityClient.get_community(community_pk=target)
     communityClient.set_target(target=target)
 
     action, result = communityClient.remove_people_from_role(role_name=request_data['role_name'], 
         people_to_remove=request_data['person_to_remove'])
 
-    return JsonResponse({ "action_status": "success" if action.resolution.status == "implemented" else "error",
-                          "action_log": action.resolution.log })
-
-
-def update_membership(request, target):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-
-    communityClient = CommunityClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
-    communityClient.set_target(target=target)
-
-    actions = communityClient.update_role_membership(
-        role_data={ 'rolename': request_data['role_name'], 'members': request_data['members']})
-
-    action_errors = []
-    for action in actions:
-        if action.resolution.status != "implemented":
-            action_errors.append(action.resolution.log)
-    
-    if action_erors:
-        return JsonResponse({ "action_status": "error", "action_log": ", ".join(action_errors)})
-    return JsonResponse({ "action_status": "success" })
-
+    return JsonResponse(get_action_dict(action))
 
 
 ###########################
@@ -183,7 +217,7 @@ def get_permissions_given_role(request, target):
     request_data = json.loads(request.body.decode('utf-8'))
 
     permissionClient = PermissionResourceClient(actor=request.user)
-    communityClient = CommunityClient(actor=request.user)
+    communityClient = GroupClient(actor=request.user)
     target = communityClient.get_community(community_pk=target)
     permissionClient.set_target(target=target)
 
@@ -220,9 +254,8 @@ def get_permissions_given_role(request, target):
     serialized_existing_conditions = {}    
     for obj in existing_conditions:
         serialized_existing_conditions.update({ obj.conditioned_object_id : 
-            { 'name' : obj.get_condition_type_class().descriptive_name, 'id': obj.pk,
-            'display': obj.get_condition_description(),
-            'configuration': obj.get_configurable_fields_with_data() } })
+            { 'name' : obj.condition_name(), 'id': obj.pk, 'display': obj.condition_description(),
+            'configuration': obj.condition_data.get_configurable_fields_with_data() } })
 
     # Get condition options
     settable_conditions = conditionalClient.get_possible_conditions()
@@ -231,10 +264,9 @@ def get_permissions_given_role(request, target):
     # Create condition configuration 
     condition_configuration = { }
     for condition in settable_conditions:
-        configurable_fields = [ field_data for field_name, field_data in condition.get_configurable_fields().items()]
         condition_configuration.update({ condition.__name__ : 
             { 'condition_name' : condition.descriptive_name, 
-            'configuration': configurable_fields }  })
+            'configuration': condition.get_configurable_fields() }  })
      
     return JsonResponse({ 
         "existing_permissions": serialized_existing_permissions,
@@ -261,7 +293,7 @@ def add_permission(request, target):
 
     reformatted_permission_data = reformat_permission_data(permission_configuration)
 
-    communityClient = CommunityClient(actor=request.user)
+    communityClient = GroupClient(actor=request.user)
     target = communityClient.get_community(community_pk=target)
     permissionClient = PermissionResourceClient(actor=request.user, target=target)
 
@@ -276,9 +308,9 @@ def add_permission(request, target):
     else:
         permission_info = None
 
-    return JsonResponse({ "action_status": "success" if action.resolution.status == "implemented" else "error",
-                          "action_log": action.resolution.log,
-                          "permission_info": permission_info })
+    action_dict = get_action_dict(action)
+    action_dict.update({ "permission_info": permission_info })
+    return JsonResponse(action_dict)
 
 
 def update_permission(request, target):
@@ -304,8 +336,9 @@ def update_permission(request, target):
 
     permission = permissionClient.get_permission(pk=permission_id)  # get refreshed version
 
-    return JsonResponse({ "action_status": action_status, "action_log": action_log,
-        "new_display_name" : permission.full_description() })
+    action_dict = get_action_dict(action)
+    action_dict.update({ "new_display_name" : permission.full_description() })
+    return JsonResponse(action_dict)
 
 
 def delete_permission(request, target):
@@ -313,7 +346,7 @@ def delete_permission(request, target):
     request_data = json.loads(request.body.decode('utf-8'))
     permission_id = request_data.get("permission_id", None)
 
-    communityClient = CommunityClient(actor=request.user)
+    communityClient = GroupClient(actor=request.user)
     target = communityClient.get_community(community_pk=target)
     permissionClient = PermissionResourceClient(actor=request.user, target=target)
     permission_target = permissionClient.get_permission(pk=permission_id)
@@ -331,9 +364,7 @@ def delete_permission(request, target):
 
     # now remove permission
     action, result = permissionClient.remove_permission(item_pk=permission_id)
-
-    return JsonResponse({ "action_status": "success" if action.resolution.status == "implemented" else "error",
-                          "action_log": action.resolution.log })
+    return JsonResponse(get_action_dict(action))
 
 
 def process_configuration_data(configuration_data):
@@ -341,11 +372,15 @@ def process_configuration_data(configuration_data):
     configuration_data = json.loads(configuration_data) if type(configuration_data) == str else configuration_data
     condition_data = []
     permission_data = []
-    for field_name, field_data in configuration_data.items():
-        if field_data["type"] in ["PermissionRoleField", "PermissionActorField"]:
-            permission_data.append(configuration_data[field_name])
+    for field in configuration_data:
+        if field["type"] in ["PermissionRoleField", "PermissionActorField"]:
+            if field["value"]:
+                field["value"] = [item.strip() for item in field["value"].split(",")] 
+            else:
+                field["value"] = []
+            permission_data.append(field)
         else:
-            condition_data.append(configuration_data[field_name])
+            condition_data.append(field)
     return condition_data, permission_data
 
                           
@@ -365,15 +400,15 @@ def add_condition(request, target):
         condition_data=condition_data, permission_data=permission_data)
 
     if action.resolution.status == "implemented":
-        condition_info = {"name": result.get_condition_type_class().descriptive_name, 
-            "display": result.get_condition_description(),
-            "configuration": result.get_configurable_fields_with_data(), "id": result.pk }
+        condition_info = {"name": result.condition_name(), 
+            "display": result.condition_description(),
+            "configuration": result.condition_data.get_configurable_fields_with_data(), "id": result.pk }
     else:
         condition_info = None 
 
-    return JsonResponse({ "action_status": "success" if action.resolution.status == "implemented" else "error",
-                          "action_log": action.resolution.log,
-                          "condition_info": condition_info })
+    action_dict = get_action_dict(action)
+    action_dict.update({ "condition_info": condition_info })
+    return JsonResponse(action_dict)
 
 
 def update_condition(request, target):
@@ -393,8 +428,9 @@ def update_condition(request, target):
     action, result = conditionClient.change_condition(condition_pk=condition_id,
         condition_data=condition_data, permission_data=permission_data)
 
-    return JsonResponse({ "action_status": action.resolution.status, "action_log": action.resolution.log,
-        "new_display_name" : result.get_condition_type_class().descriptive_name })
+    action_dict = get_action_dict(action)
+    action_dict.update({ "new_display_name" : result.condition_name() })
+    return JsonResponse(action_dict)
 
 
 def delete_condition(request, target):
@@ -402,7 +438,7 @@ def delete_condition(request, target):
     request_data = json.loads(request.body.decode('utf-8'))
     permission_id = request_data.get("permission_id", None)
 
-    communityClient = CommunityClient(actor=request.user)
+    communityClient = GroupClient(actor=request.user)
     target = communityClient.get_community(community_pk=target)
     permissionClient = PermissionResourceClient(actor=request.user, target=target)
     permission_target = permissionClient.get_permission(pk=permission_id)
@@ -411,5 +447,61 @@ def delete_condition(request, target):
     condition = conditionalClient.get_condition_template()
     action, result = conditionalClient.remove_condition(condition=condition)
 
-    return JsonResponse({ "action_status": "success" if action.resolution.status == "implemented" else "error",
-                          "action_log": action.resolution.log })
+    return JsonResponse(get_action_dict(action))
+
+
+#####################################
+### CONDITION-SPECIFIC INTERFACES ###
+#####################################
+
+def update_approval_condition(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    condition_pk = request_data.get("condition_pk", None)
+    action_to_take = request_data.get("action_to_take", None)
+
+    conditionalClient = PermissionConditionalClient(actor=request.user)
+    approvalClient = conditionalClient.get_approval_condition_as_client(pk=condition_pk)
+
+    if action_to_take == "approve":
+        action, result = approvalClient.approve()
+    elif action_to_take == "reject":
+        action, result = approvalClient.reject()
+
+    return JsonResponse(get_action_dict(action))
+    
+
+def get_condition_data(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    condition_pk = request_data.get("condition_pk", None)
+    condition_type = request_data.get("condition_type", None)
+
+    conditionalClient = PermissionConditionalClient(actor=request.user)
+    condition = conditionalClient.get_condition_item(condition_pk=condition_pk, condition_type=condition_type)
+
+    # for permission on condition, does user have permission? 
+    permissionClient = PermissionResourceClient(actor=request.user)
+    permission_details = {}
+    for permission in permissionClient.get_permissions_on_object(object=condition):
+        has_permission = permissionClient.actor_satisfies_permission(actor=request.user,
+            permission=permission)
+        permission_details.update({ permission.change_type : has_permission })
+
+    return JsonResponse({ "permission_details" : permission_details,
+        "condition_details" : { 
+            "status": condition.condition_status(),
+            "display_status": condition.display_status(),
+            "fields": condition.display_fields()
+        }
+    })
+
+
+def get_action_data(request):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    action_pk = request_data.get("action_pk", None)
+
+    action = ActionClient(actor=request.user).get_action_given_pk(action_pk)
+
+    return JsonResponse({ "action_data": process_action(action) })

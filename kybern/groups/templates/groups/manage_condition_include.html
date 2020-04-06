@@ -101,51 +101,28 @@
         },
         methods: {
             addCondition() {
-                axios.defaults.xsrfCookieName = 'csrftoken';
-                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
                 url = "http://127.0.0.1:8000/groups/add_condition/{{ object.pk}}/";
-                // What to submit?
                 params = { condition_type: this.condition_selected, 
                     condition_configuration: JSON.stringify(this.condition_configuration_fields),
                     target_permission_id: this.permission_to_condition }
-                headers =  { "headers": { 'Content-Type': "application/json" } }
-                axios.post(url, params, headers)
-                .then(response => { 
-                    if (response.data.action_status == "success") {
-                        Vue.set(this.conditions, this.permission_to_condition, response.data.condition_info)
-                        this.condition_selected = '';
-                        this.$emit('clear-state', {} )
-                    } else {
-                        this.$parent.error_message = response.data.action_log
-                    }
-                })
-                .catch(error => {
-                    console.log("ERROR: ", error)
-                    this.$parent.error_message = "We're sorry, there was an error adding the condition."
-                })
+                implementationCallback = (response) => {
+                    Vue.set(this.conditions, this.permission_to_condition, response.data.condition_info)
+                    this.condition_selected = '';
+                    this.$emit('clear-state', {} )
+                }
+                this.submit_standard_axios_action_call(url, params, implementationCallback)
             },
             updateCondition() {
-                // change configuration
-                axios.defaults.xsrfCookieName = 'csrftoken';
-                axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
-                url = "http://127.0.0.1:8000/groups/update_condition/{{ object.pk}}/";
+                url = "http://127.0.0.1:8000/groups/update_condition/{{ object.pk}}/"
                 params = { condition_id : this.condition_to_edit, 
                            permission_id : this.permission_to_condition,
                            condition_configuration : this.condition_configuration_fields}
-                headers =  { "headers": { 'Content-Type': "application/json" } }
-                axios.post(url, params, headers)
-                .then(response => {              
-                    if (response.data.action_status == "success") {
-                        this.conditions[this.permission_to_condition]["display"] = response.data.new_display_name
-                        this.condition_selected = ''
-                        this.$emit('clear-state', {} )
-                    } else {
-                        this.$parent.error_message = response.data.action_log
-                    }
-                })
-                .catch(error => {
-                    this.$parent.error_message = "We're sorry, there was an error changing the condition."
-                })    
+                implementationCallback = (response) => {
+                    this.conditions[this.permission_to_condition]["display"] = response.data.new_display_name
+                    this.condition_selected = ''
+                    this.$emit('clear-state', {} )
+                }
+                this.submit_standard_axios_action_call(url, params, implementationCallback)
             }
         }
     });
