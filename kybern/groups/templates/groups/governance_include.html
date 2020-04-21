@@ -1,16 +1,9 @@
 <div id="governance">
 
-    <b-card-group deck>
+        <!-- <leadership-component></leadership-component>    -->
+         <!-- root component is also a b-card -->
 
-        <b-card header="Group Roles" class="mb-5">
-
-            <p class="card-text mt-2">
-                Every group has owners who hold fundamental authority over the group. There are a variety
-                of ownership structures, from a single owner to collective self-ownership.  This group's
-                structure is: {{ X }}.
-            </p>
-
-            <b-button class="btn-sm mb-3">Change leadership</b-button>
+        <b-card header="Other Roles">
 
             <p class="card-text mt-2">
                 Each group also has a variety of roles which different people can be assigned to. Each 
@@ -21,33 +14,17 @@
 
             <b-list-group>
 
-                    <!-- Special item for members -->
-                    <b-list-group-item class="d-flex justify-content-between align-items-center">
-                            <span>members
-                                <small class="ml-2"> [[ members_as_options.length ]] people</small>
-                            </span>
-                            <div>
-                                <b-badge variant="primary" pill v-b-modal.edit_role_modal
-                                    v-on:click="role_to_edit = 'members'">
-                                    edit role</b-badge>
-                                <b-badge variant="secondary" pill v-b-modal.change_membership_modal
-                                    v-on:click="role_to_change_membership = 'members'">
-                                    change members</b-badge>
-                            </div>
-                    </b-list-group-item>
-
-                    <!-- Iterate through custom roles -->
-                    <b-list-group-item v-for="role in roles" v-bind:key="role.id" 
+                    <b-list-group-item v-for="role in allRoles" v-bind:key="role.id" 
                         class="d-flex justify-content-between align-items-center"> 
                             <span>
-                                [[ role.role_name ]] <small class="ml-2"> [[role.current_members.length ]] people </small>
+                                [[ role.name ]] <small class="ml-2"> [[role.current_members.length ]] people </small>
                             </span>
                             <div>
                                 <b-badge variant="primary" pill v-b-modal.edit_role_modal
-                                    v-on:click="role_to_edit = role.role_name">
+                                    v-on:click="role_to_edit = role.name">
                                     edit role</b-badge>
                                 <b-badge variant="secondary" pill v-b-modal.change_membership_modal
-                                    v-on:click="role_to_change_membership = role.role_name">
+                                    v-on:click="role_to_change_membership = role.name">
                                     change members</b-badge>
                             </div>
                     </b-list-group-item>
@@ -56,17 +33,13 @@
 
         </b-card>
 
-    </b-card-group>
-
-    <add-role-modal @add-new-role="update_roles"></add-role-modal>
-    <change-membership-modal @update-members="update_members" @update-role-members="update_role_members"
-        @remove-member-from-all-roles="remove_member_from_all_roles"></change-membership-modal>
+    <add-role-modal></add-role-modal>
+    <change-membership-modal :role_selected=role_to_change_membership></change-membership-modal>
     <edit-role-modal :role_to_edit=role_to_edit></edit-role-modal>
-
 
 </div>
 
-
+{% include 'groups/leadership_include.html' %}    
 {% include 'groups/add_role_include.html' %}
 {% include 'groups/change_membership_include.html' %}
 {% include 'groups/edit_role_include.html' %}
@@ -74,71 +47,20 @@
 
 <script type="application/javascript">
 
-
     // Main vue instance for role app
     var roleApp = new Vue({
         delimiters: ['[[', ']]'],
         el: '#governance',
+        store,
         data: {
-
-            // Data for components
-            role_to_change_membership: '',                  // for add-people-to-role-modal
-            role_to_edit: '',                           // for edit-role-modal
-            
-            // Data from components
-            members_as_options: [],                     // from member-modal
-            
-            // Misc used broadly
-            username_map: {{ username_map|safe }},      // Gets usernames for display
-            roles: {{ roles|safe }},                    // Roles to iterate through
-
+            role_to_change_membership: '',                  // prop for add-people-to-role-modal
+            role_to_edit: '',                           // propfor edit-role-modal
+        },
+        computed: {
+            ...Vuex.mapState(['roles']),
+            ...Vuex.mapGetters(['allRoles'])
         },
         methods: {
-            // handle data passed from members component
-            update_members(current_members) {
-                this.members_as_options = this.reformat_to_options(current_members)
-            },
-            update_roles(new_role_name) {
-                this.roles.push({ 'role_name': new_role_name, 'current_members': [] })
-            },
-            update_role_members(data) {
-                for (index in this.roles) {
-                    if (this.roles[index]['role_name'] == data.role_name) {
-
-                        if (data.add_or_remove == 'add') {
-                            for (person_index in data.people_selected) {
-                                this.roles[index]['current_members'].push(data.people_selected[person_index])
-                            }   
-                        } else if (data.add_or_remove == 'remove') {
-                            for (person_index in data.people_selected) {
-                                removal_index = this.roles[index]['current_members'].indexOf(data.people_selected[person_index])
-                                this.roles[index]['current_members'].splice(removal_index, 1);
-                            }
-                        }
-                        // I miss python :(
-                    }
-                }
-            },
-            remove_member_from_all_roles(data) {
-                // Called when a member is removed from the group, this removes them from any role they're in
-                for (index in this.roles) {
-                    removal_index = this.roles[index]['current_members'].indexOf(data.member_id)
-                    if (removal_index != -1) {
-                        this.roles[index]['current_members'].splice(removal_index, 1)
-                    }
-                }
-            },
-            // helper methods for this vue app + components
-            reformat_to_options(user_list) {
-                user_options = []
-                for (index in user_list) {
-                    user_options.push({
-                        'value': user_list[index],
-                        'text': this.username_map[user_list[index]]
-                    })
-                }
-                return user_options
-            }
         }
     });
 

@@ -1,10 +1,10 @@
-<div id="action_history">
+<div id="action_history" class="mt-3">
 
-    <b-badge variant="info" pill v-b-modal.action_history_modal>view full history</b-badge>
+    <b-button variant="outline-secondary" v-b-modal.action_history_modal>view group history</b-button>
 
-  <!-- Simple table to show recent actions -->
+  <!-- Simple table to show recent actions
   <b-table :items="recent_actions" :fields="recent_action_fields" id="recent_actions" striped small>
-  </b-table>
+  </b-table> -->
 
   <!-- Modal with more detailed info on all actions -->
   <b-modal id="action_history_modal" :title="title_string" class="modal fade" size="xl" @ok="handleOk">
@@ -44,7 +44,7 @@
             <template v-slot:cell(has_condition)="data">
                 <b-button v-if="data.item.has_condition.exists" size='sm'
                   @click="launch_condition_modal(data.item)">
-                  View conditional [[ data.item.has_condition.pk ]] </b-button>
+                  view </b-button>
             </template>
 
           </b-table>
@@ -56,10 +56,15 @@
         :condition_type=condition_type >
       </approve-condition-ui>
 
+      <vote-condition-ui v-if="condition_type=='VoteCondition'" :condition_data=condition_data
+        :condition_type=condition_type >
+      </vote-condition-ui>
+      
   </b-modal>   
 </div>
 
 {% include 'groups/approve_condition_include.html' %}
+{% include 'groups/vote_condition_include.html' %}
 
 <script>
 
@@ -68,7 +73,7 @@ Vue.mixin({
   methods: {
     get_condition_data(condition_pk, condition_type) {
         axios = this.prep_axios()
-        url = "http://127.0.0.1:8000/groups/get_condition_data/{{ object.pk}}/";
+        url = "http://127.0.0.1:8000/groups/get_condition_data/{{ target.pk}}/";
         params = { condition_type: condition_type, condition_pk: condition_pk }
         return axios.post(url, params)
       },
@@ -108,41 +113,53 @@ var actionHistoryApp = new Vue({
       filterOn: [],
       // Info to pass to condition modal
       condition_type: null,
-      condition_data: null
+      condition_data: null,
+      // Info for processing incoming actions
+      action_target_pk: {{ target.pk|safe }},
+      action_target_content_type: {{ target.get_content_type|safe }}
     },
     computed: {
       title_string: function() {
         if (this.condition_type == null) {
-          return "Action history for {{ object.name }}"
+          return "Action history for {{ target.name }}"
         } else {
           return this.condition_type + " on action '" + this.condition_data.action_details.description + "'"
         }
       }
     },
     created (){
-
-      // FIXME: need to make sure the actions created and changed that are pinging here are *ON THE TARGET*
-
       // Listen for new actions and add them
       EventBus.$on('action-created', (action_pk) => {
         console.log("New action has been created: ", action_pk);
         this.get_action_data(action_pk).then(response => {
-          this.actions.push(response.data.action_data)
+          if (this.action_matches_target(response.data.action_data)) {
+            this.actions.push(response.data.action_data)
+          }
         })
         .catch(error => { console.log("ERROR adding action " + action_pk + ":" + error) })
       })
       // Listen for changed actions and update them
       EventBus.$on('action-changed', (action_pk) => {
         this.get_action_data(action_pk).then(response=> {
-          matching_action_index = null
-          this.actions.forEach(function(action, index) {
-            if (action.action_pk == action_pk) { matching_action_index = index } })
-          this.actions.splice(matching_action_index, 1, response.data.action_data)
+          if (this.action_matches_target(response.data.action_data)) {
+            matching_action_index = null
+            this.actions.forEach(function(action, index) {
+              if (action.action_pk == action_pk) { matching_action_index = index } })
+            this.actions.splice(matching_action_index, 1, response.data.action_data)
+          }
         })
         .catch(error => { console.log("ERROR updating action " + action_pk + ":" + error) })
       })
     },
     methods: {
+      action_matches_target(action_data) {
+        if (action_data.action_target_pk == this.action_target_pk) {
+          if (action_data.action_target_content_type == this.action_target_content_type) {
+            return true
+          }
+        }
+        return false
+      },
       handleOk(bvModalEvt) {
         bvModalEvt.preventDefault() // Prevent modal from closing
         this.condition_type = null    // clear state
@@ -152,14 +169,16 @@ var actionHistoryApp = new Vue({
         // eventually use this https://stackoverflow.com/a/43658979/1026275
         this.get_condition_data(item.has_condition.pk, item.has_condition.type)
         .then(response=> {
-            this.condition_data = {
+
+          this.condition_data = {
               'condition_pk': item.has_condition.pk,
               'action_pk': item.action_pk,
               'action_details': item,
               'permission_details': response.data.permission_details,
               'condition_details': response.data.condition_details
             }
-            this.condition_type = item.has_condition.type
+          this.condition_type = item.has_condition.type
+            
         }).catch(error => { console.log("ERROR again: ", error) })
       }
     }

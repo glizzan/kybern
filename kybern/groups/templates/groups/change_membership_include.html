@@ -1,24 +1,25 @@
 <script type="text/x-template" id="change_membership_modal_template">
 
-    <b-modal id="change_membership_modal" :title="title_string" hide-footer @hidden="clear_state">
+    <b-modal id="change_membership_modal" :title="title_string" hide-footer>
 
-            <b>Current Members:</b><b-badge v-for="member in current_members_display" v-bind:key="member.value" 
-                pill variant="info" class="mx-1">[[ member.text ]]
-                <span v-on:click="removeMember(member.value)" class="badge badge-light ml-1"  >➖</span>
-            </b-badge>
+            <b>Current Members:</b><b-badge v-for="member in people_in_role" v-bind:key="member.pk" 
+                pill variant="info" class="mx-1">[[ member.name ]] ( [[member.pk]] )</b-badge>
 
-            <p class="my-3">Remove members by clicking the minus sign next to their names, or add new 
-                members below:</p>
+            <vue-multiselect v-model="people_selected" :options="people_to_choose_from" :multiple="true" 
+            :close-on-select="true" :clear-on-select="false" placeholder="No one selected" 
+            label="name" track-by="pk" class="mt-3">
+                <template slot="selection" slot-scope="{ values, search, isOpen }">
+                    <span v-if="!isOpen">
+                        Selected: [[ values ]]
+                    </span>
+                </template>
+            </vue-multiselect>
             
-            <template><div class="my-3">
-                <b-form-select v-model="people_selected" :options="member_options" multiple>
-                </b-form-select>
-            </div></template>
+            <b-button class="btn-sm mt-3" @click="updateMembers()">Save your changes</b-button>
 
-            <b-button class="btn-sm" @click="addMembers()">Add selected members</b-button>
-
-        <div class="mb-3" v-if="error_message">
-            [[ error_message ]]
+        <div class="mb-3" v-if="add_error_message || remove_error_message">
+            [[ add_error_message ]]
+            [[ remove_error_message ]]
         </div>
 
     </b-modal>
@@ -32,138 +33,76 @@
     changeMembershipComponent = Vue.component('change-membership-modal', {
         delimiters: ['[[', ']]'],
         template: '#change_membership_modal_template',
+        props: ['role_selected'],
+        store,
         data: function() {
             return {
-                error_message: '',
-                people_selected: [],
-                current_members: {{ current_members|safe }},
-                potential_members: {{ potential_members|safe }},
+                add_error_message: '',
+                remove_error_message: '',
+                people_selected: []
             }
         },
         computed: {
+            ...Vuex.mapGetters(['membersAsOptions']),
+            people_to_choose_from: function() {
+                if (this.role_selected == "members") {
+                    return store.state.users
+                } else {
+                    return this.membersAsOptions("members")
+                }
+            },
+            people_in_role: function() {
+                if (this.role_selected) {
+                    return this.membersAsOptions(this.role_selected)
+                } else {
+                    return []
+                }
+            },
             title_string: function() {
-                if ( this.$parent.role_to_change_membership == "members") {
-                    return "Add or remove members from group"
-                } else {
-                    return "Change members with role '" + this.$parent.role_to_change_membership + "'"
-                }
-            },
-            current_members_display: function() {
-                if (this.$parent.role_to_change_membership == "members") {
-                    members = this.current_members
-                } else {
-                    members = this.get_current_members_in_a_role()
-                }
-                return this.$parent.reformat_to_options(members)
-            },
-            member_options: function() {
-                if (this.$parent.role_to_change_membership == "members") {
-                    potential_members = this.potential_members
-                } else {
-                    potential_members = this.get_group_members_not_in_a_role()
-                }
-                return this.$parent.reformat_to_options(potential_members)
+                if ( this.role_selected == "members") { return "Add or remove members from group" } 
+                else {  return "Change members with role '" + this.role_selected + "'" }
             }
         },
-        created() { this.send_member_data_to_parent() },
+        watch: {
+            role_selected: function() { 
+                this.people_selected = this.people_in_role  // populate with current data initially
+            }
+        },
         methods: {
-            clear_state (e) {
-                this.people_selected = []   // On modal close, no one should be selected
-            },
-            send_member_data_to_parent() {
-                members_as_options = this.$parent.reformat_to_options(this.current_members)  // reformat
-                this.$emit('update-members', members_as_options )
-            },
-            get_current_members_in_a_role() {
-                role = this.$parent.role_to_change_membership
-                result = []
-                this.$parent.roles.forEach(function(item) {
-                    if (item.role_name == role) { result = item.current_members }
-                })
-                return result
-            },
-            get_group_members_not_in_a_role() {
-                all_members = this.current_members
-                role_members = this.get_current_members_in_a_role()
-                remaining = []
-                for (member_index in all_members) {
-                    if (role_members.indexOf(all_members[member_index]) == -1) {
-                        remaining.push(all_members[member_index])
+            ...Vuex.mapActions(['addMembers', 'removeMembers', 'addUsersToRole', 'removeUsersFromRole']),
+            updateMembers() {
+
+                result = this.generate_add_and_remove(old_array=this.people_in_role.map(person => person.pk),
+                    new_array=this.people_selected.map(person => person.pk))
+
+                if (result.to_add.length > 0) {
+                    if (this.role_selected == "members") {
+                        this.addMembers({ user_pks: result.to_add })
+                            .catch(error => {  
+                                this.add_error_message = error 
+                                this.people_selected = this.people_in_role })
+                    } else {
+                        this.addUsersToRole({ role_name: this.role_selected, user_pks: result.to_add })
+                            .catch(error => {  
+                                this.add_error_message = error 
+                                this.people_selected = this.people_in_role })
                     }
                 }
-                return remaining
-            },
-            // Eventually will refactor this & views.py so that we can use the same methods for both
-            // group members and role members.
-            addMembers() {
-                if (this.$parent.role_to_change_membership == 'members') {
-                    this.addGroupMembers()
-                } else {
-                    this.addRoleMembers()
-                }
-            },
-            addRoleMembers() {
-                url = "http://127.0.0.1:8000/groups/add_people_to_role/{{ object.pk}}/"
-                params = { role_name: this.$parent.role_to_change_membership, 
-                    people_pks: this.people_selected }
-                implementationCallback = () => {    
-                    // Send data to parent so vue is updated
-                    this.$emit('update-role-members', {
-                        role_name : this.$parent.role_to_change_membership, 
-                        add_or_remove : 'add',
-                        people_selected : this.people_selected
-                    })
-                }
-                this.submit_standard_axios_action_call(url, params, implementationCallback)
-            },
-            addGroupMembers() {
-                url = "http://127.0.0.1:8000/groups/add_members/{{ object.pk}}/"
-                params = { people_pks : this.people_selected }
-                implementationCallback = () => {
-                    for (index in this.people_selected) {
-                        // remove from potential_members
-                        index_in_potential_members = this.potential_members.indexOf(this.people_selected[index]);
-                        this.potential_members.splice(index_in_potential_members, 1)
-                        // add to current_members
-                        this.current_members.push(this.people_selected[index])
+
+                if (result.to_remove.length > 0) {
+                    if (this.role_selected == "members") {
+                        this.removeMembers({ user_pks: result.to_remove })
+                            .catch(error => {  
+                                this.remove_error_message = error 
+                                this.people_selected = this.people_in_role })
+                    } else {
+                        this.removeUsersFromRole({ role_name: this.role_selected, user_pks: result.to_remove })
+                            .catch(error => {  
+                                this.remove_error_message = error
+                                this.people_selected = this.people_in_role  })
                     }
-                    this.people_selected = []
-                    this.send_member_data_to_parent()    
                 }
-                this.submit_standard_axios_action_call(url, params, implementationCallback)
-            },
-            removeMember(member_id) {
-                if (this.$parent.role_to_change_membership == 'members') {
-                    this.removeGroupMember(member_id)
-                } else {
-                    this.removeRoleMember(member_id)
-                }
-            },       
-            removeRoleMember(member_id) {
-                url = "http://127.0.0.1:8000/groups/remove_person_from_role/{{ object.pk}}/"
-                params = { role_name: this.$parent.role_to_change_membership, 
-                    person_to_remove: [member_id] }
-                implementationCallback = () => {
-                    // Send data to parent so vue is updated
-                    this.$emit('update-role-members', {
-                        role_name : this.$parent.role_to_change_membership, 
-                        add_or_remove : 'remove',
-                        people_selected : [member_id]
-                    })
-                }
-                this.submit_standard_axios_action_call(url, params, implementationCallback)
-            },
-            removeGroupMember(member_id) {
-                url = "http://127.0.0.1:8000/groups/remove_member/{{ object.pk}}/"
-                params = { person_to_remove: [member_id] }
-                implementationCallback = () => {
-                    this.potential_members.push(member_id)
-                    member_index = this.current_members.indexOf(member_id)
-                    this.current_members.splice(member_index, 1)
-                    this.send_member_data_to_parent()
-                    this.$emit('remove-member-from-all-roles', { 'member_id': member_id })
-                }
-                this.submit_standard_axios_action_call(url, params, implementationCallback)
+
             }
         }
     });

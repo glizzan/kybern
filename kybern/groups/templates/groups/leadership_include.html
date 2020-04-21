@@ -1,0 +1,444 @@
+<script type="text/x-template" id="leadership_template">
+
+    <span>
+
+        <b-card header="Leadership" class="my-3">
+
+            <p class="card-text mt-2">
+                Every group has owners who hold fundamental authority over the group. There are a variety
+                of ownership structures, from a single owner to collective self-ownership.  This group's
+                structure is: 
+            </p>
+
+            <p class="card-text mt-2">
+                [[ governance_info_display ]]
+            </p>
+            
+            <b-button class="btn-sm mb-3" v-b-modal.leadership_modal>Change leadership</b-button>
+        
+        </b-card>
+
+        <b-modal id="leadership_modal" :title="title_string" class="modal fade" size="lg" hide-footer>
+            
+            <p class="font-weight-bold">Owners</p>
+
+            <p>Groups can be owned by a combination of individuals and people with specific roles.  There must 
+                always be at least one person who is an owner. Here are the current individuals and roles who 
+                are owners:</p>
+
+                <b-form inline id="owner_actors_and_roles" class="mx-auto">
+
+                    <div class="w-50 p-2">
+                        <p class="text-center font-italic">Roles</p>
+                        <vue-multiselect v-model="owner_roles_selected" :options="rolesAsOptions" :multiple="true" 
+                        :close-on-select="true" :clear-on-select="false" placeholder="No roles selected" 
+                        label="name" track-by="name">
+                            <template slot="selection" slot-scope="{ values, search, isOpen }">
+                                <span v-if="!isOpen"> Selected: [[ values ]] </span>
+                            </template>
+                        </vue-multiselect>
+                    </div>
+                    <div class="w-50 p-2">
+                        <p class="text-center font-italic">Individuals</p>
+                        <vue-multiselect v-model="owner_actors_selected" :options="groupMembersAsOptions" :multiple="true" 
+                        :close-on-select="true" :clear-on-select="true" placeholder="No individuals selected" 
+                        label="name" track-by="pk" prepend="Individuals">
+                            <template slot="selection" slot-scope="{ values, search, isOpen }">
+                                <span v-if="!isOpen"> Selected: [[ values ]] </span>
+                            </template>
+                            </vue-multiselect>
+                        </div>
+                    </div>
+
+                    <b-button variant="outline-secondary" class="mx-auto btn-sm mt-3" @click="update_leadership('owners')">
+                        Update owners</b-button>
+                    
+                </b-form>
+
+                <div class="mb-3 text-danger" v-if="owner_error_message">
+                        [[ owner_error_message ]]
+                </div>
+
+            <p class="mt-3">If owners have "unconditional" power this means any one owner - whether matched as an individual,
+                or matched through roles - can make arbitrary changes to the community, including deleting it.  
+                Unless you have a small, new group, you probably don't want this, so we recommend setting a 
+                condition.  Here's the condition currently set:</p>
+
+            <!-- <manage-condition :condition_data=owner_condition_data :called_for="'owner'"
+                :condition_options=condition_options :condition_configuration_options=condition_configuration_options
+                :mode_from_parent=owner_condition_mode_from_parent @update-conditions=change_condition_data
+                :member_options=membersAsOptions :role_options=rolesAsOptions> 
+            </manage-condition> -->
+
+            <p class="font-weight-bold">Governors</p>
+
+            <p>Often we want to give people power in a community without granting it to them completely or
+                permanently.  For instance, if our owners are a large collective of people who take action by 
+                voting, we may want to give a small number of people the ability to "manage" the community so they
+                can take action quickly.  But if they abuse that power, we want the ability to remove them.</p>
+            <p>We call these people "governors".  By default, they can do most things in the community, although
+                the group can always override their power to do specific things.  If the owners are unhappy with
+                the governors, they can remove or change them.</p>
+            <p>Governors are optional. Here are the current individuals and roles who are governors:</p>
+    
+            <b-form inline id="governor_actors_and_roles" class="mx-auto">
+
+                <div class="w-50 p-2">
+                    <p class="text-center font-italic">Roles</p>
+                    <vue-multiselect v-model="governor_roles_selected" :options="rolesAsOptions" :multiple="true" 
+                    :close-on-select="true" :clear-on-select="false" placeholder="No roles selected" 
+                    label="name" track-by="name">
+                        <template slot="selection" slot-scope="{ values, search, isOpen }">
+                            <span v-if="!isOpen"> Selected: [[ values ]] </span>
+                        </template>
+                    </vue-multiselect>
+                </div>
+                <div class="w-50 p-2">
+                    <p class="text-center font-italic">Individuals</p>
+                    <vue-multiselect v-model="governor_actors_selected" :options="groupMembersAsOptions" :multiple="true" 
+                    :close-on-select="true" :clear-on-select="true" placeholder="No individuals selected" 
+                    label="name" track-by="pk" prepend="Individuals">
+                        <template slot="selection" slot-scope="{ values, search, isOpen }">
+                            <span v-if="!isOpen"> Selected: [[ values ]] </span>
+                        </template>
+                        </vue-multiselect>
+                    </div>
+                </div>
+
+                <b-button variant="outline-secondary" class="mx-auto btn-sm mt-3" @click="update_leadership('governors')">
+                    Update governors</b-button>
+                
+            </b-form>
+
+            <div class="mb-3 text-danger" v-if="governor_error_message">
+                    [[ governor_error_message ]]
+            </div>
+
+            <p class="mt-3">Just as with owners, you can set a condition on governors.  This is less common, as the main point
+                of appointing governors is so they can act efficiently, but can still be useful.  Here's the condition
+                currently set:</p>
+
+            <!-- <manage-condition :condition_data=governor_condition_data :called_for="'governor'"
+                :condition_options=condition_options :condition_configuration_options=condition_configuration_options
+                :mode_from_parent=governor_condition_mode_from_parent
+                @update-conditions=change_condition_data
+                :member_options=membersAsOptions :role_options=rolesAsOptions> 
+            </manage-condition> -->
+
+            <p class="font-weight-bold">Just so you know</p>
+
+            <p>There are some actions that owners can't delegate to governors - in order to make these changes,
+                the owners will have to take the action.  These changes are:</p>
+            
+            <ul>
+                <li>adding and removing owners, both individuals and roles</li>
+                <li>adding and removing governors, both individuals and roles</li>
+                <li>making it so only owners can change a specific resource, or removing that restriction from a 
+                    specific resource</li> <!-- aka enabling or disabling the foundational permission on an object -->
+                <li>making it so governors cannot change a specific resource, or removing that restriction from a 
+                    specific resource</li> <!-- aka enabling or disabling the governing permission on an object -->         
+            </ul>
+
+            <!-- I *think* we want to put enabling/disabling foundational/governing permission for the group
+            as a whole elsewhere, since it's more about access restrictions for the group (so it can go 
+            in the same place where we're putting change name etc) but maybe it goes better here. -->
+
+        </b-modal>
+
+    </span>
+    
+</script>
+
+{% include 'groups/manage_condition_include.html' %}
+
+<script type="application/javascript">
+
+    Vue.component('vue-multiselect', window.VueMultiselect.default)
+
+    leadershipComponent = Vue.component('leadership-component', {
+        delimiters: ['[[', ']]'],
+        template: '#leadership_template',
+        store,
+        data: function() {
+            return {   
+                
+                governance_info : {{ governance_info|safe }},
+                owner_error_message : null,   
+                governor_error_message : null,
+
+                // For multiselects - reformatting done on created and before sending updated to server
+                owner_roles_selected: [],
+                owner_actors_selected: [],
+                governor_roles_selected: [],
+                governor_actors_selected: [],
+
+                // To pass into leadership conditions, populated on creation
+                condition_options: null,  
+                condition_configuration_options: null, 
+                owner_condition_data: null,  
+                owner_condition_mode_from_parent: 'start',
+                governor_condition_data: null,
+                governor_condition_mode_from_parent: 'start'
+            }
+        },
+        created: function () { 
+
+            // Populate initial selected with data from store
+            this.populate_from_store()
+
+            // On creation, query server to get leadership condition data
+            axios = this.prep_axios()
+            url = "http://127.0.0.1:8000/groups/get_leadership_condition_data/{{ object.pk}}/"
+            params = { }
+            axios.post(url, params)
+            .then(response => { 
+                this.condition_options = response.data.condition_options
+                this.condition_configuration_options = response.data.condition_configuration_options
+                this.owner_condition_data = response.data.owner_condition_data
+                this.governor_condition_data = response.data.governor_condition_data
+            }).catch(error => {  
+                this.handle_caught_error(error)  
+                // TODO: replace this with showing an error in the condition sections
+            })
+        },
+        computed: {
+            ...Vuex.mapState(['roles']),
+            ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getUserName', 'leadershipAsOptions']),
+            title_string: function() {
+                return "Change leadership of " + "{{ object.name }}"
+            },
+            governance_info_display: function () {
+                // This is a hack to replace user ids with username for displaying in leadership
+
+                current_context = this
+                function replace_pk_with_username(string_with_pks_embedded) {
+                    const digit_regex = /\d+/g
+                    new_string = string_with_pks_embedded.replace(digit_regex, function (digit_match) {
+                        return current_context.getUserName(digit_match)
+                    })
+                    return new_string
+                }
+
+                // Replace anything matching "individual N", ending with space, period, or comma
+                const single_regex = /individual\s\d+(\s|\.|\s)/g
+
+                // Replace anything matching list of "individuals M and N" or "individuals M, N, O and P", 
+                // ending with space, period or comma
+                const multiple_regex = /individuals(\s\d+\,)*\s\d+\sand\s\d+(\s|\.|\s)/g
+
+                reformatted_string = this.governance_info.replace(single_regex, replace_pk_with_username)
+                reformatted_string = reformatted_string.replace(multiple_regex, replace_pk_with_username)
+                return reformatted_string
+            }
+        },
+        methods: {
+            ...Vuex.mapActions(['updateOwners', 'updateGovernors']),
+            populate_from_store() {
+                this.owner_roles_selected = this.leadershipAsOptions.owner_role_options
+                this.owner_actors_selected = this.leadershipAsOptions.owner_actor_options
+                this.governor_roles_selected = this.leadershipAsOptions.governor_role_options
+                this.governor_actors_selected = this.leadershipAsOptions.governor_actor_options
+            },
+            change_condition_data(data) {
+                if (data.how_to_change == "delete") { 
+                    new_value = null 
+                } else { 
+                    new_value = data.condition_info 
+                }
+                if (data.called_for == "owner") {
+                    this.owner_condition_data = new_value
+                } else if (data.called_for == "governor") 
+                {
+                    this.governor_condition_data = new_value
+                }
+            },
+            update_leadership(leadership_type) {
+                if (leadership_type == "owners") {
+                    roles = this.owner_roles_selected.map(role => role.name)
+                    actors = this.owner_actors_selected.map(actor => actor.pk)
+                    this.updateOwners({ roles: roles, actors: actors}).catch(error => {
+                        this.owner_error_message = error.message
+                        this.populate_from_store()  // sync selected data with existing data
+                    })
+                } else if (leadership_type == "governors") {
+                    console.log("Updating governors!")
+                    roles = this.governor_roles_selected.map(role => role.name)
+                    actors = this.governor_actors_selected.map(actor => actor.pk)
+                    this.updateGovernors({ roles: roles, actors: actors}).catch(error => {
+                        this.governor_error_message = error.message
+                        this.populate_from_store()  // sync selected data with existing data
+                    })
+                }
+            }
+        }
+    });
+
+</script>
+
+<!-- Vue.component('vue-multiselect', window.VueMultiselect.default)
+
+leadershipComponent = Vue.component('leadership-component', {
+    delimiters: ['[[', ']]'],
+    template: '#leadership_template',
+    store,
+    data: function() {
+        return {   
+            
+            governance_info : {{ governance_info|safe }},
+            error_message : null,   
+
+            // For multiselects - reformatting done on created and before sending updated to server
+            leadership_data: {{ leadership_data|safe }},
+            owner_roles: [],
+            owner_actors: [],
+            governor_roles: [],
+            governor_actors: [],
+
+            // To pass into leadership conditions, populated on creation
+            condition_options: null,  
+            condition_configuration_options: null, 
+            owner_condition_data: null,  
+            owner_condition_mode_from_parent: 'start',
+            governor_condition_data: null,
+            governor_condition_mode_from_parent: 'start'
+        }
+    },
+    created: function () {
+        // On creation, query server to get leadership condition data
+        axios = this.prep_axios()
+        url = "http://127.0.0.1:8000/groups/get_leadership_condition_data/{{ object.pk}}/"
+        params = { }
+        axios.post(url, params)
+        .then(response => { 
+            this.condition_options = response.data.condition_options
+            this.condition_configuration_options = response.data.condition_configuration_options
+            this.owner_condition_data = response.data.owner_condition_data
+            this.governor_condition_data = response.data.governor_condition_data
+        }).catch(error => {  this.handle_caught_error(error)  })
+
+        // Also, reformat initial owner/governor data
+        current_context = this
+        this.leadership_data.owner_roles.forEach(function(item){ 
+            current_context.owner_roles.push({ name: item }) })
+        this.leadership_data.governor_roles.forEach(function(item){ 
+            current_context.governor_roles.push({ name: item }) })
+        this.leadership_data.owner_actors.forEach(function(item){ 
+            current_context.owner_actors.push({ pk: item, name: current_context.$parent.get_username(item) }) })
+        this.leadership_data.governor_actors.forEach(function(item){ 
+            current_context.governor_actors.push({ pk: item, name: current_context.$parent.get_username(item) }) })  
+    },
+    computed: {
+        title_string: function() {
+            return "Change leadership of " + "{{ object.name }}"
+        },
+        // Computed data for the multiselects - is there an easier way of doing this?
+        owner_roles: function() {
+            roles = []
+            this.leadership_data.owner_roles.forEach(function(item){ roles.push({ name: item }) })
+            return roles
+         },
+        governor_roles: function() { 
+            roles = []
+            this.leadership_data.governor_roles.forEach(function(item){ roles.push({ name: item }) })
+            return roles
+        },
+        owner_actors: function() {
+            get_username = this.$parent.get_username
+            actors = []
+            this.leadership_data.owner_actors.forEach(function(item){ 
+                actors.push({ pk: item, name: get_username(item) }) })
+            return actors
+        },
+        governor_actors: function() { 
+            actors = []
+            this.leadership_data.governor_actors.forEach(function(item){ 
+                actors.push({ pk: item, name: get_username(item) }) })
+            return actors
+        },
+        owner_roles_to_submit: function() { return this.roles_to_submit(this.owner_roles) },
+        owner_actors_to_submit: function() { return this.actors_to_submit(this.owner_actors) },
+        governor_roles_to_submit: function() { return this.roles_to_submit(this.governor_roles) },
+        governor_actors_to_submit: function() { return this.actors_to_submit(this.governor_actors) },
+        actor_options: function() {
+            actor_options = []
+            this.actor_option_data.forEach(function(item){
+                actor_options.push({ name: item.text, pk: item.value })
+            })
+            return actor_options
+        },
+        role_options: function() {
+            role_options = []
+            this.role_option_data.forEach(function(item){
+                role_options.push({ name: item.role_name })
+            })
+            return role_options
+        },
+        // Misc
+        governance_info_display: function () {
+            // This is a hack to replace user ids with username for displaying in leadership
+
+            get_username = this.$parent.get_username
+            function replace_pk_with_username(string_with_pks_embedded) {
+                const digit_regex = /\d+/g
+                new_string = string_with_pks_embedded.replace(digit_regex, function (digit_match) {
+                    return get_username([digit_match])
+                })
+                return new_string
+            }
+
+            // Replace anything matching "individual N", ending with space, period, or comma
+            const single_regex = /individual\s\d+(\s|\.|\s)/g
+
+            // Replace anything matching list of "individuals M and N" or "individuals M, N, O and P", 
+            // ending with space, period or comma
+            const multiple_regex = /individuals(\s\d+\,)*\s\d+\sand\s\d+(\s|\.|\s)/g
+
+            reformatted_string = this.governance_info.replace(single_regex, replace_pk_with_username)
+            reformatted_string = reformatted_string.replace(multiple_regex, replace_pk_with_username)
+            return reformatted_string
+        }
+    },
+    methods: {
+        change_condition_data(data) {
+
+            if (data.how_to_change == "delete") { 
+                new_value = null 
+            } else { 
+                new_value = data.condition_info 
+            }
+
+            if (data.called_for == "owner") {
+                this.owner_condition_data = new_value
+            } else if (data.called_for == "governor") 
+            {
+                this.governor_condition_data = new_value
+            }
+        },
+        roles_to_submit(roles_from_multiselect) {
+            roles = []
+            roles_from_multiselect.forEach(function(item) { roles.push(item.name.trim()) })
+            return roles 
+        },
+        actors_to_submit(actors_from_multiselect) {
+            actors = []
+            actors_from_multiselect.forEach(function(item) { actors.push(item.pk) })
+            return actors
+        },
+        update_owners() {
+            url = "http://127.0.0.1:8000/groups/update_owners/{{ object.pk}}/";
+            params = { owner_roles: this.owner_roles_to_submit, owner_actors: this.owner_actors_to_submit }
+            implementationCallback = (response) => {
+                this.governance_info = response.data.governance_info
+            }
+            this.submit_axios_multiple_action_call(url, params, implementationCallback)
+        },
+        update_governors() {
+            url = "http://127.0.0.1:8000/groups/update_governors/{{ object.pk}}/";
+            params = { governor_roles: this.governor_roles_to_submit, governor_actors: this.governor_actors_to_submit }
+            implementationCallback = (response) => {
+                this.governance_info = response.data.governance_info
+            }
+            this.submit_axios_multiple_action_call(url, params, implementationCallback)
+        }
+    }
+}); -->

@@ -1,0 +1,59 @@
+<div class="input-group my-1" v-for="field in configuration_fields">   
+   
+    <div v-if="field.type=='CharField'" class="input-group mb-3">
+        <div class="input-group-prepend">
+            <span class="input-group-text" id=field.name>[[ field.display ]]</span>
+        </div>
+        <input type="text" class="form-control" aria-label=field.name aria-describedby="field.name label"
+            v-model=field.value :required=field.required>
+    </div>
+
+    <span v-if="field.type=='BooleanField'">
+        <b-form-checkbox v-model=field.value name="checkbox-1" value="true" 
+        unchecked-value="false"> [[ field.display ]] </b-form-checkbox>
+    </span>
+
+    <div v-if="field.type=='IntegerField'" class="input-group mb-3">
+        <div class="input-group-prepend">
+            <span class="input-group-text" id=field.name>[[ field.display ]]</span>
+        </div>
+        <input type="number" class="form-control" aria-label=field.name aria-describedby="field.name label" 
+            v-model=field.value
+            :required=field.required>
+    </div>
+    
+    <!-- Should be a choice field populated by current roles -->
+    <div v-if="field.type=='PermissionRoleField'" class="input-group mb-3">
+
+        [[ field.display ]]
+
+        <vue-multiselect v-model=field.value :options=rolesAsOptions :allow-empty="true"
+            :multiple="select_field_is_multiple(field)" :close-on-select="true" placeholder="Select roles" 
+            label="name" track-by="name">
+            <template slot="selection" slot-scope="{ values, search, isOpen }">
+                <span v-if="!isOpen">
+                    Selected: [[ values ]]
+                </span>
+            </template>
+        </vue-multiselect>
+
+    </div>
+
+    <!-- Should be a multiselect field populated by current members -->
+    <div v-if="field.type=='PermissionActorField'" class="input-group mb-3">
+
+        [[ field.display ]]
+
+        <vue-multiselect v-model=field.value :options=groupMembersAsOptions :allow-empty="true"
+            :multiple="select_field_is_multiple(field)" :close-on-select="true" placeholder="Select actors" 
+            label="name" track-by="pk">
+            <template slot="selection" slot-scope="{ values, search, isOpen }">
+                <span v-if="!isOpen">
+                    Selected: [[ values ]]
+                </span>
+            </template>
+        </vue-multiselect>
+
+    </div>
+
+</div>

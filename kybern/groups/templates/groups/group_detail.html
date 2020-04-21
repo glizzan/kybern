@@ -2,26 +2,96 @@
 
 {% block content %}
 
-<div class="col-2"></div>
-<div class="col-8">
+<div class="col-5">
 
+    <!-- Basic group info -->
     <div class="card">
         <h5 class="card-header">{{ object.name }}</h5>
         <div class="card-body">
             <p class="card-text">{{ object.group_description }}</p>
-            Governing permission enabled? {{ object.governing_permission_enabled }}<br />
-            Foundational permission enabled? {{ object.foundational_permission_enabled }}
         </div>
     </div>
+
+    <!-- Action history -->
+    {% include 'groups/action_include.html' with target=object %}
+    <action-history></action-history>
 
     <div class="mt-3">
         {% include 'groups/governance_include.html' %}
     </div>
+
+</div>
+
+<div class="col-7">
+
+    <div id="toy_store_display">
+
+        Permission options: [[ permission_options ]]
+
+        <br /><br />
+
+        Permission configuration options:  [[ permission_configuration_options ]]
+
+        <br /><br />
+
+        Condition options: [[ condition_options ]]
+
+        <br /><br />
+
+        Condition configuration options: [[ condition_configuration_options ]]
+
+        <br /><br />
+
+        List role names: <button v-for="role in roleNames">[[ role ]]</button>
+
+        <br /><br />
+
+        Get members specifically: <span v-for="member in memberNames" class="ml-3">[[ member ]]</span>
+
+        <br /><br />
+
+    </div>
+
+
+    <script type="application/javascript">
+
+        // Main vue instance for role app
+        var roleApp = new Vue({
+            delimiters: ['[[', ']]'],
+            el: '#toy_store_display',
+            store,
+            data: { },
+            computed: {
+                ...Vuex.mapState(['roles', 'users', 'permission_options', 'permission_configuration_options',
+                                    'condition_options', 'condition_configuration_options']),
+                ...Vuex.mapGetters(['roleNames', 'getUser', 'getMembers', 'memberNames']),
+                roles_with_usernames: function() {
+                    roles_with_usernames = []
+                    for (index in this.roles) {
+                        current_members = []
+                        for (member_index in this.roles[index].current_members) {
+                            user = this.getUser(this.roles[index].current_members[member_index])
+                            current_members.push( user.name )
+                        }
+                        roles_with_usernames.push({ name: this.roles[index].name, current_members: current_members })
+                    }
+                    return roles_with_usernames
+                }
+            },
+            methods: {
+                ...Vuex.mapActions(['addRole']),
+                addRoleBadasses() {
+                    this.addRole({ role_name: 'badasses'})
+                },
+                removeBucky() {
+                    store.commit('REMOVE_USER_FROM_ROLE', { role_name: 'members', user_pk: 2})
+                }
+            }
+        })
+
+    </script>
+
     
-    {% include 'groups/action_include.html' %}
-
-    <action-history></action-history>
-
 
 </div>
 

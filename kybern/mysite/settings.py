@@ -138,3 +138,7 @@ STATIC_URL = '/static/'
 ALTERNATIVE_COMMUNITY_MODELS = [
     { 'app_name': 'groups', 'model_name': 'group' }
 ]
+
+ADDITIONAL_PERMISSIONED_MODELS = [
+    { 'app_name': 'groups', 'model_name': 'group' }
+]

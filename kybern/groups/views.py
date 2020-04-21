@@ -8,20 +8,20 @@ from django.contrib.auth.models import User
 from concord.actions.client import ActionClient
 from concord.communities.client import CommunityClient
 from concord.permission_resources.client import PermissionResourceClient
-from concord.conditionals.client import PermissionConditionalClient
+from concord.conditionals.client import PermissionConditionalClient, CommunityConditionalClient
 
 from .models import Group
+
+
+##################################
+### Helper methods and classes ###
+##################################
 
 
 # FIXME: this probably doesn't belong here
 class GroupClient(CommunityClient):
     """Easy way to replace the default community model with the one we want to use here, group."""
     community_model = Group
-
-
-class GroupListView(generic.ListView):
-    model = Group
-    template_name = 'groups/group_list.html'
 
 
 def process_action(action):
@@ -44,6 +44,8 @@ def process_action(action):
 
     return {
         "action_pk": action.pk,
+        "action_target_pk": action.object_id,
+        "action_target_content_type": action.content_type.pk,
         "description": action.get_description(),
         "created": str(action.created_at),
         "display_date": action.created_at.strftime("%b %d %Y %I:%M%p"),
@@ -60,38 +62,46 @@ def process_action(action):
     }
 
 
-def process_actions(action_queryset):
-    """Helper method, gets action data and saves it as list of dicts for Vue to use."""
+def get_action_dict(action):
+    action_log = action.resolution.log
+    if (not action_log and action.resolution.status == "waiting"):
+        action_log = "waiting on condition"
+    return { 
+        "action_created": True if action.resolution.status in ["implemented", "approved", "waiting", "rejected"] else False,
+        "action_status": action.resolution.status,
+        "action_log": action_log,
+        "action_pk": action.pk,
+    }
 
-    actions = []
-    
-    for action in action_queryset:
-        actions.append(process_action(action))
 
-    return json.dumps(actions)
+def get_multiple_action_dicts(actions):
+    # overall data
+    action_log = ""
+    action_status = "implemented"
+    for action in actions:
+        if action.resolution.status != "implemented":
+            action_status = "error"
+            action_log += action.resolution.log
+    # individual action data
+    action_dicts_list = []
+    for action in actions:
+        action_dicts_list.append(get_action_dict(action))
+        
+    return {
+        "action_status": action_status,
+        "action_log": action_log,
+        "actions": action_dicts_list
+    }
 
 
-class GroupDetailView(generic.DetailView):
+############################
+### Standard Django CBVs ###
+############################
+
+
+class GroupListView(generic.ListView):
     model = Group
-    template_name = 'groups/group_detail.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Actions
-        actions = ActionClient(actor=self.request.user, 
-            target=self.object).get_action_history_given_target()
-        context['actions'] = process_actions(actions)
-        context['recent_actions'] = process_actions(actions.order_by('updated_at')[:5])
-        # Role/Member info
-        communityClient = GroupClient(actor=self.request.user, target=self.object)
-        context['username_map'] = { person.pk : person.username for person in User.objects.all() }
-        context['current_members'] = [member.pk for member in communityClient.get_members()]
-        context['potential_members'] = list(set(context['username_map'].keys()).difference(set(context['current_members'])))
-
-        # Role Info
-        context['roles'] = [ { 'role_name': role_name, 'current_members': role_data } 
-                                        for role_name, role_data in communityClient.get_custom_roles().items() ]
-        return context        
+    template_name = 'groups/group_list.html'
 
 
 class GroupCreateView(generic.edit.CreateView):
@@ -109,18 +119,108 @@ class GroupCreateView(generic.edit.CreateView):
         return HttpResponseRedirect(reverse('group_detail', kwargs={'pk': self.object.pk}))
 
 
-#####################################################
-### Helper methods, likely to be moved to concord ###
-#####################################################
+class GroupDetailView(generic.DetailView):
+    model = Group
+    template_name = 'groups/group_detail.html'
+
+    def prep_clients(self):
+        self.communityClient = GroupClient(actor=self.request.user, target=self.object)
+        self.permissionClient = PermissionResourceClient(actor=self.request.user, target=self.object)
+        self.actionClient = ActionClient(actor=self.request.user, target=self.object)
+        self.conditionalClient = PermissionConditionalClient(actor=self.request.user)
+
+    def add_user_data_to_context(self, context):
+
+        # Governance info
+        context['owners'] = self.communityClient.target.roles.get_owners()
+        context['governors'] = self.communityClient.target.roles.get_governors()
+        context['governance_info'] = json.dumps(self.communityClient.get_governance_info_as_text())
+        
+        # Role/Member info
+        context['username_map'] = { person.pk : person.username for person in User.objects.all() }
+        context['current_members'] = [member.pk for member in self.communityClient.get_members()]
+        context['potential_members'] = list(set(context['username_map'].keys()).difference(set(context['current_members'])))
+        
+        # Role Info
+        context['roles'] = [ { 'name': role_name, 'current_members': role_data } 
+                                        for role_name, role_data in self.communityClient.get_custom_roles().items() ]
+        # Added for vuex store
+        context["users"] = [ { 'name' : person.username, 'pk': person.pk } for person in User.objects.all() ]
+        return context
+
+    def add_action_data_to_context(self, context):
+        actions = self.actionClient.get_action_history_given_target()
+        context['actions'] = json.dumps([process_action(action) for action in actions])
+        context['recent_actions'] = json.dumps([process_action(action) for action in actions.order_by('updated_at')[:5]])
+        return context
+
+    def add_permission_data_to_context(self, context):
+        """  This method gets permission *options* and permission configuration *options*, not the permission
+        data itself, which is fetched as needed based on user action.  
+        
+        (note: this matches format specified in vuex store)     
+        permission_options: {{ permission_options }},
+            // [ { value: x , text: x } ]
+        permission_configuration_options: {{ permission_configuration_options }},
+            // { fieldname: { display: x, type: x, required: x, value: x, field_name: x } }
+        """
+        
+        settable_permissions = self.permissionClient.get_settable_permissions(return_format="state_change_objects")
+
+        # Get list of permission options
+        permission_options = []
+        for permission in settable_permissions:
+            permission_options.append({ "value": permission.get_change_type(), "text": permission.description })
+        context["permission_options"] = json.dumps(permission_options)
+
+        # Get list of permission configuration options
+        permission_configuration = {}
+        for permission in settable_permissions:
+            permission_configuration.update({
+                permission.get_change_type(): permission.get_configurable_form_fields()
+            })            
+        context["permission_configuration_options"] = json.dumps(permission_configuration)
+
+        return context
+
+    def add_condition_data_to_context(self, context):
+        """ This method gets condition *options* and configuration *options*, not data for existing conditions.
+        
+        (note: this matches format specified in vuex store)
+        condition_options: {{ condition_options }},
+            // [ { value: x , text: x } ]
+        condition_configuration_options: {{ condition_configuration_options }},
+            // { fieldname: { display: x, type: x, required: x, value: x, field_name: x } }   
+        TODO: make format below align with this documentation (which corresponds to what vue expects)      
+        """
+
+        # Get condition options
+        settable_conditions = self.conditionalClient.get_possible_conditions()
+        condition_options = [ { 'value': cond.__name__, 'text': cond.descriptive_name } for cond in settable_conditions ]
+        context["condition_options"] = json.dumps(condition_options)
+
+        # Create condition configuration 
+        condition_configuration = { }
+        for condition in settable_conditions:
+            condition_configuration.update({ condition.__name__ : condition.get_configurable_fields() })
+        context["condition_configuration_options"] = json.dumps(condition_configuration)
+        
+        return context
+
+    def get_context_data(self, **kwargs):
+        # TODO: refactor this into stuff returned from API calls (or at least view mixins)
+        context = super().get_context_data(**kwargs)
+        self.prep_clients()
+        context = self.add_user_data_to_context(context)
+        context = self.add_action_data_to_context(context)
+        context = self.add_permission_data_to_context(context)
+        context = self.add_condition_data_to_context(context)
+        return context        
 
 
-def get_action_dict(action):
-    return { 
-        "action_created": True if action.resolution.status in ["implemented", "approved", "waiting", "rejected"] else False,
-        "action_status": action.resolution.status,
-        "action_log": action.resolution.log, 
-        "action_pk": action.pk,
-    }
+################################################################################
+### Helper methods, likely to be moved to concord, called by vuex data store ###
+################################################################################
 
 
 def add_role(request, target):
@@ -144,20 +244,22 @@ def add_members(request, target):
     target = communityClient.get_community(community_pk=target)
     communityClient.set_target(target=target)
 
-    action, result = communityClient.add_members(member_pk_list=request_data["people_pks"])
+    action, result = communityClient.add_members(member_pk_list=request_data["user_pks"])
 
     return JsonResponse(get_action_dict(action))
 
 
-def remove_member(request, target):
+def remove_members(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
+
+    print(request_data)
 
     communityClient = GroupClient(actor=request.user)
     target = communityClient.get_community(community_pk=target)
     communityClient.set_target(target=target)
 
-    action, result = communityClient.remove_members(request_data['person_to_remove'])
+    action, result = communityClient.remove_members(request_data['user_pks'])
 
     return JsonResponse(get_action_dict(action))
 
@@ -171,12 +273,12 @@ def add_people_to_role(request, target):
     communityClient.set_target(target=target)
 
     action, result = communityClient.add_people_to_role(role_name=request_data['role_name'], 
-        people_to_add=request_data['people_pks'])
+        people_to_add=request_data['user_pks'])
 
     return JsonResponse(get_action_dict(action))
 
 
-def remove_person_from_role(request, target):
+def remove_people_from_role(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
 
@@ -185,102 +287,157 @@ def remove_person_from_role(request, target):
     communityClient.set_target(target=target)
 
     action, result = communityClient.remove_people_from_role(role_name=request_data['role_name'], 
-        people_to_remove=request_data['person_to_remove'])
+        people_to_remove=request_data['user_pks'])
 
     return JsonResponse(get_action_dict(action))
 
 
-###########################
-### Stuff for edit role ###
-###########################
+###########################################
+### Getting condition & permission data ###
+###########################################
 
 
-def ready_permission_fields_for_display(permission):
+def serialize_existing_permission_for_vue(permission):
+    """  (note: this matches format specified in vuex store)
+    permissions: {{ permissions }},         
+        // { int(pk) : { name: x, display: x, change_type: x } } """
+    return { permission.pk : { "name": permission.full_description(), "display": permission.full_description(), 
+            "change_type": permission.change_type } }
 
-    # NOTE: object type for none-existing data is State Change Object class not instance
-    existing_data = True if permission.__class__.__name__ == "PermissionsItem" else False
-    permission_fields = permission.get_configuration() if existing_data else permission.get_configurable_fields()
 
-    fields = []
-    if existing_data:
-        for key, value in permission_fields.items():
-            fields.append({'name': key, 'value': value})
-    else:
-        for field in permission_fields:
-            fields.append({'name': field, 'value': None})
+def serialize_existing_permission_configuration_for_vue(permission):
+    """  (note: this matches format specified in vuex store)
+    permission_configurations: {{ permission_configurations }},
+        // { int(pk) : { permissionfieldname : permissionfieldvalue } }       
+    """
+    return { permission.pk: permission.get_configuration() } 
 
+
+def serialize_existing_condition_for_vue(condition):
+    """ (note: this matches format specified in vuex store)
+    conditions: {{ conditions }},         
+        // { int(pk) : { name: x, display: x, conditioned_object_pk: x } }       
+    """
+    print({ condition.pk :  { 'name' : condition.condition_name(), 'display': condition.condition_description(), 
+        'conditioned_object_pk': condition.conditioned_object_id } })
+    return { condition.pk :  { 'name' : condition.condition_name(), 'display': condition.condition_description(), 
+        'conditioned_object_pk': condition.conditioned_object_id } }
+
+
+def serialize_existing_condition_configuration_for_vue(condition):
+    """ (note: this matches format specified in vuex store)
+    condition_configurations: {{ condition_configurations }},
+        // { int(pk) : { conditionfieldname : conditionfieldvalue } }       
+    """
+    return { condition.pk: condition.condition_data.get_configurable_fields_with_data() }
+
+
+def get_permissions_given_role(actor, target, role_name):
+
+    # get permissions
+    existing_permissions = PermissionResourceClient(actor=actor, target=target).\
+        get_permissions_associated_with_role(role_name=role_name)
+
+    permission_pks, permissions, permission_configurations = [], {}, {}
+    for permission in existing_permissions:
+        permission_pks.append(permission.pk)
+        permissions.update(serialize_existing_permission_for_vue(permission))
+        permission_configurations.update(serialize_existing_permission_configuration_for_vue(permission))
+        
+    return permission_pks, permissions, permission_configurations
+
+
+def get_conditions_given_role(actor, target, role_name):
+
+    # get permissions & the associated conditions
+    existing_permissions = PermissionResourceClient(actor=actor, target=target).\
+        get_permissions_associated_with_role(role_name=role_name)
+    conditionalClient = PermissionConditionalClient(actor=actor)
+    existing_conditions = conditionalClient.get_conditions_given_targets(
+            target_pks=[permission.pk for permission in existing_permissions])
+
+    conditions, condition_configurations = {}, {}
+    for condition in existing_conditions:
+        conditions.update(serialize_existing_condition_for_vue(condition))
+        condition_configurations.update(serialize_existing_condition_configuration_for_vue(condition))
+
+    return conditions, condition_configurations
+
+
+def get_data_for_role(request, target):
+
+    actor = request.user
+    communityClient = GroupClient(actor=actor)
+    target = communityClient.get_community(community_pk=target)
+    request_data = json.loads(request.body.decode('utf-8'))
+    role_name = request_data['role_name']
+    
+    permission_pks, permissions, permission_configurations = get_permissions_given_role(actor, target, role_name)
+    conditions, condition_configurations = get_conditions_given_role(actor, target, role_name)
+
+    return JsonResponse({ "permissions" : permissions, "permission_configurations" : permission_configurations,
+        "conditions" : conditions, "condition_configurations" : condition_configurations,
+        "role_permissions": permission_pks })
+
+
+#############################################
+### Setting permsision and condition data ###
+#############################################
+
+
+def reformat_permission_field(field):
+    if field["type"] == "PermissionRoleField":
+        if "other_data" in field and "multiple" in field["other_data"] and field["other_data"]["multiple"] == False:
+            print("Reformating single")
+            field["value"] = field["value"]["name"]   # Single select treated differently
+        else:
+            print("Reformating multiple")
+            field["value"] = [data["name"] for data in field["value"]] if field["value"] else []
+    elif field["type"] == "PermissionActorField":
+        try:
+            field["value"] = [data["value"] for data in field["value"]] if field["value"] else []
+        except:
+            # if the above doesn't work, try to get by pk
+            field["value"] = [data["pk"] for data in field["value"]] if field["value"] else []
+    return field
+
+
+def reformat_permission_data(permission_configuration):
+    """
+    [{'field_name': 'role_name', 'display': 'Roles people can be added to', 'type': 'PermissionRoleField', 'required': False, 'value': [{'name': 'romans'}]}]
+
+    """
+    fields = {}
+    for field in permission_configuration:
+        field = reformat_permission_field(field)
+        # if hasattr(field, "other_data") and "multiple" in field["other_data"] and field["other_data"]["multiple"] == False:
+        #     field["value"] = field["value"][0]
+        fields.update({
+            field["field_name"] : field["value"]
+        })
     return fields
 
 
-def get_permissions_given_role(request, target):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-
-    permissionClient = PermissionResourceClient(actor=request.user)
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
-    permissionClient.set_target(target=target)
-
-    ### Prep permissions
-
-    # Get existing permissions
-    existing_permissions = permissionClient.get_permissions_associated_with_role(role_name=request_data['role_name'])
-    
-    # Serialize them for vue
-    serialized_existing_permissions = []
-    for permission in existing_permissions:
-        serialized_existing_permissions.append({ "id": permission.pk, 
-            "name": permission.full_description(), "display": permission.full_description(), 
-            "change_type": permission.change_type,
-            "configuration": ready_permission_fields_for_display(permission) })
-
-    # Get permission options
-    settable_permissions = permissionClient.get_settable_permissions(return_format="state_change_objects")
-    permission_options = [ { "value": perm.get_change_type(), "text": perm.description } for perm in settable_permissions ]
-
-    # Create permission configuration options
-    permission_configuration = {}
-    for sco in settable_permissions:
-        permission_configuration[sco.get_change_type()] = ready_permission_fields_for_display(sco)                      
-           
-    ### Prep conditions
-    
-    # Get existing conditions
-    conditionalClient = PermissionConditionalClient(actor=request.user)
-    existing_conditions = conditionalClient.get_conditions_given_targets(
-            target_pks=[permission.pk for permission in existing_permissions])
-    
-    # Serialize them for vue
-    serialized_existing_conditions = {}    
-    for obj in existing_conditions:
-        serialized_existing_conditions.update({ obj.conditioned_object_id : 
-            { 'name' : obj.condition_name(), 'id': obj.pk, 'display': obj.condition_description(),
-            'configuration': obj.condition_data.get_configurable_fields_with_data() } })
-
-    # Get condition options
-    settable_conditions = conditionalClient.get_possible_conditions()
-    condition_options = [ { 'value': cond.__name__, 'text': cond.descriptive_name } for cond in settable_conditions ]
-
-    # Create condition configuration 
-    condition_configuration = { }
-    for condition in settable_conditions:
-        condition_configuration.update({ condition.__name__ : 
-            { 'condition_name' : condition.descriptive_name, 
-            'configuration': condition.get_configurable_fields() }  })
-     
-    return JsonResponse({ 
-        "existing_permissions": serialized_existing_permissions,
-        "permission_options": permission_options,
-        "permission_configuration": permission_configuration,
-        "existing_conditions": serialized_existing_conditions,
-        "condition_options": condition_options,
-        "condition_configuration": condition_configuration
-    })
+def process_configuration_data(configuration_data):
+    """Splits configuration data into condition_data and permission_data."""
+    configuration_data = json.loads(configuration_data) if type(configuration_data) == str else configuration_data
+    condition_data = []
+    permission_data = []
+    for field in configuration_data:
+        field = reformat_permission_field(field)
+        if field["type"] in ["PermissionRoleField", "PermissionActorField"]:
+            permission_data.append(field)
+        else:
+            condition_data.append(field)
+    return condition_data, permission_data
 
 
-def reformat_permission_data(permission_data):
-    result = { field['name'] : field['value'] for field in permission_data }
-    return result
+def get_permission_info(permission):
+    return {
+        "pk": permission.pk,
+        "permission_data": list(serialize_existing_permission_for_vue(permission).values()),
+        "configuration_data": list(serialize_existing_permission_configuration_for_vue(permission).values())
+    }
 
 
 def add_permission(request, target):
@@ -301,15 +458,10 @@ def add_permission(request, target):
         permission_actors=permission_actors, permission_roles=permission_roles, 
         permission_configuration=reformatted_permission_data)
 
-    if action.resolution.status == "implemented":
-        permission_info = {"id": result.pk, "name": result.get_name(), 
-            "display": result.full_description(), "change_type": result.change_type, 
-            "configuration": ready_permission_fields_for_display(result) }
-    else:
-        permission_info = None
-
     action_dict = get_action_dict(action)
-    action_dict.update({ "permission_info": permission_info })
+    permission_info = get_permission_info(result) if action.resolution.status == "implemented" else None
+    action_dict.update({ "permission": permission_info })
+
     return JsonResponse(action_dict)
 
 
@@ -327,17 +479,12 @@ def update_permission(request, target):
     actions = permissionClient.update_configuration(configuration_dict=reformatted_permission_data, 
         permission=target_permission)
 
-    action_log = ""
-    action_status = "success"
-    for action in actions:
-        if action.resolution.status != "implemented":
-            action_status = "error"
-            action_log += action.resolution.log
+    action_dict = get_multiple_action_dicts(actions)
 
     permission = permissionClient.get_permission(pk=permission_id)  # get refreshed version
+    permission_info = get_permission_info(permission)
+    action_dict.update({ "permission" : permission_info })
 
-    action_dict = get_action_dict(action)
-    action_dict.update({ "new_display_name" : permission.full_description() })
     return JsonResponse(action_dict)
 
 
@@ -364,95 +511,108 @@ def delete_permission(request, target):
 
     # now remove permission
     action, result = permissionClient.remove_permission(item_pk=permission_id)
-    return JsonResponse(get_action_dict(action))
-
-
-def process_configuration_data(configuration_data):
-    """Splits configuration data into condition_data and permission_data."""
-    configuration_data = json.loads(configuration_data) if type(configuration_data) == str else configuration_data
-    condition_data = []
-    permission_data = []
-    for field in configuration_data:
-        if field["type"] in ["PermissionRoleField", "PermissionActorField"]:
-            if field["value"]:
-                field["value"] = [item.strip() for item in field["value"].split(",")] 
-            else:
-                field["value"] = []
-            permission_data.append(field)
-        else:
-            condition_data.append(field)
-    return condition_data, permission_data
-
-                          
-def add_condition(request, target):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-    target_permission_id = request_data.get("target_permission_id", None)
-    condition_type = request_data.get("condition_type", None)
-    configuration_data = request_data.get("condition_configuration", None)
-
-    condition_data, permission_data = process_configuration_data(configuration_data)
-
-    target_permission = PermissionResourceClient(actor=request.user).get_permission(pk=target_permission_id)
-    conditionalClient = PermissionConditionalClient(actor=request.user, target=target_permission)
-
-    action, result = conditionalClient.add_condition(condition_type=condition_type.lower(),
-        condition_data=condition_data, permission_data=permission_data)
-
-    if action.resolution.status == "implemented":
-        condition_info = {"name": result.condition_name(), 
-            "display": result.condition_description(),
-            "configuration": result.condition_data.get_configurable_fields_with_data(), "id": result.pk }
-    else:
-        condition_info = None 
-
     action_dict = get_action_dict(action)
-    action_dict.update({ "condition_info": condition_info })
+    action_dict.update({ "removed_permission_pk": permission_id })
     return JsonResponse(action_dict)
 
 
-def update_condition(request, target):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-    permission_id = request_data.get("permission_id", None)
-    condition_id = request_data.get("condition_id", None)
-    configuration_data = request_data.get("condition_configuration", None)
-
-    condition_data, permission_data = process_configuration_data(configuration_data)
-
-    #FIXME: the client call below doesn't require target
-    permissionClient = PermissionResourceClient(actor=request.user)
-    target_permission = permissionClient.get_permission(pk=permission_id)
-
-    conditionClient = PermissionConditionalClient(actor=request.user, target=target_permission)
-    action, result = conditionClient.change_condition(condition_pk=condition_id,
-        condition_data=condition_data, permission_data=permission_data)
-
-    action_dict = get_action_dict(action)
-    action_dict.update({ "new_display_name" : result.condition_name() })
-    return JsonResponse(action_dict)
+####################################
+### Views for setting conditions ###
+####################################
 
 
-def delete_condition(request, target):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-    permission_id = request_data.get("permission_id", None)
+def leadership_condition_helper(request, request_data, target, action_type):
 
     communityClient = GroupClient(actor=request.user)
     target = communityClient.get_community(community_pk=target)
-    permissionClient = PermissionResourceClient(actor=request.user, target=target)
-    permission_target = permissionClient.get_permission(pk=permission_id)
-    conditionalClient = PermissionConditionalClient(actor=request.user, target=permission_target)
+    conditionalClient = CommunityConditionalClient(actor=request.user, target=target)
 
-    condition = conditionalClient.get_condition_template()
-    action, result = conditionalClient.remove_condition(condition=condition)
+    called_for = request_data.get("called_for")
+    condition_id = request_data.get("condition_id", None)
+    condition_type = request_data.get("condition_type", None)
+    configuration_data = request_data.get("condition_configuration", None)
+    if configuration_data:
+        condition_data, permission_data = process_configuration_data(configuration_data)
 
-    return JsonResponse(get_action_dict(action))
+    if action_type == "add":
+
+        if called_for == "owner":
+            return conditionalClient.add_condition_to_owners(condition_data=condition_data,
+                permission_data=permission_data, condition_type=condition_type)
+        elif called_for == "governor":
+            return conditionalClient.add_condition_to_governors(condition_data=condition_data,
+                permission_data=permission_data, condition_type=condition_type)
+
+    if action_type == "update":
+        return conditionalClient.change_condition(condition_pk=condition_id,
+            condition_data=condition_data, permission_data=permission_data)
+
+    if action_type == "delete":
+        condition = conditionalClient.get_condition_template()
+        return conditionalClient.remove_condition(condition=condition)
 
 
-#####################################
-### CONDITION-SPECIFIC INTERFACES ###
-#####################################
+def permission_condition_helper(request, request_data, target, action_type):
+
+    target_permission_id = request_data.get("target_permission_id", None)
+    target_permission = PermissionResourceClient(actor=request.user).get_permission(pk=target_permission_id)
+    conditionalClient = PermissionConditionalClient(actor=request.user, target=target_permission)
+
+    condition_type = request_data.get("condition_type", None)
+    condition_id = request_data.get("condition_id", None)
+    configuration_data = request_data.get("condition_configuration", None)
+    if configuration_data:
+        condition_data, permission_data = process_configuration_data(configuration_data)
+
+    if action_type == "add":
+        return conditionalClient.add_condition(condition_type=condition_type.lower(),
+            condition_data=condition_data, permission_data=permission_data)
+
+    if action_type == "update":
+        print("UPDATING CONDITION: ", condition_id)
+        return conditionalClient.change_condition(condition_pk=condition_id,
+            condition_data=condition_data, permission_data=permission_data)
+
+    if action_type == "delete":
+        condition = conditionalClient.get_condition_template()
+        return conditionalClient.remove_condition(condition=condition)
+
+
+def get_condition_info(condition):
+    return {
+        "pk": condition.pk,
+        "condition_data": list(serialize_existing_condition_for_vue(condition).values()),
+        "configuration_data": list(serialize_existing_condition_configuration_for_vue(condition).values())
+    }
+
+
+def manage_condition(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    target_type = request_data.get("target_type")
+    request_type = request_data.get("request_type")
+
+    if target_type == "community":
+        action, result = leadership_condition_helper(request, request_data, target, request_type)
+    else:
+        action, result = permission_condition_helper(request, request_data, target, request_type)
+
+    if request_type in ["add", "update"]:
+        condition_info = get_condition_info(result) if action.resolution.status == "implemented" else None
+        action_dict = get_action_dict(action)
+        action_dict.update({ "condition_info": get_condition_info(result) })
+        return JsonResponse(action_dict)
+
+    if request_type == "delete":
+        action_dict = get_action_dict(action)
+        action_dict.update({ "deleted_condition_pk": request_data.get("condition_id") })
+        return JsonResponse(action_dict)
+
+
+#############################################
+### Views for interacting with conditions ###
+#############################################
+
 
 def update_approval_condition(request, target):
 
@@ -471,6 +631,20 @@ def update_approval_condition(request, target):
     return JsonResponse(get_action_dict(action))
     
 
+def update_vote_condition(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    condition_pk = request_data.get("condition_pk", None)
+    action_to_take = request_data.get("action_to_take", None)
+
+    conditionalClient = PermissionConditionalClient(actor=request.user)
+    voteClient = conditionalClient.get_vote_condition_as_client(pk=condition_pk)
+    
+    action, result = voteClient.vote(vote=action_to_take)
+
+    return JsonResponse(get_action_dict(action))
+
+
 def get_condition_data(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -487,6 +661,7 @@ def get_condition_data(request, target):
         has_permission = permissionClient.actor_satisfies_permission(actor=request.user,
             permission=permission)
         permission_details.update({ permission.change_type : has_permission })
+    permission_details.update({ 'user_condition_status': condition.user_condition_status(user=request.user) })
 
     return JsonResponse({ "permission_details" : permission_details,
         "condition_details" : { 
@@ -505,3 +680,207 @@ def get_action_data(request):
     action = ActionClient(actor=request.user).get_action_given_pk(action_pk)
 
     return JsonResponse({ "action_data": process_action(action) })
+
+
+
+### For leadership condition data
+
+def serialize_leadership_condition_with_data(condition):
+    if condition:
+        return { 
+            'name' : condition.condition_name(), 
+            'id': condition.pk, 
+            'display': condition.condition_description(),
+            'configuration': condition.condition_data.get_configurable_fields_with_data()
+        }
+    return None
+
+
+def get_leadership_condition_data(request, target):
+
+    communityClient = GroupClient(actor=request.user)
+    target = communityClient.get_community(community_pk=target)
+    conditionalClient = CommunityConditionalClient(actor=request.user, target=target)
+
+    owner_condition = conditionalClient.get_condition_template_for_owner()
+    serialized_owner_condition = serialize_leadership_condition_with_data(owner_condition)
+    governor_condition = conditionalClient.get_condition_template_for_governor()
+    serialized_governor_condition = serialize_leadership_condition_with_data(governor_condition)
+
+    # Get condition options
+    settable_conditions = conditionalClient.get_possible_conditions()
+    condition_options = [ { 'value': cond.__name__, 'text': cond.descriptive_name } for cond in settable_conditions ]
+
+    # Create condition configuration 
+    condition_configuration = { }
+    for condition in settable_conditions:
+        condition_configuration.update({ condition.__name__ : 
+            { 'condition_name' : condition.descriptive_name, 
+            'configuration': condition.get_configurable_fields() }  })
+
+    return JsonResponse({ 
+        "condition_options": condition_options,
+        "condition_configuration_options": condition_configuration,
+        "owner_condition_data": serialized_owner_condition,
+        "governor_condition_data": serialized_governor_condition
+    })
+
+
+####################################
+### Views for leadership include ###
+####################################
+
+
+def update_owners(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    owner_roles = request_data.get("owner_roles", "")  # no need to make into list, leadershipcomponent handles that
+    owner_actors = request_data.get("owner_actors", "")  # no need to make into list, leadershipcomponent handles that
+
+    communityClient = GroupClient(actor=request.user)
+    target = communityClient.get_community(community_pk=target)
+    communityClient.set_target(target=target)
+
+    actions = communityClient.update_owners(new_owner_data={"individuals": owner_actors, "roles": owner_roles})
+
+    action_dict = get_multiple_action_dicts(actions)
+    action_dict.update({ "governance_info": json.dumps(communityClient.get_governance_info_as_text()) })
+
+    return JsonResponse(action_dict)
+
+
+def update_governors(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    governor_roles = request_data.get("governor_roles", "")  # no need to make into list, leadershipcomponent handles that
+    governor_actors = request_data.get("governor_actors", "")  # no need to make into list, leadershipcomponent handles that
+
+    communityClient = GroupClient(actor=request.user)
+    target = communityClient.get_community(community_pk=target)
+    communityClient.set_target(target=target)
+
+    actions = communityClient.update_governors(new_governor_data={"individuals": governor_actors, "roles": governor_roles})
+
+    action_dict = get_multiple_action_dicts(actions)
+    action_dict.update({ "governance_info": json.dumps(communityClient.get_governance_info_as_text()) })
+
+    return JsonResponse(action_dict)
+
+
+
+
+
+
+# def add_condition(request, target):
+
+#     request_data = json.loads(request.body.decode('utf-8'))
+#     target_type = request_data.get("target_type")
+
+#     if target_type == "community":
+#         action, result = leadership_condition_helper(request, target, "add")
+#     elif target_type == "permission":
+#         action, result = permission_condition_helper(request, target, "add")
+
+#     if action.resolution.status == "implemented":
+#         condition_info = {"name": result.condition_name(), 
+#             "display": result.condition_description(),
+#             "configuration": result.condition_data.get_configurable_fields_with_data(), "id": result.pk }
+#     else:
+#         condition_info = None 
+
+#     action_dict = get_action_dict(action)
+#     action_dict.update({ "condition_info": condition_info })
+#     return JsonResponse(action_dict)
+
+                          
+# def update_condition(request, target):
+
+#     request_data = json.loads(request.body.decode('utf-8'))
+#     target_type = request_data.get("target_type")
+
+#     if target_type == "community":
+#         action, result = leadership_condition_helper(request, target, "update")
+#     elif target_type == "permission":
+#         action, result = permission_condition_helper(request, target, "update")
+
+#     action_dict = get_action_dict(action)
+#     action_dict.update({ "new_display_name" : result.condition_name() })
+#     return JsonResponse(action_dict)
+
+
+# def delete_condition(request, target):
+
+#     request_data = json.loads(request.body.decode('utf-8'))
+#     permission_id = request_data.get("permission_id", None)
+
+#     communityClient = GroupClient(actor=request.user)
+#     target = communityClient.get_community(community_pk=target)
+#     permissionClient = PermissionResourceClient(actor=request.user, target=target)
+#     permission_target = permissionClient.get_permission(pk=permission_id)
+#     conditionalClient = PermissionConditionalClient(actor=request.user, target=permission_target)
+
+#     condition = conditionalClient.get_condition_template()
+#     action, result = conditionalClient.remove_condition(condition=condition)
+
+#     return JsonResponse(get_action_dict(action))
+
+
+
+
+# def add_condition(request, target):   # for permission condition
+
+#     request_data = json.loads(request.body.decode('utf-8'))
+#     target_permission_id = request_data.get("target_permission_id", None)
+#     condition_type = request_data.get("condition_type", None)
+#     configuration_data = request_data.get("condition_configuration", None)
+
+#     condition_data, permission_data = process_configuration_data(configuration_data)
+
+#     target_permission = PermissionResourceClient(actor=request.user).get_permission(pk=target_permission_id)
+#     conditionalClient = PermissionConditionalClient(actor=request.user, target=target_permission)
+
+#     action, result = conditionalClient.add_condition(condition_type=condition_type.lower(),
+#         condition_data=condition_data, permission_data=permission_data)
+
+#     if action.resolution.status == "implemented":
+#         condition_info = {"name": result.condition_name(), 
+#             "display": result.condition_description(),
+#             "configuration": result.condition_data.get_configurable_fields_with_data(), "id": result.pk }
+#     else:
+#         condition_info = None 
+
+#     action_dict = get_action_dict(action)
+#     action_dict.update({ "condition_info": condition_info })
+#     return JsonResponse(action_dict)
+
+# def add_leadership_condition(request, target):
+
+#     request_data = json.loads(request.body.decode('utf-8'))
+#     communityClient = GroupClient(actor=request.user)
+#     target = communityClient.get_community(community_pk=target)
+#     conditionalClient = CommunityConditionalClient(actor=request.user, target=target)
+
+#     called_for = request_data.get("called_for")
+#     condition_type = request_data.get("condition_type", None)
+#     configuration_data = request_data.get("condition_configuration", None)
+#     condition_data, permission_data = process_configuration_data(configuration_data)
+
+#     if called_for == "owner":
+#         action, result = conditionalClient.add_condition_to_owners(condition_data=condition_data,
+#             permission_data=permission_data, condition_type=condition_type)
+#     elif called_for == "governor":
+#         action, result = conditionalClient.add_condition_to_governors(condition_data=condition_data,
+#             permission_data=permission_data, condition_type=condition_type)
+
+#     if action.resolution.status == "implemented":
+#         condition_info = {"name": result.condition_name(), 
+#             "display": result.condition_description(),
+#             "configuration": result.condition_data.get_configurable_fields_with_data(), 
+#             "id": result.pk }
+#     else:
+#         condition_info = None 
+
+#     action_dict = get_action_dict(action)
+#     action_dict.update({ "condition_info": condition_info })
+#     return JsonResponse(action_dict)
+

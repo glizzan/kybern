@@ -1,34 +1,46 @@
 <script type="text/x-template" id="manage_permission_template">
+    <div class="border m-2 p-2 text-center"> 
 
-    <span v-if="mode == 'permission create' || mode == 'permission update'">
+        <!-- Before anyone has indicated they want add or edit a permission, just display a button. -->
+        <b-button v-if="mode == 'start'" v-on:click="switch_to_create_mode()" class="btn-sm my-3">Add a permission</b-button>   
 
-        <span v-if="mode == 'permission create'">
-            <p class="my-3"><b>Add a new permission:</b></p>
-            <template><div>
-                <b-form-select v-model="permission_selected" :options="permission_options" :select-size="4">
-                </b-form-select>
-            </div></template>
+        <!-- If we're creating a new permission -->
+        <span v-if="mode == 'create' && !permission_selected ">
+                <b>Select permission to add</b> 
+                <template><div>
+                    <b-form-select v-model="permission_selected" :options="permission_options" :select-size="4">
+                    </b-form-select>
+                </div></template>
         </span>
 
-        <span v-if="permission_selected || permission_to_edit">
-            <p class="mt-3" v-if="permission_configuration_fields.length > 0">
-                <b>Configure your permission</b></p>
-            <div class="input-group my-1" v-for="(field, index) in permission_configuration_fields">        
-                <div class="input-group-prepend">
-                    <span class="input-group-text" id="field.name label">[[ field.name ]]</span>
-                </div>
-                <input type="text" class="form-control" aria-label="field.name" 
-                    aria-describedby="field.name label" v-model="permission_configuration_fields[index]['value']">
-            </div>
+        <!-- If we're updating an existing permission (or configuring a new permission that has been selected) -->
+        <span v-if="mode == 'update' || permission_selected">
+
+            <span v-if="configuration_fields.length > 0">
+
+                <p class="mt-3"><b>Configure your permission</b></p>
+                {% include 'groups/configuration_fields_include.html' %}
+
+                <b-button v-if="permission_selected && mode =='create'" size="sm" 
+                    class="mt-3" @click="add_permission()">Save permission</b-button>
+                <b-button v-if="permission_to_edit && mode == 'update'" size="sm" 
+                    class="mt-3" @click="update_permission()">Save changes</b-button>
+            </span>
+            <span v-else>
+
+                There are no editable fields for this permission.
+                <b-button v-on:click="add_permission()" class="btn-sm my-3">Add a new permission</b-button>   
+
+            </span>
+
+
         </span>
 
-        <b-button v-if="permission_selected && mode =='permission create'" size="sm" 
-            class="mt-3" @click="addPermission()">Save permission</b-button>
-        <b-button v-if="permission_to_edit && mode == 'permission update'" size="sm" 
-            class="mt-3" @click="updatePermission()">Save changes</b-button>
+        <div class="mb-3 text-danger" v-if="error_message">
+            [[ error_message ]]
+        </div>
 
-    </span>
-
+    </div>
 </script>
 
 
@@ -37,60 +49,56 @@
     managePermissionComponent = Vue.component('manage-permission', {
         delimiters: ['[[', ']]'],
         template: '#manage_permission_template',
-        props: ['mode', 'role_to_edit', 'permission_to_edit', 'permissions', 'permission_options', 'permission_configuration_options'],
+        props: ['mode_from_parent', 'role_to_edit', 'permission_to_edit'],
+        store,
         data: function() {
             return {
                 permission_selected: '',
+                mode: 'start',
+                configuration_fields: [],
+                error_message: ''
+            }
+        },
+        watch: {
+            mode_from_parent: function (val) {
+                // The parent of the condition include can change the mode - overrides current mode (on change, not permanently)
+                this.mode = val; 
+            },
+            permission_to_edit: function (val) {
+                if (this.permission_to_edit) {
+                    this.configuration_fields = Object.values(this.getPermissionConfigurationFieldsWithData(this.permission_to_edit))
+                }
+            },
+            permission_selected: function (val) {
+                if (this.permission_selected) {
+                    this.configuration_fields = Object.values(this.getPermissionConfigurationFields(this.permission_selected))
+                }
             }
         },
         computed: {
-            permission_configuration_fields: function () {
-                // If permission is selected, checks for configuration fields. If updating, get
-                // existing values for the fields from existing permissions.
-
-                if (this.permission_selected || this.permission_to_edit ) {
-                    if (this.mode == 'permission create') {
-                        return this.permission_configuration_options[this.permission_selected]
-                    }
-                    if (this.mode == 'permission update') {
-                        for (index in this.permissions) {
-                            if (this.permissions[index]['id'] == this.permission_to_edit) {
-                                 return this.permissions[index]['configuration']
-                            }
-                        }
-                    }
-                } 
-                return []
-            }
+            ...Vuex.mapState(['permission_options']),
+            ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getPermissionConfigurationFields', 
+                'getPermissionConfigurationFieldsWithData', 'select_field_is_multiple'])
         },
         methods: {
-            addPermission() {
-                url = "http://127.0.0.1:8000/groups/add_permission/{{ object.pk}}/"
-                params = { permission_type : this.permission_selected, 
-                    permission_roles : [this.role_to_edit],
-                    permission_configuration : this.permission_configuration_fields }
-                implementationCallback = () => {
-                    this.permissions.push(response.data.permission_info);
-                    this.permission_selected = '';
-                    this.$emit('clear-state', {});
-                }
-                this.submit_standard_axios_action_call(url, params, implementationCallback)
+            ...Vuex.mapActions(['addPermission', 'updatePermission']),
+            switch_to_create_mode() {
+                // helper function to reset necessary state
+                this.$emit("clearState");
+                this.mode = 'create'
+                this.permission_selected = ''
+                this.configuration_fields = []
             },
-            updatePermission() {
-                url = "http://127.0.0.1:8000/groups/update_permission/{{ object.pk}}/"
-                params = { permission_id : this.permission_to_edit, 
-                           permission_configuration : this.permission_configuration_field }
-                implementationCallback = () => {
-                    for (permission_index in this.permissions) {
-                        if (this.permissions[permission_index]['id'] == this.permission_to_edit) {
-                            this.permissions[permission_index]["display"] = response.data.new_display_name
-                        }
-                        break
-                    }
-                    this.permission_selected = '';
-                    this.$emit('clear-state', {} )
-                }
-                this.submit_standard_axios_action_call(url, params, implementationCallback)
+            add_permission() {
+                this.addPermission({ permission_selected : this.permission_selected, role : [this.role_to_edit],
+                    configuration : this.configuration_fields })
+                    .then(response => { this.permission_selected = ''; this.$emit("clearState"); })
+                    .catch(error => {  this.error_message = error })
+            },
+            update_permission() {
+                this.updatePermission({ permission_id: this.permission_to_edit, configuration : this.configuration_fields })
+                .then(response => { this.$emit("clearState"); })
+                .catch(error => {  this.error_message = error })
             }
         }
     });

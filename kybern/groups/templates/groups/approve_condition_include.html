@@ -1,21 +1,6 @@
 <script type="text/x-template" id="approve_condition_template">
     <span>
 
-    <!-- "condition_pk": 1, 
-
-    "action_details": { "description": "buckybarnes added role ears to on target TeamCap", 
-        "created": "2020-04-03 18:10:59.869442+00:00", "display_date": "Apr 03 2020 06:10PM", 
-        "actor": "buckybarnes", "status": "implemented", "resolution passed by": "specific", 
-        "display": "At Apr 03 2020 06:10PM, buckybarnes added role ears to TeamCap. They did so 
-            because they have the permission specific.", 
-        "has_condition": { "exists": true, "pk": 1, "type": "ApprovalCondition" } }, 
-    
-    "permission_details": { "concord.conditionals.state_changes.ApproveStateChange": [ true, "members" ] },
-    
-    "condition_details": { "status": "approved", "display_status": "approved", 
-        "fields": [ { "field_name": "self_approval_allowed", "field_value": true, "hidden": false }  -->
-
-
         <!-- If action is waiting -->
         <span v-if="condition_status == 'waiting' && !user_has_taken_action" class="my-5">
 
@@ -77,7 +62,7 @@ approvalConditionComponent = Vue.component('approve-condition-ui', {
     },
     methods: {
         update_condition() {
-            url = "http://127.0.0.1:8000/groups/update_approval_condition/{{ object.pk}}/"
+            url = "http://127.0.0.1:8000/groups/update_approval_condition/{{ target.pk}}/"
             params = { 
                 condition_pk: this.condition_data.condition_pk,
                 action_to_take: this.button_selected

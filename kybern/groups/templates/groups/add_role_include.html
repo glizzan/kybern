@@ -7,12 +7,14 @@
                 <span class="input-group-text" id="role_name_prompt">Role Name</span>
             </div>
             <input type="text" class="form-control" aria-label="role_name" 
-                aria-describedby="role_name_prompt" v-model="role_name">
+                aria-describedby="role_name_prompt" v-model="new_role_name">
         </div>
 
-        <div class="mb-3" v-if="error_message">
+        <div class="mb-3 text-warning" v-if="error_message">
             [[ error_message ]]
         </div>
+
+        <div>FYI, here are the current roles: <span v-for="role in roles" class="ml-3">[[role.name]]</span></div>
 
         <template v-slot:modal-footer="{ ok }">
             <b-button size="sm" variant="success" @click="ok()">Save</b-button>
@@ -25,26 +27,22 @@
 
 <script type="application/javascript">
 
-
     addRoleComponent = Vue.component('add-role-modal', {
         delimiters: ['[[', ']]'],
         template: '#add_role_modal_template',
+        store,
         data: function() {
             return {
                 error_message: '',
-                role_name: '',
+                new_role_name: '',
             }
         },
+        computed: { ...Vuex.mapState(['roles']) },   // Gets existing roles from data store
         methods: {
+            ...Vuex.mapActions(['addRole']),
             submitRoleName(bvModalEvt) {
-                bvModalEvt.preventDefault();
-                url = "http://127.0.0.1:8000/groups/add_role/{{ object.pk}}/"
-                params = { role_name: this.role_name }
-                implementationCallback = () => {
-                    this.$emit('add-new-role', this.role_name )
-                    this.role_name = '';
-                }
-                this.submit_standard_axios_action_call(url, params, implementationCallback)
+                bvModalEvt.preventDefault(); // don't close modal
+                this.addRole({ role_name: this.new_role_name }).catch(error => {  this.error_message = error  })
             }
         }
     });
