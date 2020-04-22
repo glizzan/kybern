@@ -11,6 +11,7 @@ from concord.permission_resources.client import PermissionResourceClient
 from concord.conditionals.client import PermissionConditionalClient, CommunityConditionalClient
 
 from .models import Group
+from .client import ForumClient
 
 
 ##################################
@@ -127,6 +128,19 @@ def serialize_existing_condition_configuration_for_vue(condition):
     return { condition.pk: condition.condition_data.get_configurable_fields_with_data() }
 
 
+def serialize_forum_for_vue(forum):
+    return { 'pk': forum.pk, 'name': forum.name, 'description': forum.description }
+
+
+def serialize_forums_for_vue(forums):
+
+    forum_list = []
+    for forum in forums:
+        forum_list.append(serialize_forum_for_vue(forum))
+
+    return forum_list
+
+
 ############################
 ### Standard Django CBVs ###
 ############################
@@ -162,6 +176,7 @@ class GroupDetailView(generic.DetailView):
         self.actionClient = ActionClient(actor=self.request.user, target=self.object)
         self.conditionalClient = PermissionConditionalClient(actor=self.request.user)
         self.leadershipConditionalClient = CommunityConditionalClient(actor=self.request.user, target=self.object)
+        self.forumClient = ForumClient(actor=self.request.user, target=self.object)
 
     def add_user_data_to_context(self, context):
 
@@ -262,6 +277,10 @@ class GroupDetailView(generic.DetailView):
 
         return context
 
+    def add_forum_data_to_context(self, context):
+        context['forums'] = serialize_forums_for_vue(self.forumClient.get_forums_owned_by_target())
+        return context
+
     def get_context_data(self, **kwargs):
         # TODO: refactor this into stuff returned from API calls (or at least view mixins)
         context = super().get_context_data(**kwargs)
@@ -270,7 +289,80 @@ class GroupDetailView(generic.DetailView):
         context = self.add_action_data_to_context(context)
         context = self.add_permission_data_to_context(context)
         context = self.add_condition_data_to_context(context)
+        context = self.add_forum_data_to_context(context)
         return context        
+
+
+####################
+### Forums Views ###
+####################
+
+
+def get_forums(request, target):
+    communityClient = GroupClient(actor=request.user)
+    target = communityClient.get_community(community_pk=target)
+    communityClient.set_target(target=target)
+
+    forumClient = ForumClient(actor=request.user, target=target)
+
+    forums = forumClient.get_forums_owned_by_target()
+    forum_list = serialize_forums_for_vue(forums)
+
+    return JsonResponse({ "forums": forum_list })
+
+
+def add_forum(request, target):
+
+    communityClient = GroupClient(actor=request.user)
+    target = communityClient.get_community(community_pk=target)
+    communityClient.set_target(target=target)
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    name = request_data.get("name")
+    description = request_data.get("description", None)
+
+    forumClient = ForumClient(actor=request.user, target=target)
+    action, result = forumClient.create_forum(name=name, description=description)
+    
+    action_dict = get_action_dict(action)
+    action_dict["forum_data"] = serialize_forum_for_vue(result)
+    return JsonResponse(action_dict)
+
+
+def edit_forum(request, target):
+    
+    communityClient = GroupClient(actor=request.user)
+    target = communityClient.get_community(community_pk=target)
+    communityClient.set_target(target=target)
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    pk = request_data.get("pk")
+    name = request_data.get("name", None)
+    description = request_data.get("description", None)
+
+    forumClient = ForumClient(actor=request.user, target=target)
+    action, result = forumClient.edit_forum(pk=pk, name=name, description=description)
+
+    action_dict = get_action_dict(action)
+    action_dict["forum_data"] = serialize_forum_for_vue(result)
+    return JsonResponse(action_dict)
+
+
+def delete_forum(request, target):
+
+    communityClient = GroupClient(actor=request.user)
+    target = communityClient.get_community(community_pk=target)
+    communityClient.set_target(target=target)
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    pk = request_data.get("pk")
+
+    forumClient = ForumClient(actor=request.user, target=target)
+    action, result = forumClient.delete_forum(pk=pk)
+
+    action_dict = get_action_dict(action)
+    action_dict["deleted_forum_pk"] = pk
+    return JsonResponse(action_dict)
 
 
 ################################################################################

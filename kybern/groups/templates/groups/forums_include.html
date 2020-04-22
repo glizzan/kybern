@@ -1,0 +1,97 @@
+<div id="forums_template">
+
+        <h4 class="text-secondary pb-3">{{ object.name }}'s Forums   
+            <span class="pl-3"><b-button variant="outline-secondary" class="btn-sm"
+                    v-b-modal.forum_modal>+ add new</b-button></span>
+        </h4>
+
+        <div>[[ delete_error_message ]]</div>
+
+        <b-list-group>
+            <b-list-group-item v-for="{ pk, name, description } in forums" href="#" 
+                                     active class="bg-light text-info flex-column align-items-start">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1"> [[ name ]] </h5> </div>
+                
+                <p class="mb-1 text-secondary">  [[ description ]]  </p>
+
+
+                <b-button variant="outline-secondary" class="btn-sm" v-b-modal.forum_modal 
+                    @click="edit_forum_modal(pk, name, description)">
+                    edit</b-button>
+                <b-button variant="outline-secondary" class="btn-sm" @click="delete_forum(pk)">
+                    delete</b-button>
+
+            </b-list-group-item>
+        </b-list-group>
+
+        <b-modal id="forum_modal" title="Add a forum" size="md" hide-footer @hide="clearState()">
+            
+            <b-form-group id="name" label="Forum name:" label-for="forum_name">
+                <b-form-input id="forum_name" v-model="name" required placeholder="Please pick a name">
+                </b-form-input>
+            </b-form-group>
+
+            <b-form-group id="description" label="Forum description:" label-for="forum_description">
+                <b-form-textarea id="forum_description" v-model="description" placeholder="Add a description">
+                </b-form-textarea>
+            </b-form-group>
+
+            <b-button v-if=!pk variant="outline-secondary" class="btn-sm"  @click="add_forum">submit</b-button>
+            <b-button v-if=pk variant="outline-secondary" class="btn-sm"  @click="edit_forum">submit</b-button>
+
+            <div>[[ error_message ]]</div>
+
+        </b-modal>
+
+
+</div>
+
+
+<script type="application/javascript"> 
+
+    // Main vue instance for forums app
+    var forumsApp = new Vue({
+        delimiters: ['[[', ']]'],
+        el: '#forums_template',
+        store,
+        data: {
+            name: null,
+            description: null,
+            pk: null,
+            error_message: null,
+            delete_error_message: null
+        },
+        computed: {
+            ...Vuex.mapState(['forums']),
+        },
+        methods: {
+            ...Vuex.mapActions(['addForum', 'editForum', 'deleteForum']),
+            clearState() {
+                this.name = null
+                this.description = null
+                this.pk = null
+            },
+            edit_forum_modal(pk, name, description) {
+                this.pk = pk
+                this.name = name
+                this.description = description
+            },
+            add_forum() { 
+                this.addForum({ name: this.name, description: this.description })
+                .catch(error => {  this.error_message = error })
+                // close modal on success (in then)
+            }, 
+            edit_forum() {
+                this.editForum({ pk: this.pk, name: this.name, description: this.description })
+                .catch(error => {  this.error_message = error })
+            },
+            delete_forum(forum_pk) {
+                this.deleteForum({ pk: forum_pk })
+                .catch(error => {  this.delete_error_message = error })
+
+            }
+        }
+    })
+
+</script>

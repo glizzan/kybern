@@ -17,13 +17,14 @@
         // Helper method used by API calls which return a single action and throw error if not implemented
         return axios.post(url, params)
         .then(response => {
+            console.log("Got response: ", response)
             dispatch('addOrUpdateAction', { action_pk: response.data.action_pk })
             if (response.data.action_status == "implemented") {
                 implementationCallback(response)
             } else {
                 throw Error(response.data.action_log)
             }
-        }).catch(error => { throw error })
+        }).catch(error => { console.log("Got error: ", error); throw error })
     }
 
     const store = new Vuex.Store({
@@ -62,7 +63,9 @@
 
             // Action history & conditional action data
             actions: {{ actions|safe }},          // We will eventually want to only load some of these
-            conditionals: [],
+
+            // Forums data
+            forums: {{ forums|safe }},  // [ { pk: pk, name: name, description: description }]
         },
         getters: {
             memberNames: (state, getters) => {
@@ -338,16 +341,27 @@
             ADD_OR_UPDATE_ACTION (state, data) {
                 for (index in state.actions) {
                     if (state.actions[index].action_pk == data.action_data.action_pk) {
-                        console.log("A match")
-                        console.log("BEfore splice: ", state.actions)
                         state.actions.splice(index, 1, data.action_data)
-                        console.log("After splice: ", state.actions)
                         return
                     }
                 }
-                console.log("Got to push")
                 state.actions.push(data.action_data)  // If we get here, we're adding the action
-                console.log("After push: ", state.actions)
+            },
+            ADD_OR_UPDATE_FORUM (state, data) {
+                for (index in state.forums) {
+                    if (state.forums[index].pk == data.forum_data.pk) {
+                        state.forums.splice(index, 1, data.forum_data)
+                        return
+                    }
+                }
+                state.forums.push(data.forum_data)
+            },
+            DELETE_FORUM (state, data) { 
+                for (index in state.forums) {
+                    if (state.forums[index].pk == data.pk) {
+                        state.forums.splice(index, 1)
+                    }
+                }
             }
         },
         actions: {
@@ -536,6 +550,30 @@
                     commit('ADD_OR_UPDATE_ACTION', { action_data : response.data.action_data })
                 }
                 return standard_get_api_call(url, params, implementationCallback, dispatch)
+            },
+            addForum({ commit, state, dispatch}, payload) {
+                url = "http://127.0.0.1:8000/groups/1/add_forum/"
+                params = { name: payload.name, description: payload.description }
+                implementationCallback = (response) => {
+                    commit('ADD_OR_UPDATE_FORUM', { forum_data : response.data.forum_data })
+                }
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
+            },
+            editForum({ commit, state, dispatch}, payload) { 
+                url = "http://127.0.0.1:8000/groups/1/edit_forum/"
+                params = { pk: payload.pk, name: payload.name, description: payload.description }
+                implementationCallback = (response) => {
+                    commit('ADD_OR_UPDATE_FORUM', { forum_data : response.data.forum_data })
+                }
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
+            },
+            deleteForum({ commit, state, dispatch}, payload) { 
+                url = "http://127.0.0.1:8000/groups/1/delete_forum/"
+                params = { pk: payload.pk }
+                implementationCallback = (response) => {
+                    commit('DELETE_FORUM', { pk : response.data.deleted_forum_pk })
+                }
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
             }
         }
     })

@@ -28,10 +28,9 @@ urlpatterns = [
     path('get_action_data/', views.get_action_data, name='get_action_data'),
     path('update_approval_condition/<int:target>/', views.update_approval_condition, name='update_approval_condition'),
     path('update_vote_condition/<int:target>/', views.update_vote_condition, name='update_vote_condition'),
-    # path('add_condition/<int:target>/', views.add_condition, name='add_condition'),
-    # path('update_condition/<int:target>/', views.update_condition, name='update_condition'),
-    # path('delete_condition/<int:target>/', views.delete_condition, name='delete_condition'),
-    # path('add_leadership_condition/<int:target>/', views.add_leadership_condition, name='add_leadership_condition'),
-    # path('update_leadership_condition/<int:target>/', views.update_leadership_condition, name='update_leadership_condition'),
-    # path('delete_leadership_condition/<int:target>/', views.delete_leadership_condition, name='delete_leadership_condition'),
-]
+    # forum views
+    path('<int:target>/forums/', views.get_forums, name='get_forums'),
+    path('<int:target>/add_forum/', views.add_forum, name='add_forum'),
+    path('<int:target>/edit_forum/', views.edit_forum, name='edit_forum'),
+    path('<int:target>/delete_forum/', views.delete_forum, name='delete_forum'),
+  ]
