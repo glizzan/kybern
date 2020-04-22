@@ -1,16 +1,20 @@
 <script type="text/x-template" id="vote_condition_template">
+
     <span>
+        [[ condition_details ]]
 
         <!-- Information about the vote. -->
         <span v-if="is_resolved">
-            This vote, on [[ action_display ]], ended on [[ voting_deadline ]]. The results were [[ vote_results ]].
-            It required a [[ majority_or_plurality ]] vote and abstentions were <span v-if="!allow_abstain">not</span> 
-            allowed.
+            This vote, on [[ action_details.description ]], ended on [[ voting_deadline_display ]]. 
+            The results were [[ vote_results ]], which means the action was [[ condition_details.status ]].
+            It required a [[ majority_or_plurality ]] vote and abstentions were 
+            <span v-if="!allow_abstain">not</span> allowed.
         </span>
 
         <span v-else>
-            This vote, on [[ action_display ]], will end on [[ voting_deadline ]]. The results so far are 
-            [[ vote_results ]]. It requires a [[ majority_or_plurality ]] vote and abstentions are 
+            This vote, on [[ action_details.description ]], will end on [[ voting_deadline_display ]]. 
+            The results so far are [[ vote_results ]].
+            It requires a [[ majority_or_plurality ]] vote and abstentions are 
             <span v-if="!allow_abstain">not</span> allowed.
         </span> 
 
@@ -52,101 +56,111 @@
 
 <script type="application/javascript"> 
 
-// I want, when the condition is initialized (when conditiontype is set to votecondition?), to initialize all the
-// configuration stuff so they can be referenced in the template and then forgotten about
-
-
 voteConditionComponent = Vue.component('vote-condition-ui', {
     delimiters: ['[[', ']]'],
     template: '#vote_condition_template',
-    props: ['condition_type', 'condition_data'],
+    props: ['condition_type', 'condition_pk', 'action_details'],
+    store,
     data: function() {
         return {
             user_has_taken_action: false,
             button_selected: null,
             error_message: null,
-            // Helper variables made when condition_type matches
-            action_display: null,
-            majority_or_plurality: null,
-            voting_deadline: null,
+            permission_details: null,
+            condition_details: null,
             allow_abstain: null,
-            vote_results: null,
-            is_resolved: null,
-            button_options: [],
-            can_vote: null,
-            not_yet_voted: null,
-            condition_status: null
+            require_majority: null,
+            voting_deadline: null
         }
     },
-    mounted: function () { this.refresh_condition_data_helpers() },
-    methods: {
-        get_condition_field_value(field_name) {
-            for (index in this.condition_data.condition_details.fields) {
-                if (this.condition_data.condition_details.fields[index]["field_name"] == field_name) {
-                    return this.condition_data.condition_details.fields[index]["field_value"]
-                }
+    computed: {
+        voting_deadline_display: function() {
+            if (this.voting_deadline) {
+                return Date(this.voting_deadline)
             }
         },
-        refresh_condition_data_helpers() {
-            // condition status
-            this.condition_status = this.condition_data.condition_details.status
-            // action_display
-            this.action_display = this.condition_data.action_details.description
-            // require_majority
-            if  (this.get_condition_field_value("require_majority")) {
-                this.majority_or_plurality = "majority"
-            } else {
-                this.majority_or_plurality = "plurality"
-            }
-            // voting_deadline
-            this.voting_deadline = this.get_condition_field_value("voting_deadline")
-            // allow_abstain
-            this.allow_abstain = this.get_condition_field_value("allow_abstain")
-            // vote_results
-            this.vote_results = this.get_condition_field_value("current_yeas") + " yeas and " +
-                                                this.get_condition_field_value("current_nays") + " nays"
+        button_options: function() {
             if (this.allow_abstain) {
-                this.vote_results += " with " + this.get_condition_field_value("current_abstains") + " abstentions"
-            }
-            // is_resolved
-            if (["approved", "rejected", "implemented"].includes(this.condition_status)) { this.is_resolved = true }                
-            else { this.is_resolved = false }
-            // button_options
-            if (this.allow_abstain) { this.button_options = ["yea", "nay", "abstain"] } 
-            else { this.button_options =  ["yea", "nay"] }
-            this.button_options
-            // can_vote
-            this.can_vote = this.condition_data.permission_details["concord.conditionals.state_changes.AddVoteStateChange"][0]
-            // already voted
-            this.not_yet_voted = this.condition_data.permission_details["user_condition_status"][0]
+                if (this.allow_abstain == true) { return ["yea", "nay", "abstain"] }
+                else { return ["yea", "nay"] }
+            } else { return [] }
         },
-    
+        majority_or_plurality: function() {
+            if (this.require_majority == true ) {
+                return "majority (as opposed to plurality)" 
+            } else if ( this.require_majority == false ) {
+                return "plurality (as opposed to majority)"
+            } 
+        },
+        vote_results: function() {
+            if (this.condition_details) {
+                vote_results = this.current_yeas + " yeas and " + this.current_nays + " nays"
+                if (this.allow_abstain) { vote_results += " with " + this.current_abstains  + "  abstentions" }
+                return vote_results
+            }
+        },
+        can_vote: function() {
+            if (this.permission_details) {
+                return this.permission_details["concord.conditionals.state_changes.AddVoteStateChange"][0]
+            }
+        },
+        not_yet_voted: function() {
+            if (this.permission_details) {
+                return this.permission_details["user_condition_status"][0]
+            }
+        },
+        is_resolved: function() {
+            if (this.condition_details) {
+                if (["approved", "rejected", "implemented"].includes(this.condition_details.status)) {
+                    return true
+                } else { return false }
+            }
+        }
+    },
+    created () {
+        this.get_conditional_data()
+    },
+    methods: {
+        get_conditional_data() {
+            axios = this.prep_axios()
+            url = "http://127.0.0.1:8000/groups/get_conditional_data/{{ target.pk}}/"
+            params = { condition_pk: this.condition_pk, condition_type: this.condition_type }
+            axios.post(url, params).then(response => { 
+                this.condition_details = response.data.condition_details
+                this.permission_details = response.data.permission_details
+                for (field in this.condition_details.fields) {
+                    name = this.condition_details.fields[field]["field_name"]
+                    value = this.condition_details.fields[field]["field_value"]
+                    this[name] = value
+                }
+            }).catch(error => {  console.log("Error calling get_conditional_data in vote condition: ", error)  })
+        },
         update_condition() {
+
+            // For now, we don't store individual conditional data in vuex in part to make this more 
+            // extensible, although presumably there *is* a way to make vuex handle this extensibly, 
+            // but that's a bit above my paygrade for now.
+
+            axios = this.prep_axios()
             url = "http://127.0.0.1:8000/groups/update_vote_condition/{{ target.pk}}/"
-            params = { 
-                condition_pk: this.condition_data.condition_pk,
-                action_to_take: this.button_selected
-            }
-            implementationCallback = () => {    // using an arrow function here to pass surrounding context's this
-                // Call get_condition_data method to get updated condition data & adjust local vars
-                this.get_condition_data(this.condition_data.condition_pk, this.condition_type)
-                .then(response=> {
+            params = { condition_pk: this.condition_pk, action_to_take: this.button_selected }
+            axios.post(url, params).then(response => {  
 
-                    // Update with new data
-                    this.condition_data.permission_details = response.data.permission_details
-                    this.condition_data.condition_details = response.data.condition_details
-                    this.refresh_condition_data_helpers()
-
-                    // If condition status has changed to a 'resolved' state, emit notification.
-                    if (this.condition_status == "approved" || this.condition_status == "rejected" ) {
-                        EventBus.$emit('action-changed', this.condition_data.action_pk );
-                    }  
-                })
+                // update condition data
+                this.get_conditional_data()
                 this.user_has_taken_action = true
-            }
-            this.submit_standard_axios_action_call(url, params, implementationCallback)
+
+                // update action this was a condition on
+                this.addOrUpdateAction({ action_pk: this.action_details["action_pk"] })
+                   
+                // also call vuex to record this as an action (need to do this for all actions)
+                this.addOrUpdateAction({ action_pk: response.data.action_pk })
+
+            })
+
         }
     }
 })
 
 </script>
+

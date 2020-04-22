@@ -81,7 +81,7 @@ def get_multiple_action_dicts(actions):
     for action in actions:
         if action.resolution.status != "implemented":
             action_status = "error"
-            action_log += action.resolution.log
+            action_log += action.resolution.log if action.resolution.log else ""
     # individual action data
     action_dicts_list = []
     for action in actions:
@@ -92,6 +92,39 @@ def get_multiple_action_dicts(actions):
         "action_log": action_log,
         "actions": action_dicts_list
     }
+
+
+def serialize_existing_permission_for_vue(permission):
+    """  (note: this matches format specified in vuex store)
+    permissions: {{ permissions }},         
+        // { int(pk) : { name: x, display: x, change_type: x } } """
+    return { permission.pk : { "name": permission.full_description(), "display": permission.full_description(), 
+            "change_type": permission.change_type } }
+
+
+def serialize_existing_permission_configuration_for_vue(permission):
+    """  (note: this matches format specified in vuex store)
+    permission_configurations: {{ permission_configurations }},
+        // { int(pk) : { permissionfieldname : permissionfieldvalue } }       
+    """
+    return { permission.pk: permission.get_configuration() } 
+
+
+def serialize_existing_condition_for_vue(condition):
+    """ (note: this matches format specified in vuex store)
+    conditions: {{ conditions }},         
+        // { int(pk) : { name: x, display: x, conditioned_object_pk: x } }       
+    """
+    return { condition.pk :  { 'name' : condition.condition_name(), 'display': condition.condition_description(), 
+        'conditioned_object_pk': condition.conditioned_object_id } }
+
+
+def serialize_existing_condition_configuration_for_vue(condition):
+    """ (note: this matches format specified in vuex store)
+    condition_configurations: {{ condition_configurations }},
+        // { int(pk) : { conditionfieldname : conditionfieldvalue } }       
+    """
+    return { condition.pk: condition.condition_data.get_configurable_fields_with_data() }
 
 
 ############################
@@ -128,6 +161,7 @@ class GroupDetailView(generic.DetailView):
         self.permissionClient = PermissionResourceClient(actor=self.request.user, target=self.object)
         self.actionClient = ActionClient(actor=self.request.user, target=self.object)
         self.conditionalClient = PermissionConditionalClient(actor=self.request.user)
+        self.leadershipConditionalClient = CommunityConditionalClient(actor=self.request.user, target=self.object)
 
     def add_user_data_to_context(self, context):
 
@@ -135,6 +169,11 @@ class GroupDetailView(generic.DetailView):
         context['owners'] = self.communityClient.target.roles.get_owners()
         context['governors'] = self.communityClient.target.roles.get_governors()
         context['governance_info'] = json.dumps(self.communityClient.get_governance_info_as_text())
+
+        owner_condition = self.leadershipConditionalClient.get_condition_template_for_owner()
+        governor_condition = self.leadershipConditionalClient.get_condition_template_for_governor()
+        context['owner_condition_pk'] = json.dumps(owner_condition.pk if owner_condition else None)
+        context['governor_condition_pk'] = json.dumps(governor_condition.pk if governor_condition else None)
         
         # Role/Member info
         context['username_map'] = { person.pk : person.username for person in User.objects.all() }
@@ -204,7 +243,23 @@ class GroupDetailView(generic.DetailView):
         for condition in settable_conditions:
             condition_configuration.update({ condition.__name__ : condition.get_configurable_fields() })
         context["condition_configuration_options"] = json.dumps(condition_configuration)
-        
+
+        # Get & serialize existing conditions
+        owner_condition = self.leadershipConditionalClient.get_condition_template_for_owner()
+        governor_condition = self.leadershipConditionalClient.get_condition_template_for_governor()
+        serialized_conditions = {}
+        for condition in [owner_condition, governor_condition]:
+            if condition:
+                serialized_conditions.update(serialize_existing_condition_for_vue(condition))
+        context["conditions"] = json.dumps(serialized_conditions)
+
+        # Get & serialize existing condition configurations
+        serialized_condition_configurations = {}
+        for condition in [owner_condition, governor_condition]:
+            if condition:
+                serialized_condition_configurations.update(serialize_existing_condition_configuration_for_vue(condition))
+        context["condition_configurations"] = json.dumps(serialized_condition_configurations)
+
         return context
 
     def get_context_data(self, **kwargs):
@@ -253,8 +308,6 @@ def remove_members(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
 
-    print(request_data)
-
     communityClient = GroupClient(actor=request.user)
     target = communityClient.get_community(community_pk=target)
     communityClient.set_target(target=target)
@@ -292,44 +345,9 @@ def remove_people_from_role(request, target):
     return JsonResponse(get_action_dict(action))
 
 
-###########################################
-### Getting condition & permission data ###
-###########################################
-
-
-def serialize_existing_permission_for_vue(permission):
-    """  (note: this matches format specified in vuex store)
-    permissions: {{ permissions }},         
-        // { int(pk) : { name: x, display: x, change_type: x } } """
-    return { permission.pk : { "name": permission.full_description(), "display": permission.full_description(), 
-            "change_type": permission.change_type } }
-
-
-def serialize_existing_permission_configuration_for_vue(permission):
-    """  (note: this matches format specified in vuex store)
-    permission_configurations: {{ permission_configurations }},
-        // { int(pk) : { permissionfieldname : permissionfieldvalue } }       
-    """
-    return { permission.pk: permission.get_configuration() } 
-
-
-def serialize_existing_condition_for_vue(condition):
-    """ (note: this matches format specified in vuex store)
-    conditions: {{ conditions }},         
-        // { int(pk) : { name: x, display: x, conditioned_object_pk: x } }       
-    """
-    print({ condition.pk :  { 'name' : condition.condition_name(), 'display': condition.condition_description(), 
-        'conditioned_object_pk': condition.conditioned_object_id } })
-    return { condition.pk :  { 'name' : condition.condition_name(), 'display': condition.condition_description(), 
-        'conditioned_object_pk': condition.conditioned_object_id } }
-
-
-def serialize_existing_condition_configuration_for_vue(condition):
-    """ (note: this matches format specified in vuex store)
-    condition_configurations: {{ condition_configurations }},
-        // { int(pk) : { conditionfieldname : conditionfieldvalue } }       
-    """
-    return { condition.pk: condition.condition_data.get_configurable_fields_with_data() }
+####################################
+### Condition & permission views ###
+####################################
 
 
 def get_permissions_given_role(actor, target, role_name):
@@ -380,18 +398,11 @@ def get_data_for_role(request, target):
         "role_permissions": permission_pks })
 
 
-#############################################
-### Setting permsision and condition data ###
-#############################################
-
-
 def reformat_permission_field(field):
     if field["type"] == "PermissionRoleField":
         if "other_data" in field and "multiple" in field["other_data"] and field["other_data"]["multiple"] == False:
-            print("Reformating single")
             field["value"] = field["value"]["name"]   # Single select treated differently
         else:
-            print("Reformating multiple")
             field["value"] = [data["name"] for data in field["value"]] if field["value"] else []
     elif field["type"] == "PermissionActorField":
         try:
@@ -399,6 +410,8 @@ def reformat_permission_field(field):
         except:
             # if the above doesn't work, try to get by pk
             field["value"] = [data["pk"] for data in field["value"]] if field["value"] else []
+        # make sure individual items in list are ints
+        field["value"] = [int(pk) for pk in field["value"]]
     return field
 
 
@@ -410,8 +423,6 @@ def reformat_permission_data(permission_configuration):
     fields = {}
     for field in permission_configuration:
         field = reformat_permission_field(field)
-        # if hasattr(field, "other_data") and "multiple" in field["other_data"] and field["other_data"]["multiple"] == False:
-        #     field["value"] = field["value"][0]
         fields.update({
             field["field_name"] : field["value"]
         })
@@ -569,7 +580,6 @@ def permission_condition_helper(request, request_data, target, action_type):
             condition_data=condition_data, permission_data=permission_data)
 
     if action_type == "update":
-        print("UPDATING CONDITION: ", condition_id)
         return conditionalClient.change_condition(condition_pk=condition_id,
             condition_data=condition_data, permission_data=permission_data)
 
@@ -645,7 +655,7 @@ def update_vote_condition(request, target):
     return JsonResponse(get_action_dict(action))
 
 
-def get_condition_data(request, target):
+def get_conditional_data(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
     condition_pk = request_data.get("condition_pk", None)
@@ -683,47 +693,47 @@ def get_action_data(request):
 
 
 
-### For leadership condition data
+# ### For leadership condition data
 
-def serialize_leadership_condition_with_data(condition):
-    if condition:
-        return { 
-            'name' : condition.condition_name(), 
-            'id': condition.pk, 
-            'display': condition.condition_description(),
-            'configuration': condition.condition_data.get_configurable_fields_with_data()
-        }
-    return None
+# def serialize_leadership_condition_with_data(condition):
+#     if condition:
+#         return { 
+#             'name' : condition.condition_name(), 
+#             'id': condition.pk, 
+#             'display': condition.condition_description(),
+#             'configuration': condition.condition_data.get_configurable_fields_with_data()
+#         }
+#     return None
 
 
-def get_leadership_condition_data(request, target):
+# def get_leadership_condition_data(request, target):
 
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
-    conditionalClient = CommunityConditionalClient(actor=request.user, target=target)
+#     communityClient = GroupClient(actor=request.user)
+#     target = communityClient.get_community(community_pk=target)
+#     conditionalClient = CommunityConditionalClient(actor=request.user, target=target)
 
-    owner_condition = conditionalClient.get_condition_template_for_owner()
-    serialized_owner_condition = serialize_leadership_condition_with_data(owner_condition)
-    governor_condition = conditionalClient.get_condition_template_for_governor()
-    serialized_governor_condition = serialize_leadership_condition_with_data(governor_condition)
+#     owner_condition = conditionalClient.get_condition_template_for_owner()
+#     serialized_owner_condition = serialize_leadership_condition_with_data(owner_condition)
+#     governor_condition = conditionalClient.get_condition_template_for_governor()
+#     serialized_governor_condition = serialize_leadership_condition_with_data(governor_condition)
 
-    # Get condition options
-    settable_conditions = conditionalClient.get_possible_conditions()
-    condition_options = [ { 'value': cond.__name__, 'text': cond.descriptive_name } for cond in settable_conditions ]
+#     # Get condition options
+#     settable_conditions = conditionalClient.get_possible_conditions()
+#     condition_options = [ { 'value': cond.__name__, 'text': cond.descriptive_name } for cond in settable_conditions ]
 
-    # Create condition configuration 
-    condition_configuration = { }
-    for condition in settable_conditions:
-        condition_configuration.update({ condition.__name__ : 
-            { 'condition_name' : condition.descriptive_name, 
-            'configuration': condition.get_configurable_fields() }  })
+#     # Create condition configuration 
+#     condition_configuration = { }
+#     for condition in settable_conditions:
+#         condition_configuration.update({ condition.__name__ : 
+#             { 'condition_name' : condition.descriptive_name, 
+#             'configuration': condition.get_configurable_fields() }  })
 
-    return JsonResponse({ 
-        "condition_options": condition_options,
-        "condition_configuration_options": condition_configuration,
-        "owner_condition_data": serialized_owner_condition,
-        "governor_condition_data": serialized_governor_condition
-    })
+#     return JsonResponse({ 
+#         "condition_options": condition_options,
+#         "condition_configuration_options": condition_configuration,
+#         "owner_condition_data": serialized_owner_condition,
+#         "governor_condition_data": serialized_governor_condition
+#     })
 
 
 ####################################

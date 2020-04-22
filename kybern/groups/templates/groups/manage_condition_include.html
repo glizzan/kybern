@@ -6,7 +6,7 @@
         <span v-if="mode == 'start'">
 
             <!-- Condition details/management are usually hidden by default on permissions, shown by default on community -->
-            <span v-if="called_for == 'owner' || called_for == 'governor'">   
+            <span v-if="target_type == 'community'">   
 
                     <span v-if="condition_to_edit">
                         [[ condition_display_helper ]]
@@ -73,54 +73,63 @@
             }
         },
         watch: {
-            mode_from_parent: function (val) {
-                // The parent of the condition include can change the mode - overrides current mode (on change, not permanently)
-                this.mode = val; 
+            // The parent of the condition include can change the mode - overrides current mode (on change, not permanently)
+            mode_from_parent: function (val) { this.mode = val; },                           
+            condition_to_edit: function (val) { this.update_configuration_fields() },
+            condition_selected: function (val) {  this.update_configuration_fields() }
+        },
+        computed: {
+            ...Vuex.mapState(['conditions', 'condition_options']),
+            ...Vuex.mapGetters(['getConditionConfigurationFields', 'getConditionConfigurationFieldsWithData', 
+                'select_field_is_multiple', 'rolesAsOptions', 'groupMembersAsOptions']),
+            condition_display_helper: function() {
+                if (this.condition_to_edit && this.conditions[this.condition_to_edit]) {
+                    return this.conditions[this.condition_to_edit].display
+                }
             },
-            condition_to_edit: function (val) {
+            target_type: function() {
+                if (this.called_for == "governor" || this.called_for == "owner") {
+                    return "community"
+                } else {
+                    return "permission"
+                }
+            }
+        },
+        created (){ this.update_configuration_fields() },
+        methods: {
+            ...Vuex.mapActions(['addCondition', 'updateCondition', 'removeCondition']),
+            update_configuration_fields(){
+                // Note that only one of condition_selected or condition_to_edit should be defined
+                if (this.condition_selected) {
+                    this.configuration_fields = Object.values(this.getConditionConfigurationFields(this.condition_selected))
+                }
                 if (this.condition_to_edit) {
                     this.configuration_fields = Object.values(this.getConditionConfigurationFieldsWithData(this.condition_to_edit))
                 }
             },
-            condition_selected: function (val) {
-                if (this.condition_selected) {
-                    this.configuration_fields = Object.values(this.getConditionConfigurationFields(this.condition_selected))
-                }
-            }
-        },
-        computed: {
-            ...Vuex.mapState(['condition_options']),
-            ...Vuex.mapGetters(['getConditionConfigurationFields', 'getConditionConfigurationFieldsWithData', 
-                'select_field_is_multiple', 'rolesAsOptions', 'groupMembersAsOptions']),
-            condition_display_helper: function() {
-                // using condition_to_edit, get condition data from vuex and display it appropriately
-                return "Need to fill this out"
-            }
-        },
-        methods: {
-            ...Vuex.mapActions(['addCondition', 'updateCondition']),
             add_condition(){
                 this.addCondition({ condition_selected : this.condition_selected, configuration : this.configuration_fields,
-                        permission : this.permission_to_condition })
-                    .then(response => { this.condition_selected = ''; this.$emit("clearState"); })
+                        permission : this.permission_to_condition, target_type: this.target_type, called_for: this.called_for })
+                    .then(response => { this.condition_selected = ''; this.mode = 'start';
+                            this.$emit("clearState"); })
                     .catch(error => {  this.error_message = error })
             },
             update_condition(){
                 this.updateCondition({ condition_to_edit: this.condition_to_edit, configuration : this.configuration_fields,
-                    permission : this.permission_to_condition })
-                .then(response => { this.$emit("clearState"); })
+                    permission : this.permission_to_condition,  target_type: this.target_type  })
+                .then(response => { this.mode = 'start'; this.$emit("clearState"); })
                 .catch(error => {  this.error_message = error })
             },
-            // remove_condition() {
-
-                    // ONLY CALLED BY LEADERSHIP INCLUDE
-
-            //     this.updateCondition({ condition_id: this.condition_to_edit, configuration : this.configuration_fields })
-            //     .then(response => { this.$emit("clearState"); })
-            //     .catch(error => {  this.error_message = error })
-            // }
+            remove_condition() {
+                // Only called when used by leadership include, edit_role handles deletion for permission conditions
+                this.removeCondition({ condition_id : this.condition_to_edit, called_for: this.called_for, 
+                    target_type: this.target_type })
+                .then(response => { this.mode = 'start'; this.$emit("clearState"); })
+                .catch(error => { 
+                    this.error_message = error.message
+                })
+            }
         }
-    
     });
 
 </script>

@@ -6,7 +6,6 @@
     axios.defaults.xsrfCookieName = 'csrftoken';
     axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
     axios.defaults.headers = { "headers": { 'Content-Type': "application/json" } }
-    
 
     standard_get_api_call = function (url, params, implementationCallback) { 
     // note that we might not need this non-action call, since view should be an action, but we'll use for now
@@ -14,10 +13,11 @@
         .then(response => {  implementationCallback(response) }).catch(error => { console.log(error); throw error })
     }
 
-    standard_action_api_call = function (url, params, implementationCallback) {
+    standard_action_api_call = function (url, params, implementationCallback, dispatch) {
         // Helper method used by API calls which return a single action and throw error if not implemented
         return axios.post(url, params)
         .then(response => {
+            dispatch('addOrUpdateAction', { action_pk: response.data.action_pk })
             if (response.data.action_status == "implemented") {
                 implementationCallback(response)
             } else {
@@ -35,8 +35,15 @@
             users: {{ users|safe }},                // [ { name: 'username', pk: pk } ]
 
             // Leadership data
+            governance_info: {{ governance_info|safe }},                    // Text string explaining governance structure
             owners: {{ owners|safe }},              // { actors: [pk, pk], roles: ['rolename', 'rolename'] }
             governors: {{ governors|safe }},        // { actors: [pk, pk], roles: ['rolename', 'rolename'] }
+            owner_condition_pk: {{ owner_condition_pk|safe }},         // data stored in list of conditions
+            governor_condition_pk: {{ governor_condition_pk|safe }},    // data stored in list of conditions 
+
+            // At start, we only load leadership condition data  
+            conditions: {{ conditions|safe }},                 // { int(pk) : { name: x, display: x, conditioned_object_pk: x } }         
+            condition_configurations: {{ condition_configurations|safe }},   // { int(pk) : { conditionfieldname : conditionfieldvalue } }
 
             // Permission & condition options   
             permission_options: {{ permission_options|safe }},
@@ -48,17 +55,14 @@
             condition_configuration_options: {{ condition_configuration_options|safe }},
                 // { condition_type: { fieldname: { display: x, type: x, required: x, value: x, field_name: x } }         
 
-            // Permission & condition data (loaded opportunistically)
+            // Permission data (loaded opportunistically)
             role_permissions: {},             // { role_name: [pk, pk, pk], role_name: [pk, pk, pk] }
             permissions: {},                // { int(pk) : { name: x, display: x, change_type: x } }
             permission_configurations: {},  // { int(pk) : { permissionfieldname : permissionfieldvalue } } 
-            conditions: {},                 // { int(pk) : { name: x, display: x, conditioned_object_pk: x } }         
-            condition_configurations: {},   // { int(pk) : { conditionfieldname : conditionfieldvalue } }
-            owner_condition_pk: null,         // shortcut to get owner condition from list of conditions
-            governor_condition_pk: null,      // shortcut to get governor condition from list of conditions
 
             // Action history & conditional action data
-            actions: [],
+            actions: {{ actions|safe }},          // We will eventually want to only load some of these
+            conditionals: [],
         },
         getters: {
             memberNames: (state, getters) => {
@@ -318,45 +322,71 @@
             },
             DELETE_CONDITION_CONFIGURATION (state, data) {
                 Vue.delete(state.condition_configurations, data.pk);
+            },
+            SET_OWNER_CONDITION_PK (state, data) {
+                state.owner_condition_pk = data.pk
+            },
+            SET_GOVERNOR_CONDITION_PK (state, data) {
+                state.governor_condition_pk = data.pk
+            },
+            DELETE_OWNER_CONDITION_PK (state, data) {
+                state.owner_condition_pk = null
+            },
+            DELETE_GOVERNOR_CONDITION_PK (state, data) {
+                state.governor_condition_pk = null
+            },
+            ADD_OR_UPDATE_ACTION (state, data) {
+                for (index in state.actions) {
+                    if (state.actions[index].action_pk == data.action_data.action_pk) {
+                        console.log("A match")
+                        console.log("BEfore splice: ", state.actions)
+                        state.actions.splice(index, 1, data.action_data)
+                        console.log("After splice: ", state.actions)
+                        return
+                    }
+                }
+                console.log("Got to push")
+                state.actions.push(data.action_data)  // If we get here, we're adding the action
+                console.log("After push: ", state.actions)
             }
         },
         actions: {
-            addMembers ({ commit, state }, payload) { 
+            addMembers ({ commit, state, dispatch }, payload) { 
                 url = "http://127.0.0.1:8000/groups/add_members/{{ object.pk}}/"
                 params = { user_pks : payload.user_pks }
                 implementationCallback = () => { commit('ADD_MEMBERS', { user_pks: payload.user_pks }) }
-                return standard_action_api_call(url, params, implementationCallback)
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
-            removeMembers ({ commit, state }, payload) { 
+            removeMembers ({ commit, state, dispatch }, payload) { 
                 url = "http://127.0.0.1:8000/groups/remove_members/{{ object.pk}}/"
                 params = { user_pks : payload.user_pks }
                 implementationCallback = () => { 
                     commit('REMOVE_USERS_FROM_ALL_ROLES', { user_pks: payload.user_pks })
                     commit('REMOVE_MEMBERS', { user_pks: payload.user_pks }) 
                 }
-                return standard_action_api_call(url, params, implementationCallback)
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
-            addUsersToRole ({ commit, state }, payload) { 
+            addUsersToRole ({ commit, state, dispatch }, payload) { 
                 url = "http://127.0.0.1:8000/groups/add_people_to_role/{{ object.pk}}/"
                 params = { role_name : payload.role_name, user_pks: payload.user_pks }
                 implementationCallback = () => { commit('ADD_USERS_TO_ROLE', 
                     { role_name : payload.role_name, user_pks: payload.user_pks }) }
-                return standard_action_api_call(url, params, implementationCallback)
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
-            removeUsersFromRole ({ commit, state }, payload) {
+            removeUsersFromRole ({ commit, state, dispatch }, payload) {
                 url = "http://127.0.0.1:8000/groups/remove_people_from_role/{{ object.pk}}/"
                 params = { role_name : payload.role_name, user_pks: payload.user_pks }
                 implementationCallback = () => { commit('REMOVE_USERS_FROM_ROLE', 
                     { role_name : payload.role_name, user_pks: payload.user_pks }) }
-                return standard_action_api_call(url, params, implementationCallback)
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
-            addRole ({ commit, state }, payload) {
+            addRole ({ commit, state, dispatch }, payload) {
                 url = "http://127.0.0.1:8000/groups/add_role/{{ object.pk}}/"
                 params = { role_name: payload.role_name }
                 implementationCallback = () => { commit('ADD_ROLE', { role_name: payload.role_name }) }
-                return standard_action_api_call(url, params, implementationCallback)
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
-            updateOwners({ commit, state}, payload) {
+            updateOwners({ commit, state, dispatch}, payload) {
                 url = "http://127.0.0.1:8000/groups/update_owners/{{ object.pk}}/"
                 params = { owner_roles: payload.roles, owner_actors: payload.actors }
                 implementationCallback = () => { 
@@ -367,9 +397,9 @@
                     commit('ADD_OWNERS', { roles_to_add: roles_to_add, actors_to_add: actors_to_add })
                     commit('REMOVE_OWNERS', { roles_to_remove: roles_to_remove, actors_to_remove: actors_to_remove })
                 }
-                return standard_action_api_call(url, params, implementationCallback)
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
-            updateGovernors({ commit, state}, payload) {
+            updateGovernors({ commit, state, dispatch}, payload) {
                 url = "http://127.0.0.1:8000/groups/update_governors/{{ object.pk}}/"
                 params = { governor_roles: payload.roles, governor_actors: payload.actors }
                 implementationCallback = () => { 
@@ -380,7 +410,7 @@
                     commit('ADD_GOVERNORS', { roles_to_add: roles_to_add, actors_to_add: actors_to_add })
                     commit('REMOVE_GOVERNORS', { roles_to_remove: roles_to_remove, actors_to_remove: actors_to_remove })
                 }
-                return standard_action_api_call(url, params, implementationCallback)
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             refreshRoleData ({ commit, state }, payload) { 
                 url = "http://127.0.0.1:8000/groups/get_data_for_role/{{ object.pk}}/"
@@ -404,7 +434,7 @@
                 }
                 return standard_get_api_call(url, params, implementationCallback)
             },
-            addPermission ({ commit, state }, payload) { 
+            addPermission ({ commit, state, dispatch }, payload) { 
                 url = "http://127.0.0.1:8000/groups/add_permission/{{ object.pk}}/"
                 params = { permission_type : payload.permission_selected, permission_roles : payload.role, 
                         permission_configuration : payload.configuration }
@@ -416,9 +446,9 @@
                     commit('ADD_OR_UPDATE_PERMISSION_CONFIGURATION', { pk : pk, data: configuration_data })
                     commit('ADD_PERMISSION_TO_ROLE', { pk : pk, role: payload.role })
                 }
-                return standard_action_api_call(url, params, implementationCallback)
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
-            updatePermission ({ commit, state }, payload) { 
+            updatePermission ({ commit, state, dispatch }, payload) { 
                 url = "http://127.0.0.1:8000/groups/update_permission/{{ object.pk}}/"
                 params = { permission_id : payload.permission_id, permission_configuration : payload.configuration }
                 implementationCallback = (response) => { 
@@ -428,9 +458,9 @@
                     commit('ADD_OR_UPDATE_PERMISSION', { pk : pk, data : permission_data })
                     commit('ADD_OR_UPDATE_PERMISSION_CONFIGURATION', { pk : pk, data: configuration_data })
                 }
-                return standard_action_api_call(url, params, implementationCallback)
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
-            removePermission ({ commit, getters }, payload) {  
+            removePermission ({ commit, getters, dispatch }, payload) {  
                 url = "http://127.0.0.1:8000/groups/delete_permission/{{ object.pk}}/";
                 params = { permission_id : payload.permission_id }
                 implementationCallback = (response) => {
@@ -443,44 +473,69 @@
                     commit('DELETE_PERMISSION_CONFIGURATION', { pk: response.data.removed_permission_pk })
                     commit('DELETE_PERMISSION', { pk: response.data.removed_permission_pk })
                 }
-                return standard_action_api_call(url, params, implementationCallback)
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             // Conditions
-            addCondition ({ commit, state }, payload) { 
+            addCondition ({ commit, state, dispatch }, payload) { 
                 url = "http://127.0.0.1:8000/groups/manage_condition/{{ object.pk}}/";
                 params = { request_type: "add", condition_type: payload.condition_selected, 
-                            target_permission_id: payload.permission, condition_configuration: payload.configuration }
+                            target_permission_id: payload.permission, condition_configuration: payload.configuration,
+                            target_type: payload.target_type, called_for: payload.called_for }
                 implementationCallback = (response) => {
-                    pk = response.data.condition_info.pk
+                    pk = response.data.condition_info.pk                   
                     condition_data = response.data.condition_info.condition_data[0]
                     configuration_data = response.data.condition_info.configuration_data[0]
                     commit('ADD_OR_UPDATE_CONDITION', { pk: pk, data: condition_data })
                     commit('ADD_OR_UPDATE_CONDITION_CONFIGURATION', { pk: pk, data: configuration_data })
+                    if (payload.called_for == "owner") {
+                        commit('SET_OWNER_CONDITION_PK', { pk: pk })
+                    }
+                    if (payload.called_for == "governor") {
+                        commit('SET_GOVERNOR_CONDITION_PK', { pk: pk })
+                    }
                 }
-                return standard_action_api_call(url, params, implementationCallback)
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
-            updateCondition ({ commit, state }, payload) { 
+            updateCondition ({ commit, state, dispatch }, payload) { 
                 url = "http://127.0.0.1:8000/groups/manage_condition/{{ object.pk}}/";
                 params = { request_type: "update", condition_id: payload.condition_to_edit, 
-                            target_permission_id: payload.permission, condition_configuration: payload.configuration }
+                            target_permission_id: payload.permission, condition_configuration: payload.configuration,
+                            target_type: payload.target_type} 
                 implementationCallback = (response) => {
                     pk = response.data.condition_info.pk
                     condition_data = response.data.condition_info.condition_data[0]
                     configuration_data = response.data.condition_info.configuration_data[0]
+                    console.log("Updating condition data", condition_data)
+                    console.log("Updating configuration data", configuration_data)
                     commit('ADD_OR_UPDATE_CONDITION', { pk: pk, data: condition_data })
                     commit('ADD_OR_UPDATE_CONDITION_CONFIGURATION', { pk: pk, data: configuration_data })
                 }
-                return standard_action_api_call(url, params, implementationCallback)
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
-            removeCondition ({ commit, state }, payload) {  
+            removeCondition ({ commit, state, dispatch }, payload) {  
                 url = "http://127.0.0.1:8000/groups/manage_condition/{{ object.pk}}/";
                 params = { request_type: "delete", condition_id: payload.condition_id, 
-                                                            target_permission_id: payload.permission_id }  
+                            target_permission_id: payload.permission_id, target_type: payload.target_type,
+                            called_for: payload.called_for }  
                 implementationCallback = (response) => {
+                    if (payload.called_for == "owner") {
+                        commit('DELETE_OWNER_CONDITION_PK', { pk: response.data.deleted_condition_pk })
+                    }
+                    if (payload.called_for == "governor") {
+                        commit('DELETE_GOVERNOR_CONDITION_PK', { pk: response.data.deleted_condition_pk })
+                    }   
                     commit('DELETE_CONDITION_CONFIGURATION', { pk: response.data.deleted_condition_pk })
-                    commit('DELETE_CONDITION', { pk: response.data.deleted_condition_pk })      
+                    commit('DELETE_CONDITION', { pk: response.data.deleted_condition_pk })   
                 }
-                return standard_action_api_call(url, params, implementationCallback)
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
+            },
+            addOrUpdateAction ({ commit, state, dispatch}, payload) {
+                url = "http://127.0.0.1:8000/groups/get_action_data/";
+                params = { action_pk : payload.action_pk }
+                implementationCallback = (response) => {
+                    commit('ADD_OR_UPDATE_ACTION', { action_data : response.data.action_data })
+                }
+                return standard_get_api_call(url, params, implementationCallback, dispatch)
             }
         }
     })

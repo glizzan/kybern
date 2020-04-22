@@ -64,11 +64,9 @@
                 Unless you have a small, new group, you probably don't want this, so we recommend setting a 
                 condition.  Here's the condition currently set:</p>
 
-            <!-- <manage-condition :condition_data=owner_condition_data :called_for="'owner'"
-                :condition_options=condition_options :condition_configuration_options=condition_configuration_options
-                :mode_from_parent=owner_condition_mode_from_parent @update-conditions=change_condition_data
-                :member_options=membersAsOptions :role_options=rolesAsOptions> 
-            </manage-condition> -->
+            <manage-condition :condition_to_edit=owner_condition_pk :called_for="'owner'"
+                :mode_from_parent=owner_condition_mode_from_parent> 
+            </manage-condition>
 
             <p class="font-weight-bold">Governors</p>
 
@@ -118,12 +116,9 @@
                 of appointing governors is so they can act efficiently, but can still be useful.  Here's the condition
                 currently set:</p>
 
-            <!-- <manage-condition :condition_data=governor_condition_data :called_for="'governor'"
-                :condition_options=condition_options :condition_configuration_options=condition_configuration_options
-                :mode_from_parent=governor_condition_mode_from_parent
-                @update-conditions=change_condition_data
-                :member_options=membersAsOptions :role_options=rolesAsOptions> 
-            </manage-condition> -->
+            <manage-condition :condition_to_edit=governor_condition_pk :called_for="'governor'"
+                :mode_from_parent=governor_condition_mode_from_parent> 
+            </manage-condition>
 
             <p class="font-weight-bold">Just so you know</p>
 
@@ -153,6 +148,12 @@
 
 <script type="application/javascript">
 
+    // TODO!
+    // - get initial data from vuex (see data func below for list of needed stuff)
+    // - figure out what manage_condition_include needs from leadership condition
+    // - then try to use it and see where it breaks - probably need separate calls to vuex to update leadership
+    // data, for instance
+
     Vue.component('vue-multiselect', window.VueMultiselect.default)
 
     leadershipComponent = Vue.component('leadership-component', {
@@ -161,8 +162,8 @@
         store,
         data: function() {
             return {   
-                
-                governance_info : {{ governance_info|safe }},
+                // Get from vuex: governance_info, condition options & configuration options,
+                // owner_condition_id and governor condition id for this community
                 owner_error_message : null,   
                 governor_error_message : null,
 
@@ -172,37 +173,13 @@
                 governor_roles_selected: [],
                 governor_actors_selected: [],
 
-                // To pass into leadership conditions, populated on creation
-                condition_options: null,  
-                condition_configuration_options: null, 
-                owner_condition_data: null,  
+                // To pass into leadership conditions
                 owner_condition_mode_from_parent: 'start',
-                governor_condition_data: null,
                 governor_condition_mode_from_parent: 'start'
             }
         },
-        created: function () { 
-
-            // Populate initial selected with data from store
-            this.populate_from_store()
-
-            // On creation, query server to get leadership condition data
-            axios = this.prep_axios()
-            url = "http://127.0.0.1:8000/groups/get_leadership_condition_data/{{ object.pk}}/"
-            params = { }
-            axios.post(url, params)
-            .then(response => { 
-                this.condition_options = response.data.condition_options
-                this.condition_configuration_options = response.data.condition_configuration_options
-                this.owner_condition_data = response.data.owner_condition_data
-                this.governor_condition_data = response.data.governor_condition_data
-            }).catch(error => {  
-                this.handle_caught_error(error)  
-                // TODO: replace this with showing an error in the condition sections
-            })
-        },
         computed: {
-            ...Vuex.mapState(['roles']),
+            ...Vuex.mapState(['roles', 'governance_info', 'owner_condition_pk', 'governor_condition_pk']),
             ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getUserName', 'leadershipAsOptions']),
             title_string: function() {
                 return "Change leadership of " + "{{ object.name }}"
@@ -231,6 +208,9 @@
                 return reformatted_string
             }
         },
+        created (){ 
+            this.populate_from_store()
+        },
         methods: {
             ...Vuex.mapActions(['updateOwners', 'updateGovernors']),
             populate_from_store() {
@@ -238,19 +218,6 @@
                 this.owner_actors_selected = this.leadershipAsOptions.owner_actor_options
                 this.governor_roles_selected = this.leadershipAsOptions.governor_role_options
                 this.governor_actors_selected = this.leadershipAsOptions.governor_actor_options
-            },
-            change_condition_data(data) {
-                if (data.how_to_change == "delete") { 
-                    new_value = null 
-                } else { 
-                    new_value = data.condition_info 
-                }
-                if (data.called_for == "owner") {
-                    this.owner_condition_data = new_value
-                } else if (data.called_for == "governor") 
-                {
-                    this.governor_condition_data = new_value
-                }
             },
             update_leadership(leadership_type) {
                 if (leadership_type == "owners") {
@@ -261,7 +228,6 @@
                         this.populate_from_store()  // sync selected data with existing data
                     })
                 } else if (leadership_type == "governors") {
-                    console.log("Updating governors!")
                     roles = this.governor_roles_selected.map(role => role.name)
                     actors = this.governor_actors_selected.map(actor => actor.pk)
                     this.updateGovernors({ roles: roles, actors: actors}).catch(error => {

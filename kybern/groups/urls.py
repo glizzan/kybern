@@ -20,9 +20,8 @@ urlpatterns = [
     path('delete_permission/<int:target>/', views.delete_permission, name='delete_permission'),
     # condition views
     path('manage_condition/<int:target>/', views.manage_condition, name='manage_condition'),
-    path('get_condition_data/<int:target>/', views.get_condition_data, name='get_condition_data'),
+    path('get_conditional_data/<int:target>/', views.get_conditional_data, name='get_conditional_data'),
     # leadership views
-    path('get_leadership_condition_data/<int:target>/', views.get_leadership_condition_data, name='get_leadership_condition_data'),   
     path('update_owners/<int:target>/', views.update_owners, name='update_owners'),
     path('update_governors/<int:target>/', views.update_governors, name='update_governors'),
     # action and condition-instance views
