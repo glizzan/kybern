@@ -65,14 +65,14 @@
             }
         },
         computed: {
-            ...Vuex.mapGetters(['permissionConditionPairs']),
+            ...Vuex.mapGetters(['getPermissionConditionPairsForRole']),
             title_string: function () {
                 return "Edit role '" + this.role_to_edit + "'"
             },
             permission_condition_pairs: function () {
                 // should return this format { 'permission': { 'id': 1, 'display': name }, 'condition': null or id+display }
                 if (this.role_to_edit) {
-                    return this.permissionConditionPairs(this.role_to_edit)
+                    return this.getPermissionConditionPairsForRole(this.role_to_edit)
                 } else {
                     return []
                 }
@@ -86,10 +86,6 @@
         },
         methods: {
             ...Vuex.mapActions(['refreshRoleData', 'removePermission', 'removeCondition']),
-            add_permission() {
-                this.clearState()  // clear previous state
-                this.permission_mode_from_parent = 'create'
-            },
             edit_permission(permission_id) {
                 this.clearState()  // clear previous state
                 this.permission_to_edit = permission_id

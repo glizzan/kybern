@@ -57,7 +57,8 @@
                 // { condition_type: { fieldname: { display: x, type: x, required: x, value: x, field_name: x } }         
 
             // Permission data (loaded opportunistically)
-            role_permissions: {},             // { role_name: [pk, pk, pk], role_name: [pk, pk, pk] }
+            role_permissions: {},           // { role_name: [pk, pk, pk], role_name: [pk, pk, pk] }
+            item_permissions: {},           // { item_pk + "_" + item_model: [pk, pk, pk] }   
             permissions: {},                // { int(pk) : { name: x, display: x, change_type: x } }
             permission_configurations: {},  // { int(pk) : { permissionfieldname : permissionfieldvalue } } 
 
@@ -133,6 +134,9 @@
             permissionsForRole: (state, getters) => (role_name) => { 
                 return state.role_permissions[role_name]
             },
+            permissionsForItem: (state, getters) => (item_key) => { 
+                return state.item_permissions[item_key]
+            },
             conditionObjectForPermission: (state, getters) => (permission_pk) => {
                 for (key in state.conditions) {
                     if (state.conditions[key].conditioned_object_pk == permission_pk) {
@@ -140,8 +144,7 @@
                     }
                 }
             },
-            permissionConditionPairs: (state, getters) => (role_name) => { 
-                permissions = getters.permissionsForRole(role_name)
+            permissionConditionPairs: (state, getters) => (permissions) => { 
                 if (permissions) {
                     pairs = []
                     permissions.forEach(function(permission_pk) {
@@ -161,8 +164,18 @@
                     return []
                 }
             },
+            getPermissionConditionPairsForRole: (state, getters) => (role_name) => { 
+                permissions = getters.permissionsForRole(role_name)
+                return getters.permissionConditionPairs(permissions)
+            },
+            getPermissionConditionPairsForItem: (state, getters) => (item_key) => { 
+                permissions = getters.permissionsForItem(item_key)
+                return getters.permissionConditionPairs(permissions)
+            },
             getPermissionConfigurationFields: (state, getters) => (permission_type) => {
                 // JSON stringify + parse create a new copy of the fields so we don't accidentally mutate state by reference
+                console.log("Perm type: ", permission_type)
+                console.log(state.permission_configuration_options)
                 return JSON.parse( JSON.stringify( state.permission_configuration_options[permission_type] ))
             },
             getConditionConfigurationFields: (state, getters) => (condition_type) => { 
@@ -362,6 +375,17 @@
                         state.forums.splice(index, 1)
                     }
                 }
+            },
+            REPLACE_ITEM_PERMISSIONS (state, data) {
+                item_key = data.item_id + "_" + data.item_model
+                Vue.set(state.item_permissions, item_key, data.pks)
+            },
+            ADD_PERMISSION_TO_ITEM (state, data ) {
+                item_key = data.item_id + "_" + data.item_model
+                console.log("ITEM KEY: ", item_key)
+                console.log("Looking in: ", state.item_permissions)
+                permission_index = state.item_permissions[item_key].indexOf(data.permission_pk)
+                if (permission_index == -1) { state.item_permissions[item_key].push(data.permission_pk) }
             }
         },
         actions: {
@@ -574,7 +598,48 @@
                     commit('DELETE_FORUM', { pk : response.data.deleted_forum_pk })
                 }
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
-            }
+            },
+            getPermissionsAndConditionsForTarget({ commit, state, dispatch}, payload) { 
+                url = "http://127.0.0.1:8000/groups/get_permissions_and_conditions/"
+                params = { target_pk: payload.pk, target_model: payload.model }
+                implementationCallback = (response) => { 
+                    commit('REPLACE_ITEM_PERMISSIONS', { item_id: response.data.target_pk, 
+                                                         item_model: response.data.target_model, 
+                                                         pks: response.data.permission_pks })
+                    for (key in response.data.permissions) { 
+                        commit('ADD_OR_UPDATE_PERMISSION', { pk : key, data : response.data.permissions[key] })                    
+                    }
+                    for (key in response.data.permission_configurations) {
+                        commit('ADD_OR_UPDATE_PERMISSION_CONFIGURATION', { pk : key, 
+                                                    data : response.data.permission_configurations[key] })                      
+                    }
+                    // for (key in response.data.conditions) {
+                    //     commit('ADD_OR_UPDATE_CONDITION', { pk : key, data : response.data.conditions[key] })
+                    // }
+                    // for (key in response.data.condition_configurations) {
+                    //     commit('ADD_OR_UPDATE_CONDITION_CONFIGURATION', { pk : key, 
+                    //                                         data : response.data.condition_configurations[key] })                    
+                    // }
+                }
+                return standard_get_api_call(url, params, implementationCallback)
+            },
+            addPermissionToItem ({ commit, state, dispatch }, payload) { 
+                url = "http://127.0.0.1:8000/groups/add_permission_to_item/"
+                params = { target_pk: payload.pk, target_model: payload.model,
+                           permission_type : payload.permission_selected, permission_roles : payload.roles, 
+                           permission_actors : payload.actors, permission_configuration : payload.configuration }
+                console.log("Params: ", params)
+                implementationCallback = (response) => { 
+                    pk = response.data.permission.pk
+                    permission_data = response.data.permission.permission_data[0]
+                    configuration_data = response.data.permission.configuration_data[0]
+                    commit('ADD_OR_UPDATE_PERMISSION', { pk : pk, data : permission_data })
+                    commit('ADD_OR_UPDATE_PERMISSION_CONFIGURATION', { pk : pk, data: configuration_data })
+                    commit('ADD_PERMISSION_TO_ITEM', { permission_pk: pk, item_id: response.data.target_pk, 
+                                                         item_model: response.data.target_model })
+                }
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
+            },
         }
     })
 

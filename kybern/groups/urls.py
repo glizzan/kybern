@@ -33,4 +33,9 @@ urlpatterns = [
     path('<int:target>/add_forum/', views.add_forum, name='add_forum'),
     path('<int:target>/edit_forum/', views.edit_forum, name='edit_forum'),
     path('<int:target>/delete_forum/', views.delete_forum, name='delete_forum'),
+    # permissions & conditions views for items
+    path('get_permissions_and_conditions/', views.get_permissions_and_conditions, name='get_permissions_and_conditions'),
+    path('add_permission_to_item/', views.add_permission_to_item, name='add_permission_to_item'),
+
+    
   ]

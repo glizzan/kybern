@@ -9,7 +9,7 @@
 
         <b-list-group>
             <b-list-group-item v-for="{ pk, name, description } in forums" href="#" 
-                                     active class="bg-light text-info flex-column align-items-start">
+                                     active class="bg-light text-info flex-column align-items-start" v-bind:key="pk">
                 <div class="d-flex w-100 justify-content-between">
                     <h5 class="mb-1"> [[ name ]] </h5> </div>
                 
@@ -21,6 +21,7 @@
                     edit</b-button>
                 <b-button variant="outline-secondary" class="btn-sm" @click="delete_forum(pk)">
                     delete</b-button>
+                <permissioned_item :item_id=pk :item_model="'forum'" :item_name=name ></permissioned_item>
 
             </b-list-group-item>
         </b-list-group>

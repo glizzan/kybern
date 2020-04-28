@@ -36,4 +36,10 @@ class Forum(PermissionedModel):
         state_changes_module = importlib.import_module(relative_import)
         return inspect.getmembers(state_changes_module) 
 
+    def get_name(self):
+        return self.name
+
+    def get_nested_objects(self):
+        return [self.get_owner()]
+
 

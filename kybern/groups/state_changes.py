@@ -54,6 +54,10 @@ class AddForumChange(BaseStateChange):
     def get_allowable_targets(cls):
         return cls.get_community_models()
 
+    @classmethod
+    def get_settable_classes(cls):
+        return cls.get_community_models()
+
     def description_present_tense(self):
         return "add forum %s" % self.name  
 
@@ -75,7 +79,11 @@ class DeleteForumChange(BaseStateChange):
 
     @classmethod
     def get_allowable_targets(cls):
-        return cls.get_community_models()
+        return [Forum]
+
+    @classmethod
+    def get_settable_classes(cls):
+        return cls.get_community_models() + [Forum]
 
     def description_present_tense(self):
         return "remove forum %s" % str(self.pk)  
@@ -103,7 +111,11 @@ class EditForumChange(BaseStateChange):
 
     @classmethod
     def get_allowable_targets(cls):
-        return cls.get_community_models()
+        return [Forum]
+
+    @classmethod
+    def get_settable_classes(cls):
+        return cls.get_community_models() + [Forum]
 
     def description_present_tense(self):
         return "edit forum %s" % str(self.pk)    

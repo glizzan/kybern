@@ -2,8 +2,8 @@
 
     <b-modal id="change_membership_modal" :title="title_string" hide-footer>
 
-            <b>Current Members:</b><b-badge v-for="member in people_in_role" v-bind:key="member.pk" 
-                pill variant="info" class="mx-1">[[ member.name ]] ( [[member.pk]] )</b-badge>
+            <!-- <b>Current Members:</b><b-badge v-for="member in people_in_role" v-bind:key="member.pk" 
+                pill variant="info" class="mx-1">[[ member.name ]]</b-badge> -->
 
             <vue-multiselect v-model="people_selected" :options="people_to_choose_from" :multiple="true" 
             :close-on-select="true" :clear-on-select="false" placeholder="No one selected" 

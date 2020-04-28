@@ -1,0 +1,120 @@
+<script type="text/x-template" id="permissioned_item_template">
+
+    <span id="permissioned_item">
+
+        <span v-b-modal="modal_id" v-on:click="edit_permissions()" class="badge badge-light ml-1"  >🖉</span>
+
+        <b-modal :id=modal_id :title="title_string" hide-footer> 
+        
+            <b-list-group v-for="pair in permission_condition_pairs" v-bind:key="pair.permission.id">
+                <b-list-group-item>
+                    <div class="btn-group" role="group" aria-label="Basic example">
+                        <b-button variant="light">
+                            <small>[[ pair.permission.display ]]</small>
+                            <span v-on:click="edit_permission(pair.permission.id)" class="badge badge-light ml-1"  >🖉</span>
+                            <span v-on:click="delete_permission(pair.permission.id)" class="badge badge-light ml-1"  >🗑</span>
+                        </b-button>
+                        <b-button v-if="pair.condition" variant="secondary">
+                            <small>[[ pair.condition.display ]]</small>
+                            <span v-on:click="edit_condition(pair.permission.id, pair.condition.id)" class="badge badge-secondary ml-1">🖉</span>
+                            <span v-on:click="delete_condition(pair.permission.id, pair.condition.id)" 
+                                                                                class="badge badge-secondary ml-1"  >🗑</span>
+                        </b-button>
+                        <b-button v-else v-on:click="add_condition(pair.permission.id)" variant="secondary"
+                            ><small>add condition</small></b-button>
+                    </div>
+                </b-list-group-item>
+            </b-list-group>
+
+            <p v-if="!permission_condition_pairs.length">This role has no permissions yet.</p>
+
+            <div class="mb-3" v-if="error_message">[[ error_message ]]</div>
+
+            <manage-permission :permission_to_edit=permission_to_edit :mode_from_parent=permission_mode_from_parent
+                :item_id=item_id :item_model=item_model @clearState=clearState>
+            </manage-permission>
+            <!-- <manage-condition :condition_to_edit=condition_to_edit :mode_from_parent=condition_mode_from_parent 
+                :permission_to_condition=permission_to_condition :called_for="'permission'" @clearState=clearState>
+            </manage-condition>  -->
+        
+        </b-modal>
+
+    </span>
+
+
+</script>
+
+<script type="application/javascript"> 
+
+    permissionedItemComponent = Vue.component('permissioned_item', {
+        delimiters: ['[[', ']]'],
+        template: '#permissioned_item_template',
+        props: ['item_id', 'item_model', 'item_name'],
+        store,
+        data: function() {
+            return {
+                error_message: '',
+                // props for permission component
+                permission_to_edit: null,
+                permission_mode_from_parent: 'start',
+                // props for condition component
+                permission_to_condition: null,
+                condition_to_edit: null,
+                condition_mode_from_parent: 'start',
+                get_data: false
+            }
+        },
+        computed: { 
+            ...Vuex.mapGetters(['getPermissionConditionPairsForItem']),
+            title_string: function() {
+                return "Permissions for " + this.item_name
+            },
+            modal_id: function() {
+                return "item_permission_modal" + "_" + this.item_id + "_" + this.item_model
+            },
+            permission_condition_pairs: function () {
+                if (this.item_id && this.item_model && this.get_data) {
+                    return this.getPermissionConditionPairsForItem(this.item_id + "_" + this.item_model)
+                } else {
+                    return []
+                }
+            }
+        },
+        methods: { 
+            ...Vuex.mapActions(['getPermissionsAndConditionsForTarget']),
+            // TODO: in manage_permission_include, handle differently if no role_to_edit passed in 
+            edit_permissions() {
+                this.getPermissionsAndConditionsForTarget({ pk: this.item_id, model: this.item_model })
+                .then(response => { this.get_data = true })
+                .catch(error => {  this.error_message = error })
+            },
+            edit_permission(permission_id) {
+                this.clearState()  // clear previous state
+                this.permission_to_edit = permission_id
+                this.permission_mode_from_parent = 'update'
+            },
+            add_condition(permission_id) {
+                this.clearState()  // clear previous state
+                this.permission_to_condition = permission_id
+                this.condition_mode_from_parent = 'create'
+            },
+            edit_condition(permission_id, condition_id) {
+                this.clearState()  // clear previous state
+                this.permission_to_condition = permission_id
+                this.condition_to_edit = condition_id
+                this.condition_mode_from_parent = 'update'
+            },
+            clearState() {
+                this.get_data = false
+                this.permission_to_edit = ''
+                this.permission_to_condition = ''
+                this.condition_to_edit = ''
+                this.permission_mode_from_parent = 'start'
+                this.condition_mode_from_parent = 'start'
+            }
+        }
+    }
+    )
+
+
+</script>

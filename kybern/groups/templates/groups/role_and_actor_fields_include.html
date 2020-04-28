@@ -1,0 +1,33 @@
+<!-- Should be a choice field populated by current roles -->
+<div class="input-group mb-3">
+
+    Roles who have this permission
+
+    <vue-multiselect v-model=permission_roles_selected :multiple=true :options=rolesAsOptions :allow-empty="true"
+        :close-on-select="true" placeholder="Select roles" 
+        label="name" track-by="name">
+        <template slot="selection" slot-scope="{ values, search, isOpen }">
+            <span v-if="!isOpen">
+                Selected: [[ values ]]
+            </span>
+        </template>
+    </vue-multiselect>
+
+</div>
+
+<!-- Should be a multiselect field populated by current members -->
+<div class="input-group mb-3">
+
+    Actors who have this permission
+
+    <vue-multiselect v-model=permission_actors_selected :multiple=true :options=groupMembersAsOptions :allow-empty="true"
+        :close-on-select="true" placeholder="Select actors" 
+        label="name" track-by="pk">
+        <template slot="selection" slot-scope="{ values, search, isOpen }">
+            <span v-if="!isOpen">
+                Selected: [[ values ]]
+            </span>
+        </template>
+    </vue-multiselect>
+
+</div>

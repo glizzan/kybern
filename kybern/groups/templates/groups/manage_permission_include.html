@@ -16,23 +16,24 @@
         <!-- If we're updating an existing permission (or configuring a new permission that has been selected) -->
         <span v-if="mode == 'update' || permission_selected">
 
-            <span v-if="configuration_fields.length > 0">
+            <!-- If we've got fields to configure, or this is a permission for an item so we need to set actors and/or roles -->
+            <span v-if="configuration_fields.length > 0 || !this.role_to_edit ">
 
                 <p class="mt-3"><b>Configure your permission</b></p>
+
+                <span v-if="!role_to_edit">
+                    {% include 'groups/role_and_actor_fields_include.html' %}
+                </span>
+
                 {% include 'groups/configuration_fields_include.html' %}
 
-                <b-button v-if="permission_selected && mode =='create'" size="sm" 
-                    class="mt-3" @click="add_permission()">Save permission</b-button>
-                <b-button v-if="permission_to_edit && mode == 'update'" size="sm" 
-                    class="mt-3" @click="update_permission()">Save changes</b-button>
-            </span>
-            <span v-else>
-
-                There are no editable fields for this permission.
-                <b-button v-on:click="add_permission()" class="btn-sm my-3">Add a new permission</b-button>   
-
             </span>
 
+
+            <b-button v-if="permission_selected && mode =='create'" size="sm" 
+                class="mt-3" @click="add_permission()">Save new permission</b-button>
+            <b-button v-if="permission_to_edit && mode == 'update'" size="sm" 
+                class="mt-3" @click="update_permission()">Save changes to permission</b-button>
 
         </span>
 
@@ -49,14 +50,17 @@
     managePermissionComponent = Vue.component('manage-permission', {
         delimiters: ['[[', ']]'],
         template: '#manage_permission_template',
-        props: ['mode_from_parent', 'role_to_edit', 'permission_to_edit'],
+        props: ['mode_from_parent', 'role_to_edit', 'permission_to_edit', 'item_id', 'item_model'],
         store,
         data: function() {
             return {
                 permission_selected: '',
                 mode: 'start',
                 configuration_fields: [],
-                error_message: ''
+                error_message: '',
+                // only used for permission field on item (not on roles)
+                permission_roles_selected: [],
+                permission_actors_selected: []
             }
         },
         watch: {
@@ -67,6 +71,13 @@
             permission_to_edit: function (val) {
                 if (this.permission_to_edit) {
                     this.configuration_fields = Object.values(this.getPermissionConfigurationFieldsWithData(this.permission_to_edit))
+                
+                    if (this.item_id && this.item_model) { // only do this for permission on item
+                        role_list = this.permissions[this.permission_to_edit].roles
+                        actor_list = this.permissions[this.permission_to_edit].actors
+                        this.permission_roles_selected = this.role_to_options(role_list)
+                        this.permission_actors_selected = this.user_pk_to_options(actor_list) 
+                    }
                 }
             },
             permission_selected: function (val) {
@@ -76,12 +87,13 @@
             }
         },
         computed: {
-            ...Vuex.mapState(['permission_options']),
+            ...Vuex.mapState(['permission_options', 'permissions']),
             ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getPermissionConfigurationFields', 
-                'getPermissionConfigurationFieldsWithData', 'select_field_is_multiple'])
+                'getPermissionConfigurationFieldsWithData', 'select_field_is_multiple', 'role_to_options',
+                'user_pk_to_options'])
         },
         methods: {
-            ...Vuex.mapActions(['addPermission', 'updatePermission']),
+            ...Vuex.mapActions(['addPermission', 'updatePermission', 'addPermissionToItem']),
             switch_to_create_mode() {
                 // helper function to reset necessary state
                 this.$emit("clearState");
@@ -90,10 +102,20 @@
                 this.configuration_fields = []
             },
             add_permission() {
-                this.addPermission({ permission_selected : this.permission_selected, role : [this.role_to_edit],
+                if (this.role_to_edit) {
+                    this.addPermission({ permission_selected : this.permission_selected, role : [this.role_to_edit],
                     configuration : this.configuration_fields })
                     .then(response => { this.permission_selected = ''; this.$emit("clearState"); })
                     .catch(error => {  this.error_message = error })
+                } else if (this.item_id && this.item_model) {
+                    // TODO: this should be configured so it's on the specific item
+                    this.addPermissionToItem({ pk: this.item_id, model: this.item_model,
+                        permission_selected : this.permission_selected, configuration : this.configuration_fields,
+                        roles: this.permission_roles_selected, actors: this.permission_actors_selected })
+                    .then(response => { this.permission_selected = ''; this.permission_actors = [],
+                        this.permission_roles = []; this.$emit("clearState"); })
+                    .catch(error => {  this.error_message = error })
+                }
             },
             update_permission() {
                 this.updatePermission({ permission_id: this.permission_to_edit, configuration : this.configuration_fields })

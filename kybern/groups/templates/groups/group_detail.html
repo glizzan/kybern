@@ -4,6 +4,8 @@
 
 <div class="col-5">
 
+    {% include 'groups/item_permissions_include.html' %}
+
     <!-- Basic group info -->
     <div class="card">
         <h5 class="card-header">{{ object.name }}</h5>
@@ -25,6 +27,5 @@
 <div class="col-7">
     {% include 'groups/forums_include.html' %}
 </div>
-
 
 {% endblock %}

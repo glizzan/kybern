@@ -3,6 +3,7 @@ from django.http import HttpResponseRedirect, JsonResponse
 import json
 
 from django.urls import reverse
+from django.apps import apps
 
 from django.contrib.auth.models import User
 from concord.actions.client import ActionClient
@@ -100,7 +101,7 @@ def serialize_existing_permission_for_vue(permission):
     permissions: {{ permissions }},         
         // { int(pk) : { name: x, display: x, change_type: x } } """
     return { permission.pk : { "name": permission.full_description(), "display": permission.full_description(), 
-            "change_type": permission.change_type } }
+            "change_type": permission.change_type, "actors": permission.get_actors(), "roles": permission.get_role_names() } }
 
 
 def serialize_existing_permission_configuration_for_vue(permission):
@@ -331,20 +332,20 @@ def add_forum(request, target):
 
 def edit_forum(request, target):
     
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
-    communityClient.set_target(target=target)
-
     request_data = json.loads(request.body.decode('utf-8'))
     pk = request_data.get("pk")
     name = request_data.get("name", None)
     description = request_data.get("description", None)
 
-    forumClient = ForumClient(actor=request.user, target=target)
+    forumClient = ForumClient(actor=request.user)
+    forum = forumClient.get_forum_given_pk(pk)
+    forumClient.set_target(forum)
+
     action, result = forumClient.edit_forum(pk=pk, name=name, description=description)
 
     action_dict = get_action_dict(action)
-    action_dict["forum_data"] = serialize_forum_for_vue(result)
+    if action.resolution.status == "implemented":
+        action_dict["forum_data"] = serialize_forum_for_vue(result)
     return JsonResponse(action_dict)
 
 
@@ -446,7 +447,7 @@ def get_permissions_given_role(actor, target, role_name):
 
     # get permissions
     existing_permissions = PermissionResourceClient(actor=actor, target=target).\
-        get_permissions_associated_with_role(role_name=role_name)
+        get_permissions_associated_with_role_for_target(role_name=role_name)
 
     permission_pks, permissions, permission_configurations = [], {}, {}
     for permission in existing_permissions:
@@ -461,7 +462,7 @@ def get_conditions_given_role(actor, target, role_name):
 
     # get permissions & the associated conditions
     existing_permissions = PermissionResourceClient(actor=actor, target=target).\
-        get_permissions_associated_with_role(role_name=role_name)
+        get_permissions_for_role(role_name=role_name)
     conditionalClient = PermissionConditionalClient(actor=actor)
     existing_conditions = conditionalClient.get_conditions_given_targets(
             target_pks=[permission.pk for permission in existing_permissions])
@@ -784,50 +785,6 @@ def get_action_data(request):
     return JsonResponse({ "action_data": process_action(action) })
 
 
-
-# ### For leadership condition data
-
-# def serialize_leadership_condition_with_data(condition):
-#     if condition:
-#         return { 
-#             'name' : condition.condition_name(), 
-#             'id': condition.pk, 
-#             'display': condition.condition_description(),
-#             'configuration': condition.condition_data.get_configurable_fields_with_data()
-#         }
-#     return None
-
-
-# def get_leadership_condition_data(request, target):
-
-#     communityClient = GroupClient(actor=request.user)
-#     target = communityClient.get_community(community_pk=target)
-#     conditionalClient = CommunityConditionalClient(actor=request.user, target=target)
-
-#     owner_condition = conditionalClient.get_condition_template_for_owner()
-#     serialized_owner_condition = serialize_leadership_condition_with_data(owner_condition)
-#     governor_condition = conditionalClient.get_condition_template_for_governor()
-#     serialized_governor_condition = serialize_leadership_condition_with_data(governor_condition)
-
-#     # Get condition options
-#     settable_conditions = conditionalClient.get_possible_conditions()
-#     condition_options = [ { 'value': cond.__name__, 'text': cond.descriptive_name } for cond in settable_conditions ]
-
-#     # Create condition configuration 
-#     condition_configuration = { }
-#     for condition in settable_conditions:
-#         condition_configuration.update({ condition.__name__ : 
-#             { 'condition_name' : condition.descriptive_name, 
-#             'configuration': condition.get_configurable_fields() }  })
-
-#     return JsonResponse({ 
-#         "condition_options": condition_options,
-#         "condition_configuration_options": condition_configuration,
-#         "owner_condition_data": serialized_owner_condition,
-#         "governor_condition_data": serialized_governor_condition
-#     })
-
-
 ####################################
 ### Views for leadership include ###
 ####################################
@@ -869,120 +826,72 @@ def update_governors(request, target):
     return JsonResponse(action_dict)
 
 
+#############################
+### Item permission views ###
+#############################
 
 
+def get_model(model_name):
+    for app_config in apps.get_app_configs():
+        try:
+            model = app_config.get_model(model_name)
+            return model
+        except LookupError:
+            pass
 
 
-# def add_condition(request, target):
+def get_permissions_and_conditions(request):
 
-#     request_data = json.loads(request.body.decode('utf-8'))
-#     target_type = request_data.get("target_type")
+    request_data = json.loads(request.body.decode('utf-8'))
 
-#     if target_type == "community":
-#         action, result = leadership_condition_helper(request, target, "add")
-#     elif target_type == "permission":
-#         action, result = permission_condition_helper(request, target, "add")
+    target_pk = request_data.get("target_pk")
+    model_class = get_model(request_data.get("target_model"))
+    target = model_class.objects.get(pk=target_pk)
 
-#     if action.resolution.status == "implemented":
-#         condition_info = {"name": result.condition_name(), 
-#             "display": result.condition_description(),
-#             "configuration": result.condition_data.get_configurable_fields_with_data(), "id": result.pk }
-#     else:
-#         condition_info = None 
+    permClient = PermissionResourceClient(actor=request.user)
+    permClient.set_target(target=target)
 
-#     action_dict = get_action_dict(action)
-#     action_dict.update({ "condition_info": condition_info })
-#     return JsonResponse(action_dict)
+    existing_permissions = permClient.get_all_permissions()
 
-                          
-# def update_condition(request, target):
+    permission_pks, permissions, permission_configurations = [], {}, {}
+    for permission in existing_permissions:
+        permission_pks.append(permission.pk)
+        permissions.update(serialize_existing_permission_for_vue(permission))
+        permission_configurations.update(serialize_existing_permission_configuration_for_vue(permission))
+        
+    return JsonResponse({ "target_pk": target_pk, "target_model": request_data.get("target_model"), 
+        "permissions" : permissions, "permission_configurations" : permission_configurations,
+        "permission_pks": permission_pks })
 
-#     request_data = json.loads(request.body.decode('utf-8'))
-#     target_type = request_data.get("target_type")
-
-#     if target_type == "community":
-#         action, result = leadership_condition_helper(request, target, "update")
-#     elif target_type == "permission":
-#         action, result = permission_condition_helper(request, target, "update")
-
-#     action_dict = get_action_dict(action)
-#     action_dict.update({ "new_display_name" : result.condition_name() })
-#     return JsonResponse(action_dict)
+    # return JsonResponse({ "permissions" : permissions, "permission_configurations" : permission_configurations,
+    #     "conditions" : conditions, "condition_configurations" : condition_configurations })
 
 
-# def delete_condition(request, target):
+def add_permission_to_item(request):
 
-#     request_data = json.loads(request.body.decode('utf-8'))
-#     permission_id = request_data.get("permission_id", None)
+    request_data = json.loads(request.body.decode('utf-8'))
 
-#     communityClient = GroupClient(actor=request.user)
-#     target = communityClient.get_community(community_pk=target)
-#     permissionClient = PermissionResourceClient(actor=request.user, target=target)
-#     permission_target = permissionClient.get_permission(pk=permission_id)
-#     conditionalClient = PermissionConditionalClient(actor=request.user, target=permission_target)
+    target_pk = request_data.get("target_pk")
+    model_class = get_model(request_data.get("target_model"))
+    target = model_class.objects.get(pk=target_pk)
 
-#     condition = conditionalClient.get_condition_template()
-#     action, result = conditionalClient.remove_condition(condition=condition)
+    permission_type = request_data.get("permission_type", None)
+    permission_actors = request_data.get("permission_actors", None)
+    permission_roles = request_data.get("permission_roles", None)
+    permission_configuration = request_data.get("permission_configuration", None)
 
-#     return JsonResponse(get_action_dict(action))
+    permission_actors = [selection['pk'] for selection in permission_actors]
+    permission_roles = [selection['name'] for selection in permission_roles]
+    reformatted_permission_data = reformat_permission_data(permission_configuration)
 
+    permissionClient = PermissionResourceClient(actor=request.user, target=target)
 
+    action, result = permissionClient.add_permission(permission_type=permission_type, 
+        permission_actors=permission_actors, permission_roles=permission_roles, 
+        permission_configuration=reformatted_permission_data)
 
+    action_dict = get_action_dict(action)
+    permission_info = get_permission_info(result) if action.resolution.status == "implemented" else None
+    action_dict.update({ "permission": permission_info, "target_pk": target_pk, "target_model": request_data.get("target_model") })
 
-# def add_condition(request, target):   # for permission condition
-
-#     request_data = json.loads(request.body.decode('utf-8'))
-#     target_permission_id = request_data.get("target_permission_id", None)
-#     condition_type = request_data.get("condition_type", None)
-#     configuration_data = request_data.get("condition_configuration", None)
-
-#     condition_data, permission_data = process_configuration_data(configuration_data)
-
-#     target_permission = PermissionResourceClient(actor=request.user).get_permission(pk=target_permission_id)
-#     conditionalClient = PermissionConditionalClient(actor=request.user, target=target_permission)
-
-#     action, result = conditionalClient.add_condition(condition_type=condition_type.lower(),
-#         condition_data=condition_data, permission_data=permission_data)
-
-#     if action.resolution.status == "implemented":
-#         condition_info = {"name": result.condition_name(), 
-#             "display": result.condition_description(),
-#             "configuration": result.condition_data.get_configurable_fields_with_data(), "id": result.pk }
-#     else:
-#         condition_info = None 
-
-#     action_dict = get_action_dict(action)
-#     action_dict.update({ "condition_info": condition_info })
-#     return JsonResponse(action_dict)
-
-# def add_leadership_condition(request, target):
-
-#     request_data = json.loads(request.body.decode('utf-8'))
-#     communityClient = GroupClient(actor=request.user)
-#     target = communityClient.get_community(community_pk=target)
-#     conditionalClient = CommunityConditionalClient(actor=request.user, target=target)
-
-#     called_for = request_data.get("called_for")
-#     condition_type = request_data.get("condition_type", None)
-#     configuration_data = request_data.get("condition_configuration", None)
-#     condition_data, permission_data = process_configuration_data(configuration_data)
-
-#     if called_for == "owner":
-#         action, result = conditionalClient.add_condition_to_owners(condition_data=condition_data,
-#             permission_data=permission_data, condition_type=condition_type)
-#     elif called_for == "governor":
-#         action, result = conditionalClient.add_condition_to_governors(condition_data=condition_data,
-#             permission_data=permission_data, condition_type=condition_type)
-
-#     if action.resolution.status == "implemented":
-#         condition_info = {"name": result.condition_name(), 
-#             "display": result.condition_description(),
-#             "configuration": result.condition_data.get_configurable_fields_with_data(), 
-#             "id": result.pk }
-#     else:
-#         condition_info = None 
-
-#     action_dict = get_action_dict(action)
-#     action_dict.update({ "condition_info": condition_info })
-#     return JsonResponse(action_dict)
-
+    return JsonResponse(action_dict)
