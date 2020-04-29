@@ -20,22 +20,27 @@ urlpatterns = [
     path('delete_permission/<int:target>/', views.delete_permission, name='delete_permission'),
     # condition views
     path('manage_condition/<int:target>/', views.manage_condition, name='manage_condition'),
-    path('get_conditional_data/<int:target>/', views.get_conditional_data, name='get_conditional_data'),
+    path('get_conditional_data/', views.get_conditional_data, name='get_conditional_data'),
     # leadership views
     path('update_owners/<int:target>/', views.update_owners, name='update_owners'),
     path('update_governors/<int:target>/', views.update_governors, name='update_governors'),
     # action and condition-instance views
     path('get_action_data/', views.get_action_data, name='get_action_data'),
-    path('update_approval_condition/<int:target>/', views.update_approval_condition, name='update_approval_condition'),
-    path('update_vote_condition/<int:target>/', views.update_vote_condition, name='update_vote_condition'),
+    path('get_action_data_for_target/', views.get_action_data_for_target, name='get_action_data_for_target'),
+    path('update_approval_condition/', views.update_approval_condition, name='update_approval_condition'),
+    path('update_vote_condition/', views.update_vote_condition, name='update_vote_condition'),
     # forum views
     path('<int:target>/forums/', views.get_forums, name='get_forums'),
     path('<int:target>/add_forum/', views.add_forum, name='add_forum'),
     path('<int:target>/edit_forum/', views.edit_forum, name='edit_forum'),
     path('<int:target>/delete_forum/', views.delete_forum, name='delete_forum'),
+    path('<int:target>/get_posts/', views.get_posts_for_forum, name='get_posts_for_forum'),
+    path('<int:target>/add_post/', views.add_post, name='add_post'),
+    path('<int:target>/edit_post/', views.edit_post, name='edit_post'),
+    path('<int:target>/delete_post/', views.delete_post, name='delete_post'),
     # permissions & conditions views for items
     path('get_permissions_and_conditions/', views.get_permissions_and_conditions, name='get_permissions_and_conditions'),
     path('add_permission_to_item/', views.add_permission_to_item, name='add_permission_to_item'),
-
+    path('delete_permission_from_item/', views.delete_permission_from_item, name='delete_permission_from_item'),
     
   ]

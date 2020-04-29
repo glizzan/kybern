@@ -1,92 +1,114 @@
-<div id="action_history" class="mt-3">
+<script type="text/x-template" id="action_history_template">
+    
+  <div id="action_history" class="mt-3">
 
-    <b-button variant="outline-secondary" v-b-modal.action_history_modal>view group history</b-button>
+      <b-button variant="outline-secondary" @click="get_actions" v-b-modal="modal_id">
+          [[ launch_button_text ]]</b-button>
 
-  <!-- Modal with more detailed info on all actions -->
-  <b-modal id="action_history_modal" :title="title_string" class="modal fade" size="xl" @ok="handleOk">
-     
-    <b-container fluid id="action_history_table" v-if=!condition_type>   <!-- if condition is selected, replace table with ux for condition -->
-
-          <b-col lg="6" class="my-1">
-              <b-form-group label="Filter" label-cols-sm="3" label-align-sm="right" label-size="sm"
-                                                              label-for="filterInput" class="mb-0">
-                <b-input-group size="sm">
-                  <b-form-input v-model="filter" type="search" id="filterInput" 
-                                        placeholder="Type to Search"></b-form-input>
-                  <b-input-group-append>
-                    <b-button :disabled="!filter" @click="filter = ''">Clear</b-button>
-                  </b-input-group-append>
-                </b-input-group>
-              </b-form-group>
-            </b-col>
-
-          <b-table striped hover fixed :items="actions" :fields="action_fields" 
-              :sort-by.sync="sortBy" :sort-desc.sync="sortDesc" :filter="filter"
-              :filterIncludedFields="filterOn" id="action_history_table_element">
-
-            <!-- Custom formatting for the has_condition column -->
-            <template v-slot:cell(has_condition)="data">
-                <b-button v-if="data.item.has_condition && data.item.has_condition.exists" 
-                    @click="launch_condition_modal(data.item)" size='sm'>view</b-button>
-            </template>
-
-          </b-table>
-
-      </b-container>
-
-      <approve-condition-ui v-if="condition_type=='ApprovalCondition'" :condition_pk=condition_pk
-        :condition_type=condition_type :action_details=action_details>
-      </approve-condition-ui>
-
-      <vote-condition-ui v-if="condition_type=='VoteCondition'" :condition_pk=condition_pk
-        :condition_type=condition_type :action_details=action_details>
-      </vote-condition-ui>
+    <!-- Modal with more detailed info on all actions -->
+    <b-modal :id=modal_id :title="title_string" class="modal fade" size="xl" @ok="handleOk">
       
-  </b-modal>   
-</div>
+      <b-container fluid id="action_history_table" v-if=!condition_type>   <!-- if condition is selected, replace table with ux for condition -->
 
-{% include 'groups/approve_condition_include.html' %}
-{% include 'groups/vote_condition_include.html' %}
+            <b-col lg="6" class="my-1">
+                <b-form-group label="Filter" label-cols-sm="3" label-align-sm="right" label-size="sm"
+                                                                label-for="filterInput" class="mb-0">
+                  <b-input-group size="sm">
+                    <b-form-input v-model="filter" type="search" id="filterInput" 
+                                          placeholder="Type to Search"></b-form-input>
+                    <b-input-group-append>
+                      <b-button :disabled="!filter" @click="filter = ''">Clear</b-button>
+                    </b-input-group-append>
+                  </b-input-group>
+                </b-form-group>
+              </b-col>
+
+            <b-table striped hover fixed :items="item_actions" :fields="action_fields" 
+                :sort-by.sync="sortBy" :sort-desc.sync="sortDesc" :filter="filter"
+                :filterIncludedFields="filterOn" id="action_history_table_element">
+
+              <!-- Custom formatting for the has_condition column -->
+              <template v-slot:cell(has_condition)="data">
+                  <b-button v-if="data.item.has_condition && data.item.has_condition.exists" 
+                      @click="launch_condition_modal(data.item)" size='sm'>view</b-button>
+              </template>
+
+            </b-table>
+
+        </b-container>
+
+        <approve-condition-ui v-if="condition_type=='ApprovalCondition'" :condition_pk=condition_pk
+          :condition_type=condition_type :action_details=action_details>
+        </approve-condition-ui>
+
+        <vote-condition-ui v-if="condition_type=='VoteCondition'" :condition_pk=condition_pk
+          :condition_type=condition_type :action_details=action_details>
+        </vote-condition-ui>
+        
+    </b-modal>   
+  </div>
+
+</script>
+
 
 <script>
 
-// Main vue instance for action history app
-var actionHistoryApp = new Vue({
+// Action history component
+
+actionHistoryComponent = Vue.component('action-history', {
     delimiters: ['[[', ']]'],
-    el: '#action_history',
+    template: '#action_history_template',
+    props: ['item_id', 'item_model', 'item_name', 'launch_button_text'],
     store,
-    data: {
-      action_fields: [
-        { key: 'description', sortable: false },
-        { key: 'actor', sortable: true },
-        { key: 'created', sortable: true, formatter: (value, key, item) => {
-              return item.display_date
-            }
-        },
-        { key: 'status', sortable: true },
-        { key: 'resolution passed by', sortable: true },
-        { key: 'has_condition', sortable: true }
-      ],
-      sortBy: 'created',
-      sortDesc: true,  
-      filter: null,
-      filterOn: [],
-      // Info to pass to condition modal
-      condition_type: null,
-      condition_data: null,
-      action_details: null
+    data: function() {
+          return {
+            action_fields: [
+              { key: 'description', sortable: false },
+              { key: 'actor', sortable: true },
+              { key: 'created', sortable: true, formatter: (value, key, item) => {
+                                                  return item.display_date
+                                                }
+              },
+              { key: 'status', sortable: true },
+              { key: 'resolution passed by', sortable: true },
+              { key: 'has_condition', sortable: true }
+            ],
+            sortBy: 'created',
+            sortDesc: true,  
+            filter: null,
+            filterOn: [],
+            // Info to pass to condition modal
+            condition_type: null,
+            condition_data: null,
+            action_details: null
+          }
     },
     computed: {
       ...Vuex.mapState(['actions']),
+      item_actions: function() {
+        item_key = this.item_id + "_" + this.item_model
+        if (this.actions[item_key]) {
+          return this.actions[item_key]
+        } else {
+          return []
+        }
+      },
+      modal_id: function() {
+        return "action_history_modal_" + this.item_id + "_" + this.item_model
+      },
       title_string: function() {
         if (this.condition_type == null) {
-          return "Action history for {{ target.name }}"
+          return "Action history for " + this.item_model + " " + this.item_name
         } else {
           return this.condition_type + " on action '" + this.action_details.description + "'"
         }
       }
     },
     methods: {
+      ...Vuex.mapActions(['loadActions']),
+      get_actions() { 
+        this.loadActions({ item_id: this.item_id, item_model: this.item_model }).catch(error => {  console.log(error) })
+      },
       handleOk(bvModalEvt) {
         bvModalEvt.preventDefault() // Prevent modal from closing
         this.condition_type = null    // clear state

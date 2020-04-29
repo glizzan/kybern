@@ -96,8 +96,6 @@
         },
         computed: {
             condition_configuration_fields: function () {
-                // RETURNS: an array of dictionaries, one for each field, with keys: name, type
-                // default, required, and value
                 if (this.condition_data && this.mode == "condition update") { return this.condition_data }
                 if (this.condition_selected && this.mode == "condition create") { 
                     return this.condition_configuration_options[this.condition_selected]["configuration"] 

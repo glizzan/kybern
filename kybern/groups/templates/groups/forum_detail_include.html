@@ -1,0 +1,124 @@
+<script type="text/x-template" id="forum_detail_template">
+
+    <span>
+
+        <h3 class="mt-3">[[ forum_name ]]</h3>
+        <p>[[ forum_description ]]</p>
+
+        <span class="pl-3 mb-3"><b-button variant="outline-secondary" class="btn-sm"
+            v-b-modal.post_modal>+ add new post</b-button></span>
+
+        <span v-if="posts.length > 0">
+
+            <b-card v-for="post in posts" :title=post.title v-bind:key=post.title class="my-3 w-100">
+
+                <b-card-text>[[ post.content ]]</b-card-text>
+
+                <b-button variant="outline-secondary" class="btn-sm" v-b-modal.post_modal @click="edit_post_modal(post)">
+                    edit</b-button>
+                <b-button variant="outline-secondary" class="btn-sm" @click="delete_post(post.pk)">delete</b-button>
+                <permissioned_item :item_id=post.pk :item_model="'post'" :item_name=post.title ></permissioned_item>
+                <action-history :item_id=post.pk :item_model="'post'" :item_name=post.title 
+                    :launch_button_text="'view post history'"></action-history> 
+
+                <template v-slot:footer>
+                  <small class="text-muted">Posted [[ display_date(post.created) ]] by [[ getUserName(post.author) ]]</small>
+                </template>
+
+            </b-card>
+
+        </span>
+
+        <b-modal id="post_modal" :title=title_string size="md" hide-footer>
+            
+            <b-form-group id="title" label="Post title:" label-for="post_title">
+                <b-form-input id="post_title" v-model="post_title" required placeholder="Add a title" required>
+                </b-form-input>
+            </b-form-group>
+
+            <b-form-group id="content" label="Post content:" label-for="post_content">
+                <b-form-textarea id="post_content" v-model="post_content" placeholder="Add some content">
+                </b-form-textarea>
+            </b-form-group>
+
+            <b-button v-if=!pk variant="outline-secondary" class="btn-sm"  @click="add_post">submit</b-button>
+            <b-button v-if=pk variant="outline-secondary" class="btn-sm"  @click="edit_post">submit</b-button>
+
+            <div>[[ error_message ]]</div>
+
+        </b-modal>
+
+
+
+    </span>
+
+</script>
+
+
+
+<script type="application/javascript"> 
+
+forumComponent = Vue.component('forum-component', {
+    delimiters: ['[[', ']]'],
+    template: '#forum_detail_template',
+    props: ['forum_id'],
+    store,
+    data: function() {
+        return {
+            error_message: '',
+            post_title: '',
+            post_content: '',
+            pk: null
+        }
+    },
+    created (){ 
+        this.getPostData({ forum_pk: this.forum_id }).catch(error => { this.error_message = "Error getting post data from server " })
+    },
+    computed: {
+        // ...Vuex.mapState(['posts']),
+        ...Vuex.mapGetters(['getForum', 'getPostsForForum', 'getUserName']),
+        title_string: function() {
+            if (this.pk && this.post_title ) {
+                return "Edit post " + this.post_title
+            } else {
+                return "Add a new post"
+            }
+        },
+        posts: function() {
+            if (this.forum_id) { return this.getPostsForForum(this.forum_id) }
+        },
+        forum_name: function() {
+            if (this.forum_id) { return this.getForum(this.forum_id).name }          
+        },
+        forum_description: function() {
+            if (this.forum_id) { return this.getForum(this.forum_id).description } 
+        }
+    },
+    methods: {
+        ...Vuex.mapActions(['getPostData', 'addPost', 'editPost', 'deletePost']),
+        display_date(date) {
+            return Date(date)
+        },
+        edit_post_modal(post){
+            this.post_title = post.title
+            this.post_content = post.content
+            this.pk = post.pk
+        },
+        add_post() {
+            this.addPost({ forum_pk: this.forum_id, title: this.post_title, content: this.post_content })
+                .then(response => { this.post_title = '', this.post_content = '' })
+                .catch(error => {  this.error_message = error })
+        },
+        edit_post() {
+            this.editPost({ pk: this.pk, title: this.post_title, content: this.post_content })
+                .then(response => { this.post_title = '', this.post_content = '', this.pk = null })
+                .catch(error => {  this.error_message = error })
+        },
+        delete_post(pk) {
+            this.deletePost({ pk : pk, forum_pk: this.forum_id }).catch(error => {  this.error_message = error })
+        }
+    }
+})
+
+
+</script>

@@ -14,9 +14,10 @@
         </div>
     </div>
 
-    <!-- Action history -->
-    {% include 'groups/action_include.html' with target=object %}
-    <action-history></action-history>
+    {% include 'groups/action_include.html' %}  <!-- component -->
+    {% include 'groups/approve_condition_include.html' %}  <!-- component -->
+    {% include 'groups/vote_condition_include.html' %}  <!-- component -->
+    {% include 'groups/group_action_history_include.html' %} <!-- root vue app, kind of a hack :/ -->   
 
     <div class="mt-3">
         {% include 'groups/governance_include.html' %}

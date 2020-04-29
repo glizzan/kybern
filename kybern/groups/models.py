@@ -1,6 +1,8 @@
 import importlib, inspect
 
 from django.db import models
+from django.utils import timezone
+from django.contrib.auth.models import User
 
 from concord.communities.models import BaseCommunityModel
 from concord.actions.models import PermissionedModel
@@ -41,5 +43,19 @@ class Forum(PermissionedModel):
 
     def get_nested_objects(self):
         return [self.get_owner()]
+
+
+class Post(PermissionedModel):
+    title = models.CharField(max_length=120)
+    content = models.CharField(max_length=500)
+    created = models.DateTimeField(default=timezone.now)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)   # TODO: reconsider the on_delete
+    forum = models.ForeignKey(Forum, on_delete=models.CASCADE)   # TODO: reconsider the on_delete
+
+    def get_name(self):
+        return self.title
+
+    def get_nested_objects(self):
+        return [self.get_owner(), self.forum]
 
 

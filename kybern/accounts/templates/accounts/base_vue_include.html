@@ -8,22 +8,41 @@
     axios.defaults.headers = { "headers": { 'Content-Type': "application/json" } }
 
     standard_get_api_call = function (url, params, implementationCallback) { 
-    // note that we might not need this non-action call, since view should be an action, but we'll use for now
-        return axios.post(url, params)
-        .then(response => {  implementationCallback(response) }).catch(error => { console.log(error); throw error })
+        // note that we might not need this non-action call, since view should be an action, but we'll use for 
+        return axios.post(url, params).then(response => {  implementationCallback(response) })     
+        .catch(error => {  console.log(error); throw error })
+    }
+
+    update_actions = function (response, dispatch) {
+         if (response.data.multiple_actions) {
+            for (index in response.data.actions) {
+                if (response.data.actions[index].action_pk) {
+                    dispatch('addOrUpdateAction', { action_pk: response.data.actions[index].action_pk })
+                } else {
+                    console.log("Warning: no action_pk for mulitple!")
+                }
+            }
+         } else {
+            if (response.data.action_pk ) {
+                dispatch('addOrUpdateAction', { action_pk: response.data.action_pk })
+            } else {
+                console.log("Warning: no action_pk for single!")
+            }
+         }
     }
 
     standard_action_api_call = function (url, params, implementationCallback, dispatch) {
         // Helper method used by API calls which return a single action and throw error if not implemented
-        return axios.post(url, params)
-        .then(response => {
-            console.log("Got response: ", response)
-            dispatch('addOrUpdateAction', { action_pk: response.data.action_pk })
+        return axios.post(url, params).then(response => {
+
+            update_actions(response, dispatch)
+        
             if (response.data.action_status == "implemented") {
                 implementationCallback(response)
             } else {
                 throw Error(response.data.action_log)
             }
+
         }).catch(error => { console.log("Got error: ", error); throw error })
     }
 
@@ -63,10 +82,11 @@
             permission_configurations: {},  // { int(pk) : { permissionfieldname : permissionfieldvalue } } 
 
             // Action history & conditional action data
-            actions: {{ actions|safe }},          // We will eventually want to only load some of these
+            actions: {},                    // { 'group_1' : [ { action_dict }, { action_dict } ] }
 
             // Forums data
-            forums: {{ forums|safe }},  // [ { pk: pk, name: name, description: description }]
+            forums: {{ forums|safe }},  // [ { pk: pk, name: name, description: description }],
+            posts: []        // [ { forum_pk: pk, title: title, content: content, author: author, etc } ] }
         },
         getters: {
             memberNames: (state, getters) => {
@@ -174,8 +194,6 @@
             },
             getPermissionConfigurationFields: (state, getters) => (permission_type) => {
                 // JSON stringify + parse create a new copy of the fields so we don't accidentally mutate state by reference
-                console.log("Perm type: ", permission_type)
-                console.log(state.permission_configuration_options)
                 return JSON.parse( JSON.stringify( state.permission_configuration_options[permission_type] ))
             },
             getConditionConfigurationFields: (state, getters) => (condition_type) => { 
@@ -213,6 +231,12 @@
                 fields = getters.getPermissionConfigurationFields(permission.change_type)
                 permission_configuration_data = state.permission_configurations[permission_id]
                 return getters.mapDataToFields(fields, permission_configuration_data)
+            },
+            getForum: (state, getters) => (forum_pk) => { 
+                return state.forums.find(forum => forum.pk == forum_pk)
+            },
+            getPostsForForum: (state, getters) => (forum_pk) => {
+                return state.posts.filter(post => post.forum_pk == forum_pk)
             }
         },
         mutations: {
@@ -351,14 +375,24 @@
             DELETE_GOVERNOR_CONDITION_PK (state, data) {
                 state.governor_condition_pk = null
             },
+            REPLACE_ACTIONS_FOR_ITEM (state, data) {
+                Vue.set(state.actions, data.item_key, data.action_data)
+            },
             ADD_OR_UPDATE_ACTION (state, data) {
-                for (index in state.actions) {
-                    if (state.actions[index].action_pk == data.action_data.action_pk) {
-                        state.actions.splice(index, 1, data.action_data)
+                // Takes in action data and the item_key for the item the action targets
+
+                if (!state.actions[data.item_key]) {
+                    Vue.set(state.actions, data.item_key, [])
+                } 
+
+                for (index in state.actions[item_key]) {
+                    if (state.actions[data.item_key][index].action_pk == data.action_data.action_pk) {
+                        state.actions[data.item_key].splice(index, 1, data.action_data)
                         return
                     }
                 }
-                state.actions.push(data.action_data)  // If we get here, we're adding the action
+
+                state.actions[data.item_key].push(data.action_data)  // If we get here, we're adding the action
             },
             ADD_OR_UPDATE_FORUM (state, data) {
                 for (index in state.forums) {
@@ -382,10 +416,35 @@
             },
             ADD_PERMISSION_TO_ITEM (state, data ) {
                 item_key = data.item_id + "_" + data.item_model
-                console.log("ITEM KEY: ", item_key)
-                console.log("Looking in: ", state.item_permissions)
                 permission_index = state.item_permissions[item_key].indexOf(data.permission_pk)
                 if (permission_index == -1) { state.item_permissions[item_key].push(data.permission_pk) }
+            },
+            REMOVE_PERMISSION_FROM_ITEM (state, data) {
+                item_key = data.item_id + "_" + data.item_model
+                permission_index = state.item_permissions[item_key].indexOf(data.pk)
+                if (permission_index > -1) { state.item_permissions[item_key].splice(permission_index, 1) }
+            },
+            ADD_POST (state, data) {
+                for (index in state.posts) {
+                    if (state.posts[index].pk == data.post_data.pk) {
+                        return   // if it already exists, don't add it
+                    }
+                }
+                state.posts.push(data.post_data)
+            },
+            EDIT_POST (state, data) {
+                for (index in state.posts) {
+                    if (state.posts[index].pk == data.post_data.pk) {
+                        Vue.set(state.posts, index, data.post_data)
+                    }
+                }
+            },
+            DELETE_POST (state, data) {
+                for (index in state.posts) {
+                    if (state.posts[index].pk == data.pk) {
+                        state.posts.splice(index, 1)
+                    }
+                }
             }
         },
         actions: {
@@ -488,7 +547,8 @@
             },
             updatePermission ({ commit, state, dispatch }, payload) { 
                 url = "http://127.0.0.1:8000/groups/update_permission/{{ object.pk}}/"
-                params = { permission_id : payload.permission_id, permission_configuration : payload.configuration }
+                params = { permission_id : payload.permission_id, permission_configuration : payload.configuration,
+                    actors: payload.actors, roles: payload.roles }
                 implementationCallback = (response) => { 
                     pk = response.data.permission.pk
                     permission_data = response.data.permission.permission_data[0]
@@ -543,8 +603,6 @@
                     pk = response.data.condition_info.pk
                     condition_data = response.data.condition_info.condition_data[0]
                     configuration_data = response.data.condition_info.configuration_data[0]
-                    console.log("Updating condition data", condition_data)
-                    console.log("Updating configuration data", configuration_data)
                     commit('ADD_OR_UPDATE_CONDITION', { pk: pk, data: condition_data })
                     commit('ADD_OR_UPDATE_CONDITION_CONFIGURATION', { pk: pk, data: configuration_data })
                 }
@@ -567,11 +625,21 @@
                 }
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
+            loadActions({ commit, state, dispatch}, payload) { 
+                url = "http://127.0.0.1:8000/groups/get_action_data_for_target/";
+                params = { item_id: payload.item_id, item_model: payload.item_model }
+                implementationCallback = (response) => {
+                    item_key = payload.item_id + "_" + payload.item_model
+                    commit('REPLACE_ACTIONS_FOR_ITEM', { action_data : response.data.action_data, item_key : item_key })
+                }
+                return standard_get_api_call(url, params, implementationCallback, dispatch)
+            },
             addOrUpdateAction ({ commit, state, dispatch}, payload) {
                 url = "http://127.0.0.1:8000/groups/get_action_data/";
                 params = { action_pk : payload.action_pk }
                 implementationCallback = (response) => {
-                    commit('ADD_OR_UPDATE_ACTION', { action_data : response.data.action_data })
+                    item_key = response.data.action_data.action_target_pk + "_" + response.data.action_data.action_target_model
+                    commit('ADD_OR_UPDATE_ACTION', { action_data : response.data.action_data, item_key : item_key })
                 }
                 return standard_get_api_call(url, params, implementationCallback, dispatch)
             },
@@ -596,15 +664,16 @@
                 params = { pk: payload.pk }
                 implementationCallback = (response) => {
                     commit('DELETE_FORUM', { pk : response.data.deleted_forum_pk })
+                    // TODO: need to delete permissions set on forum in state.permissions plus key-value in item_permissions
                 }
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
-            getPermissionsAndConditionsForTarget({ commit, state, dispatch}, payload) { 
+            getPermissionsAndConditionsForItem({ commit, state, dispatch}, payload) { 
                 url = "http://127.0.0.1:8000/groups/get_permissions_and_conditions/"
-                params = { target_pk: payload.pk, target_model: payload.model }
+                params = { item_id: payload.item_id, item_model: payload.item_model }
                 implementationCallback = (response) => { 
-                    commit('REPLACE_ITEM_PERMISSIONS', { item_id: response.data.target_pk, 
-                                                         item_model: response.data.target_model, 
+                    commit('REPLACE_ITEM_PERMISSIONS', { item_id: response.data.item_id, 
+                                                         item_model: response.data.item_model, 
                                                          pks: response.data.permission_pks })
                     for (key in response.data.permissions) { 
                         commit('ADD_OR_UPDATE_PERMISSION', { pk : key, data : response.data.permissions[key] })                    
@@ -625,21 +694,71 @@
             },
             addPermissionToItem ({ commit, state, dispatch }, payload) { 
                 url = "http://127.0.0.1:8000/groups/add_permission_to_item/"
-                params = { target_pk: payload.pk, target_model: payload.model,
+                params = { item_id: payload.item_id, item_model: payload.item_model,
                            permission_type : payload.permission_selected, permission_roles : payload.roles, 
                            permission_actors : payload.actors, permission_configuration : payload.configuration }
-                console.log("Params: ", params)
                 implementationCallback = (response) => { 
                     pk = response.data.permission.pk
                     permission_data = response.data.permission.permission_data[0]
                     configuration_data = response.data.permission.configuration_data[0]
                     commit('ADD_OR_UPDATE_PERMISSION', { pk : pk, data : permission_data })
                     commit('ADD_OR_UPDATE_PERMISSION_CONFIGURATION', { pk : pk, data: configuration_data })
-                    commit('ADD_PERMISSION_TO_ITEM', { permission_pk: pk, item_id: response.data.target_pk, 
-                                                         item_model: response.data.target_model })
+                    commit('ADD_PERMISSION_TO_ITEM', { permission_pk: pk, item_id: response.data.item_id, 
+                                                         item_model: response.data.item_model })
                 }
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
+            removePermissionFromItem ({ commit, getters, dispatch }, payload) { 
+                url = "http://127.0.0.1:8000/groups/delete_permission_from_item/";
+                params = { permission_id : payload.permission_id, item_id: payload.item_id, 
+                            item_model: payload.item_model } 
+                implementationCallback = (response) => {
+                    condlist = getters.conditionObjectForPermission(response.data.removed_permission_pk)
+                    if (condlist) {
+                        commit('DELETE_CONDITION_CONFIGURATION', { pk: condlist[0] })
+                        commit('DELETE_CONDITION', { pk: condlist[0] })        
+                    }
+                    commit('REMOVE_PERMISSION_FROM_ITEM', { pk: response.data.removed_permission_pk, 
+                        item_id : response.data.item_id, item_model: response.data.item_model })
+                    commit('DELETE_PERMISSION_CONFIGURATION', { pk: response.data.removed_permission_pk })
+                    commit('DELETE_PERMISSION', { pk: response.data.removed_permission_pk })
+                }
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
+            },
+            getPostData({ commit, state, dispatch}, payload) { 
+                url = "http://127.0.0.1:8000/groups/{{ object.pk }}/get_posts/"
+                params = { forum_pk: payload.forum_pk }
+                implementationCallback = (response) => { 
+                    for (index in response.data.posts) {
+                        commit('ADD_POST', { post_data: response.data.posts[index] })
+                    }
+                }
+                return standard_get_api_call(url, params, implementationCallback)
+            },
+            addPost ({ commit, state, dispatch }, payload) { 
+                url = "http://127.0.0.1:8000/groups/{{ object.pk }}/add_post/"
+                params = { forum_pk: payload.forum_pk, title: payload.title, content: payload.content  }
+                implementationCallback = (response) => { 
+                    commit('ADD_POST', { post_data: response.data.post_data})
+                }
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
+            },
+            editPost ({ commit, state, dispatch }, payload) { 
+                url = "http://127.0.0.1:8000/groups/{{ object.pk }}/edit_post/"
+                params = { pk: payload.pk, title: payload.title, content: payload.content  }
+                implementationCallback = (response) => { 
+                    commit('EDIT_POST', { post_data: response.data.post_data})
+                }
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
+            },
+            deletePost ({ commit, state, dispatch }, payload) { 
+                url = "http://127.0.0.1:8000/groups/{{ object.pk }}/delete_post/"
+                params = { pk: payload.pk, forum_pk: payload.forum_pk }
+                implementationCallback = (response) => { 
+                    commit('DELETE_POST', { pk: response.data.deleted_post_pk })
+                }
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
+            }
         }
     })
 

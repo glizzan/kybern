@@ -31,11 +31,11 @@
             <div class="mb-3" v-if="error_message">[[ error_message ]]</div>
 
             <manage-permission :permission_to_edit=permission_to_edit :mode_from_parent=permission_mode_from_parent
-                :item_id=item_id :item_model=item_model @clearState=clearState>
+                :item_id=item_id :item_model=item_model :permission_options=item_permission_options @clearState=clearState>
             </manage-permission>
-            <!-- <manage-condition :condition_to_edit=condition_to_edit :mode_from_parent=condition_mode_from_parent 
+            <manage-condition :condition_to_edit=condition_to_edit :mode_from_parent=condition_mode_from_parent 
                 :permission_to_condition=permission_to_condition :called_for="'permission'" @clearState=clearState>
-            </manage-condition>  -->
+            </manage-condition> 
         
         </b-modal>
 
@@ -61,10 +61,11 @@
                 permission_to_condition: null,
                 condition_to_edit: null,
                 condition_mode_from_parent: 'start',
-                get_data: false
+                permission_condition_pairs: []
             }
         },
         computed: { 
+            ...Vuex.mapState(['permission_options', 'item_permissions', 'conditions']),
             ...Vuex.mapGetters(['getPermissionConditionPairsForItem']),
             title_string: function() {
                 return "Permissions for " + this.item_name
@@ -72,21 +73,22 @@
             modal_id: function() {
                 return "item_permission_modal" + "_" + this.item_id + "_" + this.item_model
             },
-            permission_condition_pairs: function () {
-                if (this.item_id && this.item_model && this.get_data) {
-                    return this.getPermissionConditionPairsForItem(this.item_id + "_" + this.item_model)
-                } else {
-                    return []
-                }
+            item_permission_options: function() {
+                return this.permission_options[this.item_model]
             }
         },
+        watch: { 
+            item_permissions: function (val) {  this.update_pairs() },
+            conditions: function (val) { this.update_pairs() }
+        },
         methods: { 
-            ...Vuex.mapActions(['getPermissionsAndConditionsForTarget']),
-            // TODO: in manage_permission_include, handle differently if no role_to_edit passed in 
+            ...Vuex.mapActions(['getPermissionsAndConditionsForItem', 'removePermissionFromItem']),
+            update_pairs() {
+                this.permission_condition_pairs = this.getPermissionConditionPairsForItem(this.item_id + "_" + this.item_model)
+            },
             edit_permissions() {
-                this.getPermissionsAndConditionsForTarget({ pk: this.item_id, model: this.item_model })
-                .then(response => { this.get_data = true })
-                .catch(error => {  this.error_message = error })
+                this.getPermissionsAndConditionsForItem({ item_id: this.item_id, item_model: this.item_model })
+                .then(response => { this.update_pairs() }).catch(error => {  console.log("AHHH"); this.error_message = error })
             },
             edit_permission(permission_id) {
                 this.clearState()  // clear previous state
@@ -105,16 +107,26 @@
                 this.condition_mode_from_parent = 'update'
             },
             clearState() {
-                this.get_data = false
+                this.update_pairs()
                 this.permission_to_edit = ''
                 this.permission_to_condition = ''
                 this.condition_to_edit = ''
                 this.permission_mode_from_parent = 'start'
                 this.condition_mode_from_parent = 'start'
+            },
+            delete_permission(permission_id) {
+                this.removePermissionFromItem({ item_id : this.item_id, item_model: this.item_model, 
+                    permission_id: permission_id })
+                .then(response => { this.update_pairs() })
+                .catch(error => {  this.error_message = error })
+            },
+            delete_condition(permission_id, condition_id) {
+                this.removeCondition({ condition_id : condition_id, permission_id: permission_id }).catch(error => { 
+                    this.error_message = error.message
+                })
             }
         }
-    }
-    )
+    })
 
 
 </script>

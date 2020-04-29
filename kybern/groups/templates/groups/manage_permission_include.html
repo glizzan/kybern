@@ -50,7 +50,7 @@
     managePermissionComponent = Vue.component('manage-permission', {
         delimiters: ['[[', ']]'],
         template: '#manage_permission_template',
-        props: ['mode_from_parent', 'role_to_edit', 'permission_to_edit', 'item_id', 'item_model'],
+        props: ['mode_from_parent', 'role_to_edit', 'permission_to_edit', 'item_id', 'item_model', 'permission_options'],
         store,
         data: function() {
             return {
@@ -87,7 +87,7 @@
             }
         },
         computed: {
-            ...Vuex.mapState(['permission_options', 'permissions']),
+            ...Vuex.mapState(['permissions']),
             ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getPermissionConfigurationFields', 
                 'getPermissionConfigurationFieldsWithData', 'select_field_is_multiple', 'role_to_options',
                 'user_pk_to_options'])
@@ -108,8 +108,7 @@
                     .then(response => { this.permission_selected = ''; this.$emit("clearState"); })
                     .catch(error => {  this.error_message = error })
                 } else if (this.item_id && this.item_model) {
-                    // TODO: this should be configured so it's on the specific item
-                    this.addPermissionToItem({ pk: this.item_id, model: this.item_model,
+                    this.addPermissionToItem({ item_id: this.item_id, item_model: this.item_model,
                         permission_selected : this.permission_selected, configuration : this.configuration_fields,
                         roles: this.permission_roles_selected, actors: this.permission_actors_selected })
                     .then(response => { this.permission_selected = ''; this.permission_actors = [],
@@ -118,9 +117,16 @@
                 }
             },
             update_permission() {
-                this.updatePermission({ permission_id: this.permission_to_edit, configuration : this.configuration_fields })
-                .then(response => { this.$emit("clearState"); })
-                .catch(error => {  this.error_message = error })
+                if (this.role_to_edit) {
+                    this.updatePermission({ permission_id: this.permission_to_edit, configuration : this.configuration_fields })
+                    .then(response => { this.$emit("clearState"); })
+                    .catch(error => {  this.error_message = error })
+                } else if (this.item_id && this.item_model) { 
+                    this.updatePermission({ permission_id: this.permission_to_edit, configuration : this.configuration_fields,
+                        roles: this.permission_roles_selected, actors: this.permission_actors_selected })
+                    .then(response => { this.$emit("clearState"); })
+                    .catch(error => {  this.error_message = error })
+                }
             }
         }
     });

@@ -2,13 +2,16 @@ from django.contrib.contenttypes.models import ContentType
 
 from concord.actions.client import BaseClient
 
-from .models import Forum
-from .state_changes import AddForumChange, DeleteForumChange, EditForumChange
+from .models import Forum, Post
+from .state_changes import (AddForumChange, DeleteForumChange, EditForumChange, AddPostChange, EditPostChange, DeletePostChange)
 
 
 class ForumClient(BaseClient):
 
-    # FIXME: right now forum target is owner, but we probably want to make the forum itself the target, no?
+    # FIXME: right now targets are confusing - some actions can only be taken on forum owner, some can only be taken on
+    # forum, some can only be taken on post, etc.  Some don't even really need a target given the data passed in. :/
+    # Also, annoyingly, we need to make the delete_x targets the thing that owns them, because once we delete the thing
+    # any actions that need to be displayed will break for lack of target. 
 
     # reads
 
@@ -23,6 +26,12 @@ class ForumClient(BaseClient):
     def get_forums_given_owner(self, owner):
         return Forum.objects.filter(owner=owner)   # probably not exactly right
 
+    def get_post_given_pk(self, pk):
+        return Post.objects.get(pk=pk)
+
+    def get_posts_for_forum(self):
+        return self.target.post_set.all()
+
     # state change writes
 
     def create_forum(self, name, description):
@@ -36,3 +45,16 @@ class ForumClient(BaseClient):
     def delete_forum(self, pk):
         change = DeleteForumChange(pk=pk)
         return self.create_and_take_action(change)
+
+    def add_post(self, forum_pk, title, content):
+        change = AddPostChange(forum_pk=forum_pk, title=title, content=content)
+        return self.create_and_take_action(change)
+
+    def edit_post(self, pk, title, content):
+        change = EditPostChange(pk=pk, title=title, content=content)
+        return self.create_and_take_action(change)
+
+    def delete_post(self, pk):
+        change = DeletePostChange(pk=pk)
+        return self.create_and_take_action(change)
+

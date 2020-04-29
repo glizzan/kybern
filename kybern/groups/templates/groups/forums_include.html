@@ -1,27 +1,33 @@
 <div id="forums_template">
 
-        <h4 class="text-secondary pb-3">{{ object.name }}'s Forums   
-            <span class="pl-3"><b-button variant="outline-secondary" class="btn-sm"
-                    v-b-modal.forum_modal>+ add new</b-button></span>
-        </h4>
+    <span v-if="!display_forum" id="forum_list_view">
 
+        <h4 class="text-secondary pb-3">{{ object.name }}'s Forums   
+                <span class="pl-3"><b-button variant="outline-secondary" class="btn-sm"
+                        v-b-modal.forum_modal>+ add new</b-button></span>
+            </h4>
+    
         <div>[[ delete_error_message ]]</div>
 
         <b-list-group>
             <b-list-group-item v-for="{ pk, name, description } in forums" href="#" 
-                                     active class="bg-light text-info flex-column align-items-start" v-bind:key="pk">
+                                        active class="bg-light text-info flex-column align-items-start" v-bind:key="pk">
                 <div class="d-flex w-100 justify-content-between">
                     <h5 class="mb-1"> [[ name ]] </h5> </div>
                 
                 <p class="mb-1 text-secondary">  [[ description ]]  </p>
 
 
+                <b-button variant="outline-secondary" class="btn-sm" @click="display_forum = pk">
+                    view</b-button>
                 <b-button variant="outline-secondary" class="btn-sm" v-b-modal.forum_modal 
                     @click="edit_forum_modal(pk, name, description)">
                     edit</b-button>
                 <b-button variant="outline-secondary" class="btn-sm" @click="delete_forum(pk)">
                     delete</b-button>
                 <permissioned_item :item_id=pk :item_model="'forum'" :item_name=name ></permissioned_item>
+                <action-history :item_id=pk :item_model="'forum'" :item_name=name 
+                    :launch_button_text="'view forum history'"></action-history>  
 
             </b-list-group-item>
         </b-list-group>
@@ -44,9 +50,22 @@
             <div>[[ error_message ]]</div>
 
         </b-modal>
+        
+    </span>
 
+    <span v-else> <!-- If we have a forum to display -->
+
+        <b-button variant="outline-secondary" class="btn-sm" @click="display_forum = null">
+            go back to forums list</b-button>
+
+        <forum-component :forum_id=display_forum ></forum-component>
+
+    </span>
+       
 
 </div>
+
+{% include 'groups/forum_detail_include.html' %}
 
 
 <script type="application/javascript"> 
@@ -61,7 +80,8 @@
             description: null,
             pk: null,
             error_message: null,
-            delete_error_message: null
+            delete_error_message: null,
+            display_forum: null
         },
         computed: {
             ...Vuex.mapState(['forums']),

@@ -11,7 +11,7 @@ from concord.communities.client import CommunityClient
 from concord.permission_resources.client import PermissionResourceClient
 from concord.conditionals.client import PermissionConditionalClient, CommunityConditionalClient
 
-from .models import Group
+from .models import Group, Forum, Post
 from .client import ForumClient
 
 
@@ -24,6 +24,15 @@ from .client import ForumClient
 class GroupClient(CommunityClient):
     """Easy way to replace the default community model with the one we want to use here, group."""
     community_model = Group
+
+
+def get_model(model_name):
+    for app_config in apps.get_app_configs():
+        try:
+            model = app_config.get_model(model_name)
+            return model
+        except LookupError:
+            pass
 
 
 def process_action(action):
@@ -47,6 +56,7 @@ def process_action(action):
     return {
         "action_pk": action.pk,
         "action_target_pk": action.object_id,
+        "action_target_model": action.target.__class__.__name__,   # will this work???
         "action_target_content_type": action.content_type.pk,
         "description": action.get_description(),
         "created": str(action.created_at),
@@ -90,6 +100,7 @@ def get_multiple_action_dicts(actions):
         action_dicts_list.append(get_action_dict(action))
         
     return {
+        "multiple_actions": True,
         "action_status": action_status,
         "action_log": action_log,
         "actions": action_dicts_list
@@ -131,6 +142,11 @@ def serialize_existing_condition_configuration_for_vue(condition):
 
 def serialize_forum_for_vue(forum):
     return { 'pk': forum.pk, 'name': forum.name, 'description': forum.description }
+
+
+def serialize_post_for_vue(post):
+    return { 'pk': post.pk, 'title': post.title, 'content': post.content, 'forum_pk': post.forum.pk, 
+        'created': post.created, 'author': post.author.pk }
 
 
 def serialize_forums_for_vue(forums):
@@ -203,38 +219,58 @@ class GroupDetailView(generic.DetailView):
         context["users"] = [ { 'name' : person.username, 'pk': person.pk } for person in User.objects.all() ]
         return context
 
-    def add_action_data_to_context(self, context):
-        actions = self.actionClient.get_action_history_given_target()
-        context['actions'] = json.dumps([process_action(action) for action in actions])
-        context['recent_actions'] = json.dumps([process_action(action) for action in actions.order_by('updated_at')[:5]])
-        return context
-
     def add_permission_data_to_context(self, context):
         """  This method gets permission *options* and permission configuration *options*, not the permission
         data itself, which is fetched as needed based on user action.  
         
         (note: this matches format specified in vuex store)     
         permission_options: {{ permission_options }},
-            // [ { value: x , text: x } ]
+            // { model_name: [ { value: x , text: x } ], model_name: [ { value: x , text: x } ] }
         permission_configuration_options: {{ permission_configuration_options }},
             // { fieldname: { display: x, type: x, required: x, value: x, field_name: x } }
         """
-        
-        settable_permissions = self.permissionClient.get_settable_permissions(return_format="state_change_objects")
 
-        # Get list of permission options
-        permission_options = []
-        for permission in settable_permissions:
-            permission_options.append({ "value": permission.get_change_type(), "text": permission.description })
-        context["permission_options"] = json.dumps(permission_options)
+        context["permission_options"] = {}
+        context["permission_configuration_options"] = {}
+
+        for model_class in [Group, Forum, Post]:
+
+            # get settable permissions given model class
+            settable_permissions = self.permissionClient.get_settable_permissions_for_model(model_class)
+
+            # get a list of permission options and save to permission_options under the model name
+            model_string = model_class.__name__.lower()
+            context["permission_options"][model_string] = []
+            for permission in settable_permissions:
+                context["permission_options"][model_string].append({ "value": permission.get_change_type(), 
+                    "text": permission.description })
+
+            # get permission configuration options & save, it's ok if things overwrite because they're the same
+            for permission in settable_permissions:
+                context["permission_configuration_options"].update({
+                    permission.get_change_type(): permission.get_configurable_form_fields()
+                })            
+            
+        # make everything json
+        context["permission_options"] = json.dumps(context["permission_options"])
+        context["permission_configuration_options"] = json.dumps(context["permission_configuration_options"])
+
+        
+        # settable_permissions = self.permissionClient.get_settable_permissions(return_format="state_change_objects")
+
+        # # Get list of permission options
+        # permission_options = []
+        # for permission in settable_permissions:
+        #     permission_options.append({ "value": permission.get_change_type(), "text": permission.description })
+        # context["permission_options"] = json.dumps(permission_options)
 
         # Get list of permission configuration options
-        permission_configuration = {}
-        for permission in settable_permissions:
-            permission_configuration.update({
-                permission.get_change_type(): permission.get_configurable_form_fields()
-            })            
-        context["permission_configuration_options"] = json.dumps(permission_configuration)
+        # permission_configuration = {}
+        # for permission in settable_permissions:
+        #     permission_configuration.update({
+        #         permission.get_change_type(): permission.get_configurable_form_fields()
+        #     })            
+        # context["permission_configuration_options"] = json.dumps(permission_configuration)
 
         return context
 
@@ -287,7 +323,6 @@ class GroupDetailView(generic.DetailView):
         context = super().get_context_data(**kwargs)
         self.prep_clients()
         context = self.add_user_data_to_context(context)
-        context = self.add_action_data_to_context(context)
         context = self.add_permission_data_to_context(context)
         context = self.add_condition_data_to_context(context)
         context = self.add_forum_data_to_context(context)
@@ -339,7 +374,7 @@ def edit_forum(request, target):
 
     forumClient = ForumClient(actor=request.user)
     forum = forumClient.get_forum_given_pk(pk)
-    forumClient.set_target(forum)
+    forumClient.set_target(target=forum)
 
     action, result = forumClient.edit_forum(pk=pk, name=name, description=description)
 
@@ -351,19 +386,89 @@ def edit_forum(request, target):
 
 def delete_forum(request, target):
 
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
-    communityClient.set_target(target=target)
-
     request_data = json.loads(request.body.decode('utf-8'))
     pk = request_data.get("pk")
 
-    forumClient = ForumClient(actor=request.user, target=target)
+    forumClient = ForumClient(actor=request.user)
+    forum = forumClient.get_forum_given_pk(pk)
+    forumClient.set_target(target=forum)
+
     action, result = forumClient.delete_forum(pk=pk)
 
     action_dict = get_action_dict(action)
     action_dict["deleted_forum_pk"] = pk
     return JsonResponse(action_dict)
+
+
+def get_posts_for_forum(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    forum_pk = request_data.get("forum_pk")
+
+    forumClient = ForumClient(actor=request.user)
+    forum = forumClient.get_forum_given_pk(forum_pk)
+    forumClient.set_target(target=forum)
+    posts = forumClient.get_posts_for_forum()
+
+    serialized_posts = [serialize_post_for_vue(post) for post in posts]
+
+    return JsonResponse({ 'forum_pk': forum_pk, 'posts': serialized_posts })
+
+
+def add_post(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    forum_pk = request_data.get("forum_pk")
+    title = request_data.get("title")
+    content = request_data.get("content", None)
+
+    forumClient = ForumClient(actor=request.user)
+    forum = forumClient.get_forum_given_pk(forum_pk)
+    forumClient.set_target(target=forum)
+
+    action, result = forumClient.add_post(forum_pk, title, content)
+    
+    action_dict = get_action_dict(action)
+    action_dict["post_data"] = serialize_post_for_vue(result)
+    return JsonResponse(action_dict)
+
+
+def edit_post(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    pk = request_data.get("pk")
+    title = request_data.get("title", None)
+    content = request_data.get("content", None)
+
+    forumClient = ForumClient(actor=request.user)
+    post = forumClient.get_post_given_pk(pk)
+    forumClient.set_target(target=post)
+
+    action, result = forumClient.edit_post(pk, title, content)
+
+    action_dict = get_action_dict(action)
+    if action.resolution.status == "implemented":
+        action_dict["post_data"] = serialize_post_for_vue(result)
+    return JsonResponse(action_dict)
+
+
+def delete_post(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    pk = request_data.get("pk")
+    forum_pk = request_data.get("forum_pk")
+
+    forumClient = ForumClient(actor=request.user)
+    forum = forumClient.get_forum_given_pk(forum_pk)
+    forumClient.set_target(target=forum)
+
+    action, result = forumClient.delete_post(pk=pk)
+
+    action_dict = get_action_dict(action)
+    action_dict["deleted_post_pk"] = pk
+    print(action_dict)
+    return JsonResponse(action_dict)
+    
 
 
 ################################################################################
@@ -575,6 +680,11 @@ def update_permission(request, target):
     permission_id = request_data.get("permission_id", None)
     permission_configuration = request_data.get("permission_configuration", None)
 
+    print(request_data)
+
+    actors = request_data.get("actors", None)
+    roles = request_data.get("roles", None)
+
     reformatted_permission_data = reformat_permission_data(permission_configuration)
 
     permissionClient = PermissionResourceClient(actor=request.user)
@@ -582,6 +692,17 @@ def update_permission(request, target):
     permissionClient.set_target(target=target_permission)
     actions = permissionClient.update_configuration(configuration_dict=reformatted_permission_data, 
         permission=target_permission)
+
+    if actors:
+        actor_data = [ actor['pk'] for actor in actors]
+        actor_actions = permissionClient.update_actors_on_permission(actor_data=actor_data, permission=target_permission)
+        actions += actor_actions
+    if roles:
+        role_data = [ role['name'] for role in roles]
+        role_actions = permissionClient.update_roles_on_permission(role_data=role_data, permission=target_permission)
+        actions += role_actions
+
+    print(actions)
 
     action_dict = get_multiple_action_dicts(actions)
 
@@ -717,7 +838,7 @@ def manage_condition(request, target):
 #############################################
 
 
-def update_approval_condition(request, target):
+def update_approval_condition(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
     condition_pk = request_data.get("condition_pk", None)
@@ -734,7 +855,7 @@ def update_approval_condition(request, target):
     return JsonResponse(get_action_dict(action))
     
 
-def update_vote_condition(request, target):
+def update_vote_condition(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
     condition_pk = request_data.get("condition_pk", None)
@@ -748,7 +869,7 @@ def update_vote_condition(request, target):
     return JsonResponse(get_action_dict(action))
 
 
-def get_conditional_data(request, target):
+def get_conditional_data(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
     condition_pk = request_data.get("condition_pk", None)
@@ -783,6 +904,20 @@ def get_action_data(request):
     action = ActionClient(actor=request.user).get_action_given_pk(action_pk)
 
     return JsonResponse({ "action_data": process_action(action) })
+
+
+def get_action_data_for_target(request):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+
+    item_id = request_data.get("item_id")
+    model_class = get_model(request_data.get("item_model"))
+    target = model_class.objects.get(pk=item_id)
+
+    actionClient = ActionClient(actor=request.user, target=target)
+    actions = actionClient.get_action_history_given_target()
+
+    return JsonResponse({ "action_data": [process_action(action) for action in actions] })
 
 
 ####################################
@@ -831,22 +966,13 @@ def update_governors(request, target):
 #############################
 
 
-def get_model(model_name):
-    for app_config in apps.get_app_configs():
-        try:
-            model = app_config.get_model(model_name)
-            return model
-        except LookupError:
-            pass
-
-
 def get_permissions_and_conditions(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
 
-    target_pk = request_data.get("target_pk")
-    model_class = get_model(request_data.get("target_model"))
-    target = model_class.objects.get(pk=target_pk)
+    item_id = request_data.get("item_id")
+    model_class = get_model(request_data.get("item_model"))
+    target = model_class.objects.get(pk=item_id)
 
     permClient = PermissionResourceClient(actor=request.user)
     permClient.set_target(target=target)
@@ -859,21 +985,18 @@ def get_permissions_and_conditions(request):
         permissions.update(serialize_existing_permission_for_vue(permission))
         permission_configurations.update(serialize_existing_permission_configuration_for_vue(permission))
         
-    return JsonResponse({ "target_pk": target_pk, "target_model": request_data.get("target_model"), 
+    return JsonResponse({ "item_id": item_id, "item_model": request_data.get("item_model"), 
         "permissions" : permissions, "permission_configurations" : permission_configurations,
         "permission_pks": permission_pks })
-
-    # return JsonResponse({ "permissions" : permissions, "permission_configurations" : permission_configurations,
-    #     "conditions" : conditions, "condition_configurations" : condition_configurations })
 
 
 def add_permission_to_item(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
 
-    target_pk = request_data.get("target_pk")
-    model_class = get_model(request_data.get("target_model"))
-    target = model_class.objects.get(pk=target_pk)
+    item_id = request_data.get("item_id")
+    model_class = get_model(request_data.get("item_model"))
+    target = model_class.objects.get(pk=item_id)
 
     permission_type = request_data.get("permission_type", None)
     permission_actors = request_data.get("permission_actors", None)
@@ -892,6 +1015,36 @@ def add_permission_to_item(request):
 
     action_dict = get_action_dict(action)
     permission_info = get_permission_info(result) if action.resolution.status == "implemented" else None
-    action_dict.update({ "permission": permission_info, "target_pk": target_pk, "target_model": request_data.get("target_model") })
+    action_dict.update({ "permission": permission_info, "item_id": item_id, "item_model": request_data.get("item_model") })
 
+    return JsonResponse(action_dict)
+
+
+def delete_permission_from_item(request):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+
+    permission_id = request_data.get("permission_id", None)
+
+    item_id = request_data.get("item_id")
+    model_class = get_model(request_data.get("item_model"))
+    target = model_class.objects.get(pk=item_id)
+    permissionClient = PermissionResourceClient(actor=request.user, target=target)
+    permission_target = permissionClient.get_permission(pk=permission_id)
+    conditionalClient = PermissionConditionalClient(actor=request.user, target=permission_target)
+
+    # try to remove condition
+    condition = conditionalClient.get_condition_template()
+    if condition:
+        action, result = conditionalClient.remove_condition(condition=condition)
+        if action.resolution.status != "implemented":
+            message = """In order to delete a permission, any conditions set on the permission must first be 
+                deleted. The following condition on this permission could not be deleted: %s 
+                It could not be deleted because: %s""" % (condition.get_name(), action.resolution.log)
+            return JsonResponse({ "action_status": "failure", "action_log" : message })
+
+    # now remove permission
+    action, result = permissionClient.remove_permission(item_pk=permission_id)
+    action_dict = get_action_dict(action)
+    action_dict.update({ "removed_permission_pk": permission_id, "item_id": item_id, "item_model": request_data.get("item_model") })
     return JsonResponse(action_dict)
