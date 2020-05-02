@@ -17,4 +17,11 @@
 10. `python manage.py makemigrations accounts`
 11. `python manage.py makemigrations groups`
 12. `python manage.py migrate`
-13. `python manage.py runserver`
+13. `python manage.py makemigrations actions`
+14. `python manage.py makemigrations communities`
+15. `python manage.py makemigrations conditionals`
+16. `python manage.py makemigrations permission_resources`
+17. `python manage.py makemigrations resources`
+18. `python manage.py migrate`
+19. `python manage.py runserver`
+`python manage.py makemigrations groups`
