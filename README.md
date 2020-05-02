@@ -16,4 +16,5 @@
 9. `python manage.py migrate`
 10. `python manage.py makemigrations accounts`
 11. `python manage.py makemigrations groups`
-12. `python manage.py runserver`
+12. `python manage.py migrate`
+13. `python manage.py runserver`
