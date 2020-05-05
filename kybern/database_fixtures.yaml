@@ -1,0 +1,120 @@
+- model: auth.user
+  pk: 1
+  fields:
+    password: pbkdf2_sha256$180000$btwsYIEYkQDe$GURHuWQaIPnEGrWkoA9NbRKPrY9VUqGeRy5Fdpa/sKM=
+    last_login: 2020-05-05 14:52:39.429346+00:00
+    is_superuser: false
+    username: meganrapinoe
+    first_name: ''
+    last_name: ''
+    email: shaunagm@gmail.com
+    is_staff: false
+    is_active: true
+    date_joined: 2020-04-23 13:13:18.055719+00:00
+    groups: []
+    user_permissions: []
+- model: auth.user
+  pk: 2
+  fields:
+    password: pbkdf2_sha256$180000$b76l5hw8Tspd$87K78MaJCXtpzrFPBEmVGLZu0K3onzCn+lu0L+HO7o0=
+    last_login: null
+    is_superuser: false
+    username: christenpress
+    first_name: ''
+    last_name: ''
+    email: shaunagm@gmail.com
+    is_staff: false
+    is_active: true
+    date_joined: 2020-04-23 13:13:18.299970+00:00
+    groups: []
+    user_permissions: []
+- model: auth.user
+  pk: 3
+  fields:
+    password: pbkdf2_sha256$180000$ioQPVuOI1hZ3$/bukC2eUPY8sHg/oCiNKtzYTZebhirFUvlozEUCmMM0=
+    last_login: null
+    is_superuser: false
+    username: tobinheath
+    first_name: ''
+    last_name: ''
+    email: shaunagm@gmail.com
+    is_staff: false
+    is_active: true
+    date_joined: 2020-04-23 13:13:18.522468+00:00
+    groups: []
+    user_permissions: []
+- model: auth.user
+  pk: 4
+  fields:
+    password: pbkdf2_sha256$180000$qtPEGS1bmt7Y$36ppifNXriDMUCnl/Oraxau+U3JQT0f7fJmSwfBkqgA=
+    last_login: null
+    is_superuser: false
+    username: crystaldunn
+    first_name: ''
+    last_name: ''
+    email: shaunagm@gmail.com
+    is_staff: false
+    is_active: true
+    date_joined: 2020-04-23 13:13:18.743162+00:00
+    groups: []
+    user_permissions: []
+- model: auth.user
+  pk: 5
+  fields:
+    password: pbkdf2_sha256$180000$lLmXtfwCoC8r$mqrvUDjp5qaWu398oLXYo7gCtjsnITvjx3/5lkONUsc=
+    last_login: null
+    is_superuser: false
+    username: julieertz
+    first_name: ''
+    last_name: ''
+    email: shaunagm@gmail.com
+    is_staff: false
+    is_active: true
+    date_joined: 2020-04-23 13:13:18.974942+00:00
+    groups: []
+    user_permissions: []
+- model: auth.user
+  pk: 6
+  fields:
+    password: pbkdf2_sha256$180000$OMEFywwOcMET$Hbv8nv4Xwz5nA7xNsABSbwyejE9FQUVD/m2RatY9BG0=
+    last_login: null
+    is_superuser: false
+    username: adfranch
+    first_name: ''
+    last_name: ''
+    email: shaunagm@gmail.com
+    is_staff: false
+    is_active: true
+    date_joined: 2020-04-23 13:13:19.205149+00:00
+    groups: []
+    user_permissions: []
+- model: auth.user
+  pk: 7
+  fields:
+    password: pbkdf2_sha256$180000$shzzVv4ywpjp$iH1K4gDOWRjIwM4G2/ALIUH5eE5Q1mpbdGSAtDR7euM=
+    last_login: null
+    is_superuser: false
+    username: caseyshort
+    first_name: ''
+    last_name: ''
+    email: shaunagm@gmail.com
+    is_staff: false
+    is_active: true
+    date_joined: 2020-04-23 13:13:19.447961+00:00
+    groups: []
+    user_permissions: []
+- model: auth.user
+  pk: 8
+  fields:
+    password: pbkdf2_sha256$180000$1C1Rk47SjaXU$jWgDLuvk8QXnPzs2935quEE2sTGCZtuZUNlx3bVgvtQ=
+    last_login: null
+    is_superuser: false
+    username: emilysonnet
+    first_name: ''
+    last_name: ''
+    email: shaunagm@gmail.com
+    is_staff: false
+    is_active: true
+    date_joined: 2020-04-23 13:13:19.669037+00:00
+    groups: []
+    user_permissions: []
