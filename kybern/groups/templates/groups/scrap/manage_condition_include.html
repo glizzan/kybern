@@ -101,7 +101,7 @@
         },
         methods: {
             addCondition() {
-                url = "http://127.0.0.1:8000/groups/add_condition/{{ object.pk}}/";
+                url = "{{ base_url }}/groups/add_condition/{{ object.pk}}/";
                 params = { condition_type: this.condition_selected, 
                     condition_configuration: JSON.stringify(this.condition_configuration_fields),
                     target_permission_id: this.permission_to_condition }
@@ -113,7 +113,7 @@
                 this.submit_standard_axios_action_call(url, params, implementationCallback)
             },
             updateCondition() {
-                url = "http://127.0.0.1:8000/groups/update_condition/{{ object.pk}}/"
+                url = "{{ base_url }}/groups/update_condition/{{ object.pk}}/"
                 params = { condition_id : this.condition_to_edit, 
                            permission_id : this.permission_to_condition,
                            condition_configuration : this.condition_configuration_fields}

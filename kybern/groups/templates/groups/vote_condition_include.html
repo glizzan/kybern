@@ -123,7 +123,7 @@ voteConditionComponent = Vue.component('vote-condition-ui', {
     methods: {
         get_conditional_data() {
             axios = this.prep_axios()
-            url = "http://127.0.0.1:8000/groups/get_conditional_data/"
+            url = "{{ base_url }}/groups/get_conditional_data/"
             params = { condition_pk: this.condition_pk, condition_type: this.condition_type }
             axios.post(url, params).then(response => { 
                 this.condition_details = response.data.condition_details
@@ -142,7 +142,7 @@ voteConditionComponent = Vue.component('vote-condition-ui', {
             // but that's a bit above my paygrade for now.
 
             axios = this.prep_axios()
-            url = "http://127.0.0.1:8000/groups/update_vote_condition/"
+            url = "{{ base_url }}/groups/update_vote_condition/"
             params = { condition_pk: this.condition_pk, action_to_take: this.button_selected }
             axios.post(url, params).then(response => {  
 

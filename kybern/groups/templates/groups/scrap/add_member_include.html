@@ -61,7 +61,7 @@
                 bvModalEvt.preventDefault();
                     axios.defaults.xsrfCookieName = 'csrftoken';
                     axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
-                    url = "http://127.0.0.1:8000/groups/add_members/{{ object.pk}}/";
+                    url = "{{ base_url }}/groups/add_members/{{ object.pk}}/";
                     params = { people_pks : this.members_selected }
                     headers =  { "headers": { 'Content-Type': "application/json" } }
                     axios.post(url, params, headers)

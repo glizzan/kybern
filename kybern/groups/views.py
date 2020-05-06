@@ -255,23 +255,6 @@ class GroupDetailView(generic.DetailView):
         context["permission_options"] = json.dumps(context["permission_options"])
         context["permission_configuration_options"] = json.dumps(context["permission_configuration_options"])
 
-        
-        # settable_permissions = self.permissionClient.get_settable_permissions(return_format="state_change_objects")
-
-        # # Get list of permission options
-        # permission_options = []
-        # for permission in settable_permissions:
-        #     permission_options.append({ "value": permission.get_change_type(), "text": permission.description })
-        # context["permission_options"] = json.dumps(permission_options)
-
-        # Get list of permission configuration options
-        # permission_configuration = {}
-        # for permission in settable_permissions:
-        #     permission_configuration.update({
-        #         permission.get_change_type(): permission.get_configurable_form_fields()
-        #     })            
-        # context["permission_configuration_options"] = json.dumps(permission_configuration)
-
         return context
 
     def add_condition_data_to_context(self, context):
@@ -326,6 +309,7 @@ class GroupDetailView(generic.DetailView):
         context = self.add_permission_data_to_context(context)
         context = self.add_condition_data_to_context(context)
         context = self.add_forum_data_to_context(context)
+        context["base_url"] = "http://" + self.request.get_host()   # FIXME: should check for http vs https
         return context        
 
 

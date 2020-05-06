@@ -272,7 +272,7 @@ leadershipComponent = Vue.component('leadership-component', {
     created: function () {
         // On creation, query server to get leadership condition data
         axios = this.prep_axios()
-        url = "http://127.0.0.1:8000/groups/get_leadership_condition_data/{{ object.pk}}/"
+        url = "{{ base_url }}/groups/get_leadership_condition_data/{{ object.pk}}/"
         params = { }
         axios.post(url, params)
         .then(response => { 
@@ -391,7 +391,7 @@ leadershipComponent = Vue.component('leadership-component', {
             return actors
         },
         update_owners() {
-            url = "http://127.0.0.1:8000/groups/update_owners/{{ object.pk}}/";
+            url = "{{ base_url }}/groups/update_owners/{{ object.pk}}/";
             params = { owner_roles: this.owner_roles_to_submit, owner_actors: this.owner_actors_to_submit }
             implementationCallback = (response) => {
                 this.governance_info = response.data.governance_info
@@ -399,7 +399,7 @@ leadershipComponent = Vue.component('leadership-component', {
             this.submit_axios_multiple_action_call(url, params, implementationCallback)
         },
         update_governors() {
-            url = "http://127.0.0.1:8000/groups/update_governors/{{ object.pk}}/";
+            url = "{{ base_url }}/groups/update_governors/{{ object.pk}}/";
             params = { governor_roles: this.governor_roles_to_submit, governor_actors: this.governor_actors_to_submit }
             implementationCallback = (response) => {
                 this.governance_info = response.data.governance_info

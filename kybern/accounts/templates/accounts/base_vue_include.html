@@ -449,13 +449,13 @@
         },
         actions: {
             addMembers ({ commit, state, dispatch }, payload) { 
-                url = "http://127.0.0.1:8000/groups/add_members/{{ object.pk}}/"
+                url = "{{ base_url }}/groups/add_members/{{ object.pk}}/"
                 params = { user_pks : payload.user_pks }
                 implementationCallback = () => { commit('ADD_MEMBERS', { user_pks: payload.user_pks }) }
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             removeMembers ({ commit, state, dispatch }, payload) { 
-                url = "http://127.0.0.1:8000/groups/remove_members/{{ object.pk}}/"
+                url = "{{ base_url }}/groups/remove_members/{{ object.pk}}/"
                 params = { user_pks : payload.user_pks }
                 implementationCallback = () => { 
                     commit('REMOVE_USERS_FROM_ALL_ROLES', { user_pks: payload.user_pks })
@@ -464,27 +464,27 @@
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             addUsersToRole ({ commit, state, dispatch }, payload) { 
-                url = "http://127.0.0.1:8000/groups/add_people_to_role/{{ object.pk}}/"
+                url = "{{ base_url }}/groups/add_people_to_role/{{ object.pk}}/"
                 params = { role_name : payload.role_name, user_pks: payload.user_pks }
                 implementationCallback = () => { commit('ADD_USERS_TO_ROLE', 
                     { role_name : payload.role_name, user_pks: payload.user_pks }) }
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             removeUsersFromRole ({ commit, state, dispatch }, payload) {
-                url = "http://127.0.0.1:8000/groups/remove_people_from_role/{{ object.pk}}/"
+                url = "{{ base_url }}/groups/remove_people_from_role/{{ object.pk}}/"
                 params = { role_name : payload.role_name, user_pks: payload.user_pks }
                 implementationCallback = () => { commit('REMOVE_USERS_FROM_ROLE', 
                     { role_name : payload.role_name, user_pks: payload.user_pks }) }
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             addRole ({ commit, state, dispatch }, payload) {
-                url = "http://127.0.0.1:8000/groups/add_role/{{ object.pk}}/"
+                url = "{{ base_url }}/groups/add_role/{{ object.pk}}/"
                 params = { role_name: payload.role_name }
                 implementationCallback = () => { commit('ADD_ROLE', { role_name: payload.role_name }) }
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             updateOwners({ commit, state, dispatch}, payload) {
-                url = "http://127.0.0.1:8000/groups/update_owners/{{ object.pk}}/"
+                url = "{{ base_url }}/groups/update_owners/{{ object.pk}}/"
                 params = { owner_roles: payload.roles, owner_actors: payload.actors }
                 implementationCallback = () => { 
                     roles_to_add = payload.roles.filter(x => !state.owners.roles.includes(x))
@@ -497,7 +497,7 @@
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             updateGovernors({ commit, state, dispatch}, payload) {
-                url = "http://127.0.0.1:8000/groups/update_governors/{{ object.pk}}/"
+                url = "{{ base_url }}/groups/update_governors/{{ object.pk}}/"
                 params = { governor_roles: payload.roles, governor_actors: payload.actors }
                 implementationCallback = () => { 
                     roles_to_add = payload.roles.filter(x => !state.governors.roles.includes(x))
@@ -510,7 +510,7 @@
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             refreshRoleData ({ commit, state }, payload) { 
-                url = "http://127.0.0.1:8000/groups/get_data_for_role/{{ object.pk}}/"
+                url = "{{ base_url }}/groups/get_data_for_role/{{ object.pk}}/"
                 params = { role_name : payload.role }
                 implementationCallback = (response) => { 
                     commit('REPLACE_ROLE_PERMISSIONS', { role: payload.role, pks: response.data.role_permissions })
@@ -532,7 +532,7 @@
                 return standard_get_api_call(url, params, implementationCallback)
             },
             addPermission ({ commit, state, dispatch }, payload) { 
-                url = "http://127.0.0.1:8000/groups/add_permission/{{ object.pk}}/"
+                url = "{{ base_url }}/groups/add_permission/{{ object.pk}}/"
                 params = { permission_type : payload.permission_selected, permission_roles : payload.role, 
                         permission_configuration : payload.configuration }
                 implementationCallback = (response) => { 
@@ -546,7 +546,7 @@
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             updatePermission ({ commit, state, dispatch }, payload) { 
-                url = "http://127.0.0.1:8000/groups/update_permission/{{ object.pk}}/"
+                url = "{{ base_url }}/groups/update_permission/{{ object.pk}}/"
                 params = { permission_id : payload.permission_id, permission_configuration : payload.configuration,
                     actors: payload.actors, roles: payload.roles }
                 implementationCallback = (response) => { 
@@ -559,7 +559,7 @@
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             removePermission ({ commit, getters, dispatch }, payload) {  
-                url = "http://127.0.0.1:8000/groups/delete_permission/{{ object.pk}}/";
+                url = "{{ base_url }}/groups/delete_permission/{{ object.pk}}/";
                 params = { permission_id : payload.permission_id }
                 implementationCallback = (response) => {
                     condlist = getters.conditionObjectForPermission(response.data.removed_permission_pk)
@@ -575,7 +575,7 @@
             },
             // Conditions
             addCondition ({ commit, state, dispatch }, payload) { 
-                url = "http://127.0.0.1:8000/groups/manage_condition/{{ object.pk}}/";
+                url = "{{ base_url }}/groups/manage_condition/{{ object.pk}}/";
                 params = { request_type: "add", condition_type: payload.condition_selected, 
                             target_permission_id: payload.permission, condition_configuration: payload.configuration,
                             target_type: payload.target_type, called_for: payload.called_for }
@@ -595,7 +595,7 @@
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             updateCondition ({ commit, state, dispatch }, payload) { 
-                url = "http://127.0.0.1:8000/groups/manage_condition/{{ object.pk}}/";
+                url = "{{ base_url }}/groups/manage_condition/{{ object.pk}}/";
                 params = { request_type: "update", condition_id: payload.condition_to_edit, 
                             target_permission_id: payload.permission, condition_configuration: payload.configuration,
                             target_type: payload.target_type} 
@@ -609,7 +609,7 @@
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             removeCondition ({ commit, state, dispatch }, payload) {  
-                url = "http://127.0.0.1:8000/groups/manage_condition/{{ object.pk}}/";
+                url = "{{ base_url }}/groups/manage_condition/{{ object.pk}}/";
                 params = { request_type: "delete", condition_id: payload.condition_id, 
                             target_permission_id: payload.permission_id, target_type: payload.target_type,
                             called_for: payload.called_for }  
@@ -626,7 +626,7 @@
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             loadActions({ commit, state, dispatch}, payload) { 
-                url = "http://127.0.0.1:8000/groups/get_action_data_for_target/";
+                url = "{{ base_url }}/groups/get_action_data_for_target/";
                 params = { item_id: payload.item_id, item_model: payload.item_model }
                 implementationCallback = (response) => {
                     item_key = payload.item_id + "_" + payload.item_model
@@ -635,7 +635,7 @@
                 return standard_get_api_call(url, params, implementationCallback, dispatch)
             },
             addOrUpdateAction ({ commit, state, dispatch}, payload) {
-                url = "http://127.0.0.1:8000/groups/get_action_data/";
+                url = "{{ base_url }}/groups/get_action_data/";
                 params = { action_pk : payload.action_pk }
                 implementationCallback = (response) => {
                     item_key = response.data.action_data.action_target_pk + "_" + response.data.action_data.action_target_model
@@ -644,7 +644,7 @@
                 return standard_get_api_call(url, params, implementationCallback, dispatch)
             },
             addForum({ commit, state, dispatch}, payload) {
-                url = "http://127.0.0.1:8000/groups/1/add_forum/"
+                url = "{{ base_url }}/groups/1/add_forum/"
                 params = { name: payload.name, description: payload.description }
                 implementationCallback = (response) => {
                     commit('ADD_OR_UPDATE_FORUM', { forum_data : response.data.forum_data })
@@ -652,7 +652,7 @@
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             editForum({ commit, state, dispatch}, payload) { 
-                url = "http://127.0.0.1:8000/groups/1/edit_forum/"
+                url = "{{ base_url }}/groups/1/edit_forum/"
                 params = { pk: payload.pk, name: payload.name, description: payload.description }
                 implementationCallback = (response) => {
                     commit('ADD_OR_UPDATE_FORUM', { forum_data : response.data.forum_data })
@@ -660,7 +660,7 @@
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             deleteForum({ commit, state, dispatch}, payload) { 
-                url = "http://127.0.0.1:8000/groups/1/delete_forum/"
+                url = "{{ base_url }}/groups/1/delete_forum/"
                 params = { pk: payload.pk }
                 implementationCallback = (response) => {
                     commit('DELETE_FORUM', { pk : response.data.deleted_forum_pk })
@@ -669,7 +669,7 @@
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             getPermissionsAndConditionsForItem({ commit, state, dispatch}, payload) { 
-                url = "http://127.0.0.1:8000/groups/get_permissions_and_conditions/"
+                url = "{{ base_url }}/groups/get_permissions_and_conditions/"
                 params = { item_id: payload.item_id, item_model: payload.item_model }
                 implementationCallback = (response) => { 
                     commit('REPLACE_ITEM_PERMISSIONS', { item_id: response.data.item_id, 
@@ -693,7 +693,7 @@
                 return standard_get_api_call(url, params, implementationCallback)
             },
             addPermissionToItem ({ commit, state, dispatch }, payload) { 
-                url = "http://127.0.0.1:8000/groups/add_permission_to_item/"
+                url = "{{ base_url }}/groups/add_permission_to_item/"
                 params = { item_id: payload.item_id, item_model: payload.item_model,
                            permission_type : payload.permission_selected, permission_roles : payload.roles, 
                            permission_actors : payload.actors, permission_configuration : payload.configuration }
@@ -709,7 +709,7 @@
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             removePermissionFromItem ({ commit, getters, dispatch }, payload) { 
-                url = "http://127.0.0.1:8000/groups/delete_permission_from_item/";
+                url = "{{ base_url }}/groups/delete_permission_from_item/";
                 params = { permission_id : payload.permission_id, item_id: payload.item_id, 
                             item_model: payload.item_model } 
                 implementationCallback = (response) => {
@@ -726,7 +726,7 @@
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             getPostData({ commit, state, dispatch}, payload) { 
-                url = "http://127.0.0.1:8000/groups/{{ object.pk }}/get_posts/"
+                url = "{{ base_url }}/groups/{{ object.pk }}/get_posts/"
                 params = { forum_pk: payload.forum_pk }
                 implementationCallback = (response) => { 
                     for (index in response.data.posts) {
@@ -736,7 +736,7 @@
                 return standard_get_api_call(url, params, implementationCallback)
             },
             addPost ({ commit, state, dispatch }, payload) { 
-                url = "http://127.0.0.1:8000/groups/{{ object.pk }}/add_post/"
+                url = "{{ base_url }}/groups/{{ object.pk }}/add_post/"
                 params = { forum_pk: payload.forum_pk, title: payload.title, content: payload.content  }
                 implementationCallback = (response) => { 
                     commit('ADD_POST', { post_data: response.data.post_data})
@@ -744,7 +744,7 @@
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             editPost ({ commit, state, dispatch }, payload) { 
-                url = "http://127.0.0.1:8000/groups/{{ object.pk }}/edit_post/"
+                url = "{{ base_url }}/groups/{{ object.pk }}/edit_post/"
                 params = { pk: payload.pk, title: payload.title, content: payload.content  }
                 implementationCallback = (response) => { 
                     commit('EDIT_POST', { post_data: response.data.post_data})
@@ -752,7 +752,7 @@
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             deletePost ({ commit, state, dispatch }, payload) { 
-                url = "http://127.0.0.1:8000/groups/{{ object.pk }}/delete_post/"
+                url = "{{ base_url }}/groups/{{ object.pk }}/delete_post/"
                 params = { pk: payload.pk, forum_pk: payload.forum_pk }
                 implementationCallback = (response) => { 
                     commit('DELETE_POST', { pk: response.data.deleted_post_pk })

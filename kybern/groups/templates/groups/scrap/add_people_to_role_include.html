@@ -72,7 +72,7 @@
                 bvModalEvt.preventDefault();
                 axios.defaults.xsrfCookieName = 'csrftoken';
                 axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
-                url = "http://127.0.0.1:8000/groups/add_people_to_role/{{ object.pk}}/";
+                url = "{{ base_url }}/groups/add_people_to_role/{{ object.pk}}/";
                 params = { role_name: this.$parent.role_to_change_membership, 
                     people_pks: this.people_selected }
                 headers =  { "headers": { 'Content-Type': "application/json" } }
@@ -105,7 +105,7 @@
             removeMember(member_id) {
                 axios.defaults.xsrfCookieName = 'csrftoken';
                 axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
-                url = "http://127.0.0.1:8000/groups/remove_person_from_role/{{ object.pk}}/";
+                url = "{{ base_url }}/groups/remove_person_from_role/{{ object.pk}}/";
                 params = { role_name: this.$parent.role_to_change_membership, 
                     person_to_remove: [member_id] }
                 headers =  { "headers": { 'Content-Type': "application/json" } }

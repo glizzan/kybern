@@ -5,17 +5,19 @@
             <!-- <b>Current Members:</b><b-badge v-for="member in people_in_role" v-bind:key="member.pk" 
                 pill variant="info" class="mx-1">[[ member.name ]]</b-badge> -->
 
-            <vue-multiselect v-model="people_selected" :options="people_to_choose_from" :multiple="true" 
-            :close-on-select="true" :clear-on-select="false" placeholder="No one selected" 
-            label="name" track-by="pk" class="mt-3">
-                <template slot="selection" slot-scope="{ values, search, isOpen }">
-                    <span v-if="!isOpen">
-                        Selected: [[ values ]]
-                    </span>
-                </template>
-            </vue-multiselect>
+            <span id="change_membership_multiselect">
+                <vue-multiselect v-model="people_selected" :options="people_to_choose_from" :multiple="true" 
+                :close-on-select="true" :clear-on-select="false" placeholder="No one selected" 
+                label="name" track-by="pk" class="mt-3">
+                    <template slot="selection" slot-scope="{ values, search, isOpen }">
+                        <span v-if="!isOpen">
+                            Selected: [[ values ]]
+                        </span>
+                    </template>
+                </vue-multiselect>
+            </span>
             
-            <b-button class="btn-sm mt-3" @click="updateMembers()">Save your changes</b-button>
+            <b-button class="btn-sm mt-3" @click="updateMembers()" id="save_member_changes">Save your changes</b-button>
 
         <div class="mb-3" v-if="add_error_message || remove_error_message">
             [[ add_error_message ]]
