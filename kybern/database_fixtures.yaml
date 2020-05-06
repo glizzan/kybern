@@ -109,7 +109,7 @@
     password: pbkdf2_sha256$180000$1C1Rk47SjaXU$jWgDLuvk8QXnPzs2935quEE2sTGCZtuZUNlx3bVgvtQ=
     last_login: null
     is_superuser: false
-    username: emilysonnet
+    username: emilysonnett
     first_name: ''
     last_name: ''
     email: shaunagm@gmail.com

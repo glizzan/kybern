@@ -33,6 +33,13 @@ class BaseTestCase(StaticLiveServerTestCase):
             names.append(item.text)
         return names
 
+    def delete_selected_in_multiselect(self, username):
+        for item in self.browser.find_by_css(".multiselect__tag"):
+            if item.text == username:
+                item.find_by_css(".multiselect__tag-icon").first.click()
+                return True
+        return False
+
     def select_from_multiselect(self, selection, element_css=".multiselect__element"):
         """Helper method to select options given the custom interface vue-multiselect provides."""
         self.browser.find_by_css(".multiselect__select").first.click()
@@ -103,3 +110,87 @@ class GroupBasicsTestCase(BaseTestCase):
         time.sleep(.5)
         self.assertEquals(self.browser.find_by_id('members_member_count').text, "2 people")
 
+    def test_create_role(self):
+        self.login_user("meganrapinoe", "badlands2020")
+        self.browser.visit(self.base_url + "1/")
+        self.scroll_to_bottom_of_page()
+        roles = [item.text for item in self.browser.find_by_css(".role_name_display")]
+        self.assertEquals(roles, ["members"])
+        self.browser.find_by_id('add_role_button').first.click()
+        self.browser.fill('role_name', 'forwards')
+        self.browser.find_by_id('save_role_button').first.click()
+        self.browser.find_by_css(".close").first.click()  # close modal
+        time.sleep(.5)
+        roles = [item.text for item in self.browser.find_by_css(".role_name_display")]
+        self.assertEquals(roles, ["members", "forwards"])
+
+    def test_add_members_to_role(self):
+        self.test_add_members_to_group()
+        self.test_create_role()
+        self.assertEquals(self.browser.find_by_id('forwards_member_count').text, "0 people")
+        self.browser.find_by_id('forwards_changemembers').first.click()
+        self.select_from_multiselect(selection="christenpress")
+        self.assertEquals(["christenpress"], self.get_selected_in_multiselect())
+        self.browser.find_by_id('save_member_changes').first.click()
+        self.browser.find_by_css(".close").first.click()  # close modal
+        time.sleep(.5)
+        self.assertEquals(self.browser.find_by_id('forwards_member_count').text, "1 people")
+
+        
+class PermissionsTestCase(BaseTestCase):
+
+    def setUp(self):
+        from django.contrib.auth.models import User
+        from concord.communities.client import CommunityClient
+        from groups.models import Group
+        self.actor = User.objects.first()
+        self.client = CommunityClient(actor=self.actor)
+        self.client.community_model = Group
+        self.community = self.client.create_community(name="USWNT")
+        self.client.set_target(target=self.community)
+        self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.add_role(role_name="forwards")
+        self.client.add_people_to_role(role_name="forwards", people_to_add=[1,2,3])  # HACK: manually looked up in yaml file
+
+    def test_add_permission_to_role(self):
+        self.login_user("meganrapinoe", "badlands2020")
+        self.browser.visit(self.base_url + "1/")
+        self.scroll_to_bottom_of_page()
+        self.browser.find_by_id('forwards_editrole').first.click()
+        permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
+        self.assertEquals(permissions, [])
+        self.browser.find_by_id('add_permission_button').first.click()
+        self.browser.select("permission_select", 
+            "concord.communities.state_changes.RemoveMembersStateChange")
+        self.browser.find_by_id('save_permission_button').first.click()
+        time.sleep(.5)
+        permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
+        self.assertEquals(permissions, ["remove members from community"])
+
+    def test_adding_permission_changes_site_behavior(self):
+
+        self.test_add_permission_to_role()
+        
+        # Christen Press, a forward, can remove members
+        self.login_user("christenpress", "badlands2020")
+        self.browser.visit(self.base_url + "1/")
+        self.scroll_to_bottom_of_page()
+        self.assertEquals(self.browser.find_by_id('members_member_count').text, "8 people")
+        self.browser.find_by_id('members_changemembers').first.click()
+        self.delete_selected_in_multiselect("tobinheath")
+        self.browser.find_by_id('save_member_changes').first.click()
+        self.browser.find_by_css(".close").first.click()  # close modal
+        time.sleep(.5)
+        self.assertEquals(self.browser.find_by_id('members_member_count').text, "7 people")
+
+        # Emily Sonnett, not a forward, cannot remove members
+        self.login_user("emilysonnett", "badlands2020")
+        self.browser.visit(self.base_url + "1/")
+        self.scroll_to_bottom_of_page()
+        self.browser.find_by_id('members_changemembers').first.click()
+        self.delete_selected_in_multiselect("crystaldunn")
+        self.browser.find_by_id('save_member_changes').first.click()
+        time.sleep(.5)
+        self.assertTrue(self.browser.is_text_present('action did not meet any permission criteria'))
+        self.browser.find_by_css(".close").first.click()  # close modal
+        self.assertEquals(self.browser.find_by_id('members_member_count').text, "7 people")

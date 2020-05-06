@@ -7,7 +7,7 @@
                 <span class="input-group-text" id="role_name_prompt">Role Name</span>
             </div>
             <input type="text" class="form-control" aria-label="role_name" 
-                aria-describedby="role_name_prompt" v-model="new_role_name">
+                aria-describedby="role_name_prompt" v-model="new_role_name" name="role_name">
         </div>
 
         <div class="mb-3 text-warning" v-if="error_message">
@@ -17,7 +17,7 @@
         <!-- <div>FYI, here are the current roles: <span v-for="role in roles" class="ml-3">[[role.name]]</span></div> -->
 
         <template v-slot:modal-footer="{ ok }">
-            <b-button size="sm" variant="success" @click="ok()">Save</b-button>
+            <b-button size="sm" variant="success" @click="ok()" id="save_role_button">Save</b-button>
         </template>
 
     </b-modal>

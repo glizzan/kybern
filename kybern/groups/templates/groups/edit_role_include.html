@@ -6,9 +6,9 @@
 
         <b-list-group v-for="pair in permission_condition_pairs" v-bind:key="pair.permission.id">
             <b-list-group-item>
-                <div class="btn-group" role="group" aria-label="Basic example">
+                <div class="btn-group permission-row" role="group" aria-label="Basic example">
                     <b-button variant="light">
-                        <small>[[ pair.permission.display ]]</small>
+                        <small class="permission-display">[[ pair.permission.display ]]</small>
                         <span v-on:click="edit_permission(pair.permission.id)" class="badge badge-light ml-1"  >🖉</span>
                         <span v-on:click="delete_permission(pair.permission.id)" class="badge badge-light ml-1"  >🗑</span>
                     </b-button>

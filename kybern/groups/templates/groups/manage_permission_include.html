@@ -2,13 +2,15 @@
     <div class="border m-2 p-2 text-center"> 
 
         <!-- Before anyone has indicated they want add or edit a permission, just display a button. -->
-        <b-button v-if="mode == 'start'" v-on:click="switch_to_create_mode()" class="btn-sm my-3">Add a permission</b-button>   
+        <b-button v-if="mode == 'start'" v-on:click="switch_to_create_mode()" class="btn-sm my-3"
+            id="add_permission_button">Add a permission</b-button>   
 
         <!-- If we're creating a new permission -->
         <span v-if="mode == 'create' && !permission_selected ">
                 <b>Select permission to add</b> 
                 <template><div>
-                    <b-form-select v-model="permission_selected" :options="permission_options" :select-size="4">
+                    <b-form-select v-model="permission_selected" :options="permission_options" :select-size="4"
+                        name="permission_select">
                     </b-form-select>
                 </div></template>
         </span>
@@ -31,9 +33,9 @@
 
 
             <b-button v-if="permission_selected && mode =='create'" size="sm" 
-                class="mt-3" @click="add_permission()">Save new permission</b-button>
+                class="mt-3" @click="add_permission()" id="save_permission_button">Save new permission</b-button>
             <b-button v-if="permission_to_edit && mode == 'update'" size="sm" 
-                class="mt-3" @click="update_permission()">Save changes to permission</b-button>
+                class="mt-3" @click="update_permission()" id="save_permission_button">Save changes to permission</b-button>
 
         </span>
 
