@@ -49,6 +49,12 @@ class BaseTestCase(StaticLiveServerTestCase):
                 return True
         return False
 
+    def go_to_group(self, group_name):
+        """Helper method to navigate to group detail page, used because liveservertestcase is finicky about
+        pks."""
+        self.browser.visit(self.base_url)
+        self.browser.find_by_text(group_name).first.click()
+
 
 class AccountsTestCase(BaseTestCase):
 
@@ -92,13 +98,13 @@ class GroupBasicsTestCase(BaseTestCase):
         self.browser.links.find_by_text('Create a group').first.click()
         self.browser.fill('name', 'NWSL')
         self.browser.fill('group_description', 'For NWSL players')
-        self.browser.find_by_id('create_group_button').first.click()
-        self.assertEqual(self.browser.url, self.base_url + "2/")
+        self.browser.find_by_id('create_group_button').first.click()        
         self.assertTrue(self.browser.is_text_present('view group history'))  # shows we're on group detail page now
+        self.assertTrue(self.browser.is_text_present("NWSL's Forums"))  # shows we're on newly created detail page now
 
     def test_add_members_to_group(self):
         self.login_user("meganrapinoe", "badlands2020")
-        self.browser.visit(self.base_url + "1/")
+        self.go_to_group("USWNT")
         self.scroll_to_bottom_of_page()
         self.assertEquals(self.browser.find_by_id('members_member_count').text, "1 people")
         self.browser.find_by_id('members_changemembers').first.click()
@@ -112,7 +118,7 @@ class GroupBasicsTestCase(BaseTestCase):
 
     def test_create_role(self):
         self.login_user("meganrapinoe", "badlands2020")
-        self.browser.visit(self.base_url + "1/")
+        self.go_to_group("USWNT")
         self.scroll_to_bottom_of_page()
         roles = [item.text for item in self.browser.find_by_css(".role_name_display")]
         self.assertEquals(roles, ["members"])
@@ -154,7 +160,7 @@ class PermissionsTestCase(BaseTestCase):
 
     def test_add_permission_to_role(self):
         self.login_user("meganrapinoe", "badlands2020")
-        self.browser.visit(self.base_url + "1/")
+        self.go_to_group("USWNT")
         self.scroll_to_bottom_of_page()
         self.browser.find_by_id('forwards_editrole').first.click()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
@@ -173,7 +179,7 @@ class PermissionsTestCase(BaseTestCase):
         
         # Christen Press, a forward, can remove members
         self.login_user("christenpress", "badlands2020")
-        self.browser.visit(self.base_url + "1/")
+        self.go_to_group("USWNT")
         self.scroll_to_bottom_of_page()
         self.assertEquals(self.browser.find_by_id('members_member_count').text, "8 people")
         self.browser.find_by_id('members_changemembers').first.click()
@@ -185,7 +191,7 @@ class PermissionsTestCase(BaseTestCase):
 
         # Emily Sonnett, not a forward, cannot remove members
         self.login_user("emilysonnett", "badlands2020")
-        self.browser.visit(self.base_url + "1/")
+        self.go_to_group("USWNT")
         self.scroll_to_bottom_of_page()
         self.browser.find_by_id('members_changemembers').first.click()
         self.delete_selected_in_multiselect("crystaldunn")
