@@ -86,7 +86,11 @@
 
             // Forums data
             forums: {{ forums|safe }},  // [ { pk: pk, name: name, description: description }],
-            posts: []        // [ { forum_pk: pk, title: title, content: content, author: author, etc } ] }
+            posts: [],        // [ { forum_pk: pk, title: title, content: content, author: author, etc } ] }
+
+            // Comment data
+            item_comments: {},          // { item_pk + "_" + item_model: [pk, pk, pk] } 
+            comments: {}                // { int(pk) : { text: x, created_at: x, author: pk, etc}}
         },
         getters: {
             memberNames: (state, getters) => {
@@ -237,7 +241,15 @@
             },
             getPostsForForum: (state, getters) => (forum_pk) => {
                 return state.posts.filter(post => post.forum_pk == forum_pk)
-            }
+            },
+            getCommentsForItem: (state, getters) => (item_key) => {
+                comments = []
+                for (index in state.item_comments[item_key]) {
+                    comment_pk = state.item_comments[item_key][index]
+                    comments.push(state.comments[comment_pk])
+                }
+                return comments
+            },
         },
         mutations: {
             ADD_ROLE (state, data) {
@@ -445,6 +457,26 @@
                         state.posts.splice(index, 1)
                     }
                 }
+            },
+            REPLACE_ITEM_COMMENTS (state, data) {
+                item_key = data.item_id + "_" + data.item_model
+                Vue.set(state.item_comments, item_key, data.pks)
+            },
+            ADD_COMMENT_TO_ITEM (state, data ) {
+                item_key = data.item_id + "_" + data.item_model
+                comment_index = state.item_comments[item_key].indexOf(data.comment_pk)
+                if (comment_index == -1) { state.item_comments[item_key].push(parseInt(data.comment_pk)) }
+            },
+            REMOVE_COMMENT_FROM_ITEM (state, data) {
+                item_key = data.item_id + "_" + data.item_model
+                comment_index = state.item_comments[item_key].indexOf(data.comment_pk)
+                if (comment_index > -1) { state.item_comments[item_key].splice(comment_index, 1) }
+            },
+            ADD_OR_UPDATE_COMMENT (state, data) {
+                Vue.set(state.comments, data.pk, data.data)
+            },
+            DELETE_COMMENT (state, data) {
+                Vue.delete(state.comments, data.pk);
             }
         },
         actions: {
@@ -758,7 +790,51 @@
                     commit('DELETE_POST', { pk: response.data.deleted_post_pk })
                 }
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
-            }
+            },
+            getCommentData({ commit, state, dispatch }, payload) { 
+                url = "{{ base_url }}/groups/get_comment_data/"
+                params = { item_id: payload.item_id, item_model: payload.item_model }
+                implementationCallback = (response) => { 
+                    for (comment_pk in response.data.comments) {
+                        commit('ADD_OR_UPDATE_COMMENT', { pk: comment_pk, data: response.data.comments[comment_pk] })
+                    }
+                    commit('REPLACE_ITEM_COMMENTS', { item_id: response.data.item_id, item_model: response.data.item_model, 
+                        pks: response.data.comment_pks })
+                }
+                return standard_get_api_call(url, params, implementationCallback)
+            },
+            addComment({ commit, state, dispatch }, payload) { 
+                url = "{{ base_url }}/groups/add_comment/"
+                params = { item_id: payload.item_id, item_model: payload.item_model, text: payload.text }
+                implementationCallback = (response) => { 
+                    pk = Object.keys(response.data.comment)[0]
+                    data = response.data.comment[pk]
+                    commit('ADD_OR_UPDATE_COMMENT', { pk: pk, data: data })
+                    commit('ADD_COMMENT_TO_ITEM', { comment_pk: pk, item_id: payload.item_id, item_model: payload.item_model })
+                }
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
+            },
+            editComment({ commit, state, dispatch }, payload) { 
+                url = "{{ base_url }}/groups/edit_comment/"
+                params = { item_id: payload.item_id, item_model: payload.item_model, text: payload.text,
+                    comment_pk: payload.comment_pk }
+                implementationCallback = (response) => { 
+                    pk = Object.keys(response.data.comment)[0]
+                    data = response.data.comment[pk]
+                    commit('ADD_OR_UPDATE_COMMENT', { pk: pk, data: data })
+                }
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
+            },
+            deleteComment({ commit, state, dispatch }, payload) { 
+                url = "{{ base_url }}/groups/delete_comment/"
+                params = { item_id: payload.item_id, item_model: payload.item_model, comment_pk: payload.comment_pk }
+                implementationCallback = (response) => { 
+                    commit('REMOVE_COMMENT_FROM_ITEM', { item_id: payload.item_id, item_model: payload.item_model,
+                        comment_pk:response.data.deleted_comment_pk })
+                    commit('DELETE_COMMENT', { pk: response.data.deleted_comment_pk })
+                }
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
+            }  
         }
     })
 

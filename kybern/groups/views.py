@@ -10,9 +10,12 @@ from concord.actions.client import ActionClient
 from concord.communities.client import CommunityClient
 from concord.permission_resources.client import PermissionResourceClient
 from concord.conditionals.client import PermissionConditionalClient, CommunityConditionalClient
+from concord.resources.client import CommentClient
+from concord.resources.models import Comment
 
 from .models import Group, Forum, Post
 from .client import ForumClient
+
 
 
 ##################################
@@ -140,6 +143,14 @@ def serialize_existing_condition_configuration_for_vue(condition):
     return { condition.pk: condition.condition_data.get_configurable_fields_with_data() }
 
 
+def serialize_existing_comment_for_vue(comment):
+    """ Serializes comment from Django model to JSOn-serializable dict.
+    (note: this matches format specified in vuex store)    
+    """
+    return { comment.pk: { 'pk': comment.pk, 'text': comment.text, 'commentor_pk': comment.commentor.pk, 
+        'created_at': comment.created_at, 'updated_at': comment.updated_at } }
+
+
 def serialize_forum_for_vue(forum):
     return { 'pk': forum.pk, 'name': forum.name, 'description': forum.description }
 
@@ -233,7 +244,7 @@ class GroupDetailView(generic.DetailView):
         context["permission_options"] = {}
         context["permission_configuration_options"] = {}
 
-        for model_class in [Group, Forum, Post]:
+        for model_class in [Group, Forum, Post, Comment]:
 
             # get settable permissions given model class
             settable_permissions = self.permissionClient.get_settable_permissions_for_model(model_class)
@@ -958,8 +969,7 @@ def get_permissions_and_conditions(request):
     model_class = get_model(request_data.get("item_model"))
     target = model_class.objects.get(pk=item_id)
 
-    permClient = PermissionResourceClient(actor=request.user)
-    permClient.set_target(target=target)
+    permClient = PermissionResourceClient(actor=request.user, target=target)
 
     existing_permissions = permClient.get_all_permissions()
 
@@ -1031,4 +1041,81 @@ def delete_permission_from_item(request):
     action, result = permissionClient.remove_permission(item_pk=permission_id)
     action_dict = get_action_dict(action)
     action_dict.update({ "removed_permission_pk": permission_id, "item_id": item_id, "item_model": request_data.get("item_model") })
+    return JsonResponse(action_dict)
+
+
+#####################
+### Comment views ###
+#####################
+
+
+def get_comment_data(request):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+
+    item_id = request_data.get("item_id")
+    model_class = get_model(request_data.get("item_model"))
+    target = model_class.objects.get(pk=item_id)
+
+    commentClient = CommentClient(actor=request.user, target=target)
+    existing_comments = commentClient.get_all_comments_on_target()
+
+    comment_pks, comments = [], {}
+    for comment in existing_comments:
+        comment_pks.append(comment.pk)
+        comments.update(serialize_existing_comment_for_vue(comment))
+        
+    return JsonResponse({ "item_id": item_id, "item_model": request_data.get("item_model"), 
+        "comments": comments, "comment_pks": comment_pks })
+
+
+def add_comment(request):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+
+    item_id = request_data.get("item_id")
+    model_class = get_model(request_data.get("item_model"))
+    target = model_class.objects.get(pk=item_id)
+    text = request_data.get("text")
+
+    commentClient = CommentClient(actor=request.user, target=target)
+    action, result = commentClient.add_comment(text=text)
+
+    action_dict = get_action_dict(action)
+    action_dict.update({ 'comment': serialize_existing_comment_for_vue(result) })
+    return JsonResponse(action_dict)
+
+
+def edit_comment(request):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+
+    item_id = request_data.get("item_id")
+    model_class = get_model(request_data.get("item_model"))
+    target = model_class.objects.get(pk=item_id)
+    text = request_data.get("text")
+    comment_pk = request_data.get("comment_pk")
+
+    commentClient = CommentClient(actor=request.user, target=target)
+    action, result = commentClient.edit_comment(pk=comment_pk, text=text)
+
+    action_dict = get_action_dict(action)
+    action_dict.update({ 'comment': serialize_existing_comment_for_vue(result) })
+    return JsonResponse(action_dict)
+
+
+def delete_comment(request):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+
+    item_id = request_data.get("item_id")
+    model_class = get_model(request_data.get("item_model"))
+    target = model_class.objects.get(pk=item_id)
+    comment_pk = request_data.get("comment_pk")
+
+    commentClient = CommentClient(actor=request.user, target=target)
+    action, result = commentClient.delete_comment(pk=comment_pk)
+
+    action_dict = get_action_dict(action)
+    action_dict.update({ 'deleted_comment_pk': comment_pk })
     return JsonResponse(action_dict)

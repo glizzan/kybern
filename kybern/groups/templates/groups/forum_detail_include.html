@@ -25,6 +25,8 @@
                   <small class="text-muted">Posted [[ display_date(post.created) ]] by [[ getUserName(post.author) ]]</small>
                 </template>
 
+                <comments :item_id=post.pk :item_model="'post'"></comments>
+
             </b-card>
 
         </span>
@@ -96,9 +98,7 @@ forumComponent = Vue.component('forum-component', {
     },
     methods: {
         ...Vuex.mapActions(['getPostData', 'addPost', 'editPost', 'deletePost']),
-        display_date(date) {
-            return Date(date)
-        },
+        display_date(date) { return Date(date) },
         edit_post_modal(post){
             this.post_title = post.title
             this.post_content = post.content

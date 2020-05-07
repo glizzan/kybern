@@ -1,0 +1,126 @@
+<script type="text/x-template" id="comment_template">
+
+    <span>
+
+        <b-button class="btn-sm mt-3" v-b-modal="comment_modal_id">
+            Add a comment</b-button>
+        <b-button v-if="item_comments.length > 0 && show_comments == false" class="btn-sm mt-3" 
+            v-on:click="show_comments = true">
+            Show comments</b-button>
+        <b-button v-if="item_comments.length > 0 && show_comments == true" class="btn-sm mt-3" 
+            v-on:click="show_comments = false">
+            Hide comments</b-button>
+
+        <span v-if="show_comments">
+
+            <b-card v-for="comment in item_comments" v-bind:key=comment.pk class="my-3 w-100">
+
+                    <b-card-text>[[ comment.text ]]</b-card-text>
+    
+                    <b-button variant="outline-secondary" class="btn-sm" v-b-modal="comment_modal_id" 
+                        @click="prep_comment_modal_for_edit(comment.pk)">edit</b-button>
+                    <b-button variant="outline-secondary" class="btn-sm"
+                        @click="delete_comment(comment.pk)">delete</b-button>
+
+                    <permissioned_item :item_id=comment.pk :item_model="'comment'" :item_name="'unnamed comment'" >
+                    </permissioned_item>
+
+                    <action-history :item_id=comment.pk :item_model="'comment'" :item_name="'unnamed comment'"
+                        :launch_button_text="'view comment history'"></action-history> 
+    
+                    <template v-slot:footer>
+                        <small class="text-muted">Posted [[ display_date(comment.created_at) ]] 
+                            by [[ getUserName(comment.commentor_pk) ]]</small>
+                    </template>
+    
+                </b-card>
+
+        </span>
+
+        <b-modal :id="comment_modal_id" :title="title_string" hide-footer>
+
+            <b-form-group id="comment_text_group">
+                <b-form-textarea id="comment_text" v-model="comment_text" placeholder="Write your comment here">
+                </b-form-textarea>
+            </b-form-group>
+
+            <b-button v-if="mode=='add'" variant="outline-secondary" class="btn-sm"  @click="add_comment">submit</b-button>
+            <b-button v-if="mode=='edit'" variant="outline-secondary" class="btn-sm"  @click="edit_comment">submit</b-button>
+
+            <div>[[ error_message ]]</div>
+
+        </b-modal>
+
+    </span>
+
+</script>
+
+
+<script type="application/javascript"> 
+
+
+    commentComponent = Vue.component('comments', {
+        delimiters: ['[[', ']]'],
+        template: '#comment_template',
+        props: ['item_id', 'item_model'],
+        store,
+        data: function() {
+            return {
+                show_comments: false,
+                mode: "add",
+                comment_pk: null,
+                comment_text: '',
+                error_message: ''
+            }
+        },
+        created () {
+            this.getCommentData({ item_id: this.item_id, item_model: this.item_model })
+            .catch(error => { console.log("Error getting comment data")  })
+        },
+        computed: {
+            ...Vuex.mapGetters(['getCommentsForItem', 'getUserName']),
+            item_comments: function() {
+              if (this.item_id && this.item_model) {
+                  return this.getCommentsForItem(this.item_id + "_" + this.item_model)
+              } else {
+                  return []
+              }
+            },
+            title_string: function() {
+                if (this.mode == "add") {  return "Add comment"  } 
+                else {  return "Edit comment"  }
+            },
+            comment_modal_id: function() {
+                return "item_comment_modal_" + this.item_id + "_" + this.item_model
+            }
+        },
+        methods: {
+            ...Vuex.mapActions(['getCommentData', 'addComment', 'editComment', 'deleteComment']),
+            display_date(date) { return Date(date) },
+            prep_comment_modal_for_edit(pk) {
+                this.mode = 'edit'
+                this.comment_pk = pk
+                for (index in this.item_comments) {
+                    if (this.item_comments[index].pk == pk) {
+                        this.comment_text = this.item_comments[index].text
+                    }
+                }
+            },
+            add_comment() {
+                this.addComment({ item_id: this.item_id, item_model: this.item_model, text: this.comment_text })
+                .catch(error => {  this.error_message = error })
+            },
+            edit_comment() {
+                this.editComment({ item_id: this.item_id, item_model: this.item_model, text: this.comment_text,
+                    comment_pk: this.comment_pk })
+                .then(response => { this.mode = 'add'; this.comment_pk = null; })
+                .catch(error => {  this.error_message = error })
+            },
+            delete_comment(pk) {
+                this.deleteComment({ item_id: this.item_id, item_model: this.item_model, comment_pk: pk })
+                .catch(error => {  console.log(error) })
+            }
+        },
+    });
+
+</script>

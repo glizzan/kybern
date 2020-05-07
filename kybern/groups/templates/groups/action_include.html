@@ -8,7 +8,8 @@
     <!-- Modal with more detailed info on all actions -->
     <b-modal :id=modal_id :title="title_string" class="modal fade" size="xl" @ok="handleOk">
       
-      <b-container fluid id="action_history_table" v-if=!condition_type>   <!-- if condition is selected, replace table with ux for condition -->
+      <b-container fluid id="action_history_table" v-if="!condition_type && !action_to_view_comments_on">   
+          <!-- if condition is selected, or comments to view, replace table with ux for those things-->
 
             <b-col lg="6" class="my-1">
                 <b-form-group label="Filter" label-cols-sm="3" label-align-sm="right" label-size="sm"
@@ -33,6 +34,11 @@
                       @click="launch_condition_modal(data.item)" size='sm'>view</b-button>
               </template>
 
+              <!-- Custom formatting for discussion/comments column -->
+              <template v-slot:cell(action_pk)="data">
+                  <b-button @click="action_to_view_comments_on = data.item.action_pk" size='sm'>view discussion</b-button>
+              </template>
+
             </b-table>
 
         </b-container>
@@ -44,6 +50,9 @@
         <vote-condition-ui v-if="condition_type=='VoteCondition'" :condition_pk=condition_pk
           :condition_type=condition_type :action_details=action_details>
         </vote-condition-ui>
+
+        <comments v-if="action_to_view_comments_on" :item_id=action_to_view_comments_on :item_model="'action'">
+        </comments>
         
     </b-modal>   
   </div>
@@ -71,6 +80,7 @@ actionHistoryComponent = Vue.component('action-history', {
               },
               { key: 'status', sortable: true },
               { key: 'resolution passed by', sortable: true },
+              { key: 'action_pk', headerTitle: 'discussion', sortable: false },
               { key: 'has_condition', sortable: true }
             ],
             sortBy: 'created',
@@ -80,7 +90,8 @@ actionHistoryComponent = Vue.component('action-history', {
             // Info to pass to condition modal
             condition_type: null,
             condition_data: null,
-            action_details: null
+            action_details: null,
+            action_to_view_comments_on: null
           }
     },
     computed: {
@@ -97,10 +108,12 @@ actionHistoryComponent = Vue.component('action-history', {
         return "action_history_modal_" + this.item_id + "_" + this.item_model
       },
       title_string: function() {
-        if (this.condition_type == null) {
-          return "Action history for " + this.item_model + " " + this.item_name
-        } else {
+        if (this.action_to_view_comments_on != null) {
+          return "Viewing discussion of action " + this.action_to_view_comments_on
+        } else if (this.condition_type != null) {
           return this.condition_type + " on action '" + this.action_details.description + "'"
+        } else {
+          return "Action history for " + this.item_model + " " + this.item_name
         }
       }
     },
@@ -114,6 +127,7 @@ actionHistoryComponent = Vue.component('action-history', {
         this.condition_type = null    // clear state
         this.condition_pk = null
         this.action_details = null
+        this.action_to_view_comments_on = null
       },
       launch_condition_modal(item) {  
         this.condition_type = item.has_condition.type
