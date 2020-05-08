@@ -2,7 +2,13 @@
 
     <span id="permissioned_item">
 
-        <span v-b-modal="modal_id" v-on:click="edit_permissions()" class="badge badge-light ml-1"  >🖉</span>
+        <span v-if="display_style == 'inline-button'">
+            <b-button variant="outline-secondary" class="btn-sm" v-b-modal="modal_id" @click="edit_permissions()">
+                permissions</b-button>
+        </span>
+        <span v-else>
+            <span v-b-modal="modal_id" v-on:click="edit_permissions()" class="badge badge-light ml-1"  >🖉</span>
+        </span>
 
         <b-modal :id=modal_id :title="title_string" hide-footer> 
         
@@ -26,7 +32,7 @@
                 </b-list-group-item>
             </b-list-group>
 
-            <p v-if="!permission_condition_pairs.length">This role has no permissions yet.</p>
+            <p v-if="!permission_condition_pairs.length">No permissions have been set yet.</p>
 
             <div class="mb-3" v-if="error_message">[[ error_message ]]</div>
 
@@ -49,7 +55,7 @@
     permissionedItemComponent = Vue.component('permissioned_item', {
         delimiters: ['[[', ']]'],
         template: '#permissioned_item_template',
-        props: ['item_id', 'item_model', 'item_name'],
+        props: ['item_id', 'item_model', 'item_name', 'display_style'],
         store,
         data: function() {
             return {

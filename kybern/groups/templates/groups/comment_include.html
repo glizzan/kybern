@@ -2,33 +2,31 @@
 
     <span>
 
-        <b-button class="btn-sm mt-3" v-b-modal="comment_modal_id">
+        <b-button class="btn-sm" v-b-modal="comment_modal_id">
             Add a comment</b-button>
-        <b-button v-if="item_comments.length > 0 && show_comments == false" class="btn-sm mt-3" 
+        <b-button v-if="item_comments.length > 0 && show_comments == false" class="btn-sm" 
             v-on:click="show_comments = true">
             Show comments</b-button>
-        <b-button v-if="item_comments.length > 0 && show_comments == true" class="btn-sm mt-3" 
+        <b-button v-if="item_comments.length > 0 && show_comments == true" class="btn-sm" 
             v-on:click="show_comments = false">
             Hide comments</b-button>
 
         <span v-if="show_comments">
 
-            <b-card v-for="comment in item_comments" v-bind:key=comment.pk class="my-3 w-100">
+            <b-card v-for="comment in item_comments" v-bind:key=comment.pk class="my-3 w-100 bg-light">
 
                     <b-card-text>[[ comment.text ]]</b-card-text>
     
-                    <b-button variant="outline-secondary" class="btn-sm" v-b-modal="comment_modal_id" 
-                        @click="prep_comment_modal_for_edit(comment.pk)">edit</b-button>
-                    <b-button variant="outline-secondary" class="btn-sm"
-                        @click="delete_comment(comment.pk)">delete</b-button>
-
-                    <permissioned_item :item_id=comment.pk :item_model="'comment'" :item_name="'unnamed comment'" >
-                    </permissioned_item>
-
-                    <action-history :item_id=comment.pk :item_model="'comment'" :item_name="'unnamed comment'"
-                        :launch_button_text="'view comment history'"></action-history> 
-    
                     <template v-slot:footer>
+                        <b-button variant="outline-secondary" class="btn-sm" v-b-modal="comment_modal_id" 
+                            @click="prep_comment_modal_for_edit(comment.pk)">edit</b-button>
+                        <b-button variant="outline-secondary" class="btn-sm"
+                            @click="delete_comment(comment.pk)">delete</b-button>
+                        <permissioned_item :item_id=comment.pk :item_model="'comment'" 
+                            :item_name="comment_name(comment.text)" :display_style="'inline-button'"></permissioned_item>
+                        <action-history :item_id=comment.pk :item_model="'comment'" :item_name="comment_name(comment.text)"
+                            :display_style="'inline-button'"></action-history> 
+                        <br />
                         <small class="text-muted">Posted [[ display_date(comment.created_at) ]] 
                             by [[ getUserName(comment.commentor_pk) ]]</small>
                     </template>
@@ -88,7 +86,7 @@
             },
             title_string: function() {
                 if (this.mode == "add") {  return "Add comment"  } 
-                else {  return "Edit comment"  }
+                else {  return "Edit " + this.comment_name(this.comment_text)  }
             },
             comment_modal_id: function() {
                 return "item_comment_modal_" + this.item_id + "_" + this.item_model
@@ -97,6 +95,13 @@
         methods: {
             ...Vuex.mapActions(['getCommentData', 'addComment', 'editComment', 'deleteComment']),
             display_date(date) { return Date(date) },
+            comment_name(text) {
+                if (text.length > 50) {
+                    return "Comment: " + text.substr(0, 50) + "...'"
+                } else {
+                    return "Comment: '" + text + "'"
+                }
+            },
             prep_comment_modal_for_edit(pk) {
                 this.mode = 'edit'
                 this.comment_pk = pk

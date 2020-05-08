@@ -3,34 +3,33 @@
     <span v-if="!display_forum" id="forum_list_view">
 
         <h4 class="text-secondary pb-3">{{ object.name }}'s Forums   
-                <span class="pl-3"><b-button variant="outline-secondary" class="btn-sm"
-                        v-b-modal.forum_modal>+ add new</b-button></span>
-            </h4>
+            <span class="pl-3"><b-button variant="outline-secondary" class="btn-sm"
+                v-b-modal.forum_modal>+ add new</b-button></span>
+        </h4>
     
         <div>[[ delete_error_message ]]</div>
 
-        <b-list-group>
-            <b-list-group-item v-for="{ pk, name, description } in forums" href="#" 
-                                        active class="bg-light text-info flex-column align-items-start" v-bind:key="pk">
-                <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1"> [[ name ]] </h5> </div>
-                
-                <p class="mb-1 text-secondary">  [[ description ]]  </p>
+        <b-card v-for="{ pk, name, description } in forums" :title=name v-bind:key=pk 
+                                class="bg-light text-info border-secondary mb-3">
 
+            <p class="mb-1 text-secondary">  [[ description ]]  </p>
 
-                <b-button variant="outline-secondary" class="btn-sm" @click="display_forum = pk">
-                    view</b-button>
-                <b-button variant="outline-secondary" class="btn-sm" v-b-modal.forum_modal 
-                    @click="edit_forum_modal(pk, name, description)">
-                    edit</b-button>
-                <b-button variant="outline-secondary" class="btn-sm" @click="delete_forum(pk)">
-                    delete</b-button>
-                <permissioned_item :item_id=pk :item_model="'forum'" :item_name=name ></permissioned_item>
-                <action-history :item_id=pk :item_model="'forum'" :item_name=name 
-                    :launch_button_text="'view forum history'"></action-history>  
+            <template v-slot:footer>
+                    <b-button variant="outline-secondary" class="btn-sm" @click="display_forum = pk">
+                            view</b-button>
+                    <b-button variant="outline-secondary" class="btn-sm" v-b-modal.forum_modal 
+                        @click="edit_forum_modal(pk, name, description)">
+                        edit</b-button>
+                    <b-button variant="outline-secondary" class="btn-sm" @click="delete_forum(pk)">
+                        delete</b-button>
+                    <permissioned_item :item_id=pk :item_model="'forum'" :item_name=name 
+                        :display_style="'inline-button'"></permissioned_item>
+                    <action-history :item_id=pk :item_model="'forum'" :item_name=name 
+                        :display_style="'inline-button'"></action-history>  
+            </template>
 
-            </b-list-group-item>
-        </b-list-group>
+        </b-card>
+
 
         <b-modal id="forum_modal" title="Add a forum" size="md" hide-footer @hide="clearState()">
             
@@ -55,10 +54,7 @@
 
     <span v-else> <!-- If we have a forum to display -->
 
-        <b-button variant="outline-secondary" class="btn-sm" @click="display_forum = null">
-            go back to forums list</b-button>
-
-        <forum-component :forum_id=display_forum ></forum-component>
+        <forum-component :forum_id=display_forum @back_to_forums="display_forum = null"></forum-component>
 
     </span>
        

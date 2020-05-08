@@ -5,27 +5,37 @@
         <h3 class="mt-3">[[ forum_name ]]</h3>
         <p>[[ forum_description ]]</p>
 
-        <span class="pl-3 mb-3"><b-button variant="outline-secondary" class="btn-sm"
-            v-b-modal.post_modal>+ add new post</b-button></span>
+        <span class="mb-5">
+            <b-button variant="outline-secondary" class="btn-sm" v-b-modal.post_modal>add new post</b-button>
+            <b-button variant="outline-secondary" class="btn-sm" @click="back_to_forums()">
+                    go back to forums list</b-button>
+        </span>
+
+        <hr class="my-4 mx-5"></hr>
 
         <span v-if="posts.length > 0">
 
-            <b-card v-for="post in posts" :title=post.title v-bind:key=post.title class="my-3 w-100">
+            <b-card v-for="post in posts" v-bind:key=post.title class="my-3 w-100">
+
+                <h5 class="card-title">[[ post.title ]]</h5>
 
                 <b-card-text>[[ post.content ]]</b-card-text>
 
-                <b-button variant="outline-secondary" class="btn-sm" v-b-modal.post_modal @click="edit_post_modal(post)">
-                    edit</b-button>
-                <b-button variant="outline-secondary" class="btn-sm" @click="delete_post(post.pk)">delete</b-button>
-                <permissioned_item :item_id=post.pk :item_model="'post'" :item_name=post.title ></permissioned_item>
-                <action-history :item_id=post.pk :item_model="'post'" :item_name=post.title 
-                    :launch_button_text="'view post history'"></action-history> 
-
                 <template v-slot:footer>
-                  <small class="text-muted">Posted [[ display_date(post.created) ]] by [[ getUserName(post.author) ]]</small>
+                    <b-button variant="outline-secondary" class="btn-sm" v-b-modal.post_modal 
+                        @click="edit_post_modal(post)">edit</b-button>
+                    <b-button variant="outline-secondary" class="btn-sm" @click="delete_post(post.pk)">
+                        delete</b-button>
+                    <permissioned_item :item_id=post.pk :item_model="'post'" :item_name=post.title 
+                        :display_style="'inline-button'"></permissioned_item>
+                    <action-history :item_id=post.pk :item_model="'post'" :item_name=post.title 
+                        :display_style="'inline-button'"></action-history> 
+                    <comments :item_id=post.pk :item_model="'post'"></comments>
+                    <br />
+                    <small class="text-muted">Posted [[ display_date(post.created) ]] by [[ getUserName(post.author) ]]</small>
                 </template>
 
-                <comments :item_id=post.pk :item_model="'post'"></comments>
+                
 
             </b-card>
 
@@ -99,6 +109,7 @@ forumComponent = Vue.component('forum-component', {
     methods: {
         ...Vuex.mapActions(['getPostData', 'addPost', 'editPost', 'deletePost']),
         display_date(date) { return Date(date) },
+        back_to_forums() { this.$emit('back_to_forums') },
         edit_post_modal(post){
             this.post_title = post.title
             this.post_content = post.content

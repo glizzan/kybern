@@ -1,9 +1,16 @@
 <script type="text/x-template" id="action_history_template">
     
-  <div id="action_history" class="mt-3">
+  <span id="action_history">
 
-      <b-button variant="outline-secondary" @click="get_actions" v-b-modal="modal_id">
-          [[ launch_button_text ]]</b-button>
+      <span v-if="display_style == 'inline-button'">
+          <b-button variant="outline-secondary" class="btn-sm" v-b-modal="modal_id" @click="get_actions"> 
+              history</b-button>
+      </span>
+      <span v-else>
+          <b-button variant="outline-secondary" class="mt-3" v-b-modal="modal_id" @click="get_actions"> 
+              view group history</b-button>
+      </span>
+
 
     <!-- Modal with more detailed info on all actions -->
     <b-modal :id=modal_id :title="title_string" class="modal fade" size="xl" @ok="handleOk">
@@ -55,7 +62,7 @@
         </comments>
         
     </b-modal>   
-  </div>
+  </span>
 
 </script>
 
@@ -67,7 +74,7 @@
 actionHistoryComponent = Vue.component('action-history', {
     delimiters: ['[[', ']]'],
     template: '#action_history_template',
-    props: ['item_id', 'item_model', 'item_name', 'launch_button_text'],
+    props: ['item_id', 'item_model', 'item_name', 'display_style'],
     store,
     data: function() {
           return {
@@ -80,7 +87,7 @@ actionHistoryComponent = Vue.component('action-history', {
               },
               { key: 'status', sortable: true },
               { key: 'resolution passed by', sortable: true },
-              { key: 'action_pk', headerTitle: 'discussion', sortable: false },
+              { key: 'action_pk', label: 'Discussion', sortable: false },
               { key: 'has_condition', sortable: true }
             ],
             sortBy: 'created',

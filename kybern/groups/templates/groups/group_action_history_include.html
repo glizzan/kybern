@@ -1,6 +1,8 @@
+<!-- Action history for group as a whole -->
+
 <div id="group_action_history">
-    <action-history :item_id={{ object.pk }} :item_model="'group'" :item_name="'{{ object.get_name }}'" 
-        :launch_button_text="'view group history'"></action-history>  <!-- Action history for group as a whole -->
+    <action-history :item_id={{ object.pk }} :item_model="'group'" :item_name="'{{ object.get_name }}'">
+    </action-history>  
 </div>
 
 <script type="application/javascript">
