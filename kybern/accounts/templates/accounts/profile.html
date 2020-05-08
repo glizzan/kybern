@@ -8,9 +8,40 @@
         <h3>Your Profile</h3>
 
         <h6><b>username:</b> {{ profile.user.username }}</h6>
-        <h6><b>email:</b> {{ profile.user.email }}</h6>
-        <h6><b>user id:</b> {{ profile.user.pk }}</h6>
-        <h6><b>profile_id:</b> {{ profile.pk }}</h6>
+
+        <h5 class="mt-5">Groups you're a leader of</h5>
+
+        {% for group in leadership_groups %}
+
+                <a href="{% url 'group_detail' pk=group.pk %}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ group.name }}</h5>
+                </div>
+                <p class="mb-1">{{ group.group_description }}</p>
+                </a>
+
+        {% empty %}
+
+                <p>You're not a leader of any groups.</p>
+
+        {% endfor %}
+
+        <h5 class="mt-5">Groups you're a member of (but not a leader)</h5>
+        
+        {% for group in other_groups %}
+
+                <a href="{% url 'group_detail' pk=group.pk %}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ group.name }}</h5>
+                </div>
+                <p class="mb-1">{{ group.group_description }}</p>
+                </a>
+
+        {% empty %}
+
+                <p>You're not a member of any groups where you're not also a leader.</p>
+
+        {% endfor %}
 
 </div>
 
