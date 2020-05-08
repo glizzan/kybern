@@ -19,7 +19,7 @@ class BaseTestCase(StaticLiveServerTestCase):
         cls.browser.quit()
 
     def login_user(self, username, password):
-        self.browser.visit(self.live_server_url + "/accounts/login/")
+        self.browser.visit(self.live_server_url + "/login/")
         self.browser.fill('username', username)
         self.browser.fill('password', password)
         self.browser.find_by_id('submit_login').first.click()

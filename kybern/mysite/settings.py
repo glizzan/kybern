@@ -142,3 +142,6 @@ ALTERNATIVE_COMMUNITY_MODELS = [
 ADDITIONAL_PERMISSIONED_MODELS = [
     { 'app_name': 'groups', 'model_name': 'group' }
 ]
+
+
+LOGIN_REDIRECT_URL = "/profile/"
