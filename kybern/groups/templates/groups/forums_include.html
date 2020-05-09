@@ -31,7 +31,7 @@
         </b-card>
 
 
-        <b-modal id="forum_modal" title="Add a forum" size="md" hide-footer @hide="clearState()">
+        <b-modal id="forum_modal" :title="title_string" size="md" hide-footer @hide="clearState()">
             
             <b-form-group id="name" label="Forum name:" label-for="forum_name">
                 <b-form-input id="forum_name" v-model="name" required placeholder="Please pick a name">
@@ -81,6 +81,13 @@
         },
         computed: {
             ...Vuex.mapState(['forums']),
+            title_string: function() {
+                if (this.name) {
+                    return "Edit forum '" + this.name + "'"
+                } else {
+                    return "Add a new forum"
+                }
+            },
         },
         methods: {
             ...Vuex.mapActions(['addForum', 'editForum', 'deleteForum']),
