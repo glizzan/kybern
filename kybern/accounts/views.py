@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django_registration.backends.activation.views import RegistrationView
 from django_registration.signals import user_registered
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 from concord.communities.client import CommunityClient
 from accounts.models import Profile, User
@@ -34,7 +35,7 @@ class IndexView(generic.TemplateView):
     template_name = 'accounts/index.html'
 
 
-class ProfileView(generic.DetailView):
+class ProfileView(LoginRequiredMixin, generic.DetailView):
     model = Profile
     template_name = 'accounts/profile.html'
 

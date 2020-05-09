@@ -4,6 +4,9 @@ import json
 
 from django.urls import reverse
 from django.apps import apps
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required
+
 
 from concord.actions.client import ActionClient
 from concord.communities.client import CommunityClient
@@ -174,12 +177,12 @@ def serialize_forums_for_vue(forums):
 ############################
 
 
-class GroupListView(generic.ListView):
+class GroupListView(LoginRequiredMixin, generic.ListView):
     model = Group
     template_name = 'groups/group_list.html'
 
 
-class GroupCreateView(generic.edit.CreateView):
+class GroupCreateView(LoginRequiredMixin, generic.edit.CreateView):
     model = Group
     template_name = 'groups/group_create.html'
     fields = ['name', 'group_description', 'governing_permission_enabled',
@@ -194,7 +197,7 @@ class GroupCreateView(generic.edit.CreateView):
         return HttpResponseRedirect(reverse('group_detail', kwargs={'pk': self.object.pk}))
 
 
-class GroupDetailView(generic.DetailView):
+class GroupDetailView(LoginRequiredMixin, generic.DetailView):
     model = Group
     template_name = 'groups/group_detail.html'
 
@@ -329,6 +332,7 @@ class GroupDetailView(generic.DetailView):
 ####################
 
 
+@login_required
 def get_forums(request, target):
     communityClient = GroupClient(actor=request.user)
     target = communityClient.get_community(community_pk=target)
@@ -342,6 +346,7 @@ def get_forums(request, target):
     return JsonResponse({ "forums": forum_list })
 
 
+@login_required
 def add_forum(request, target):
 
     communityClient = GroupClient(actor=request.user)
@@ -360,6 +365,7 @@ def add_forum(request, target):
     return JsonResponse(action_dict)
 
 
+@login_required
 def edit_forum(request, target):
     
     request_data = json.loads(request.body.decode('utf-8'))
@@ -379,6 +385,7 @@ def edit_forum(request, target):
     return JsonResponse(action_dict)
 
 
+@login_required
 def delete_forum(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -395,6 +402,7 @@ def delete_forum(request, target):
     return JsonResponse(action_dict)
 
 
+@login_required
 def get_posts_for_forum(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -410,6 +418,7 @@ def get_posts_for_forum(request, target):
     return JsonResponse({ 'forum_pk': forum_pk, 'posts': serialized_posts })
 
 
+@login_required
 def add_post(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -428,6 +437,7 @@ def add_post(request, target):
     return JsonResponse(action_dict)
 
 
+@login_required
 def edit_post(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -447,6 +457,7 @@ def edit_post(request, target):
     return JsonResponse(action_dict)
 
 
+@login_required
 def delete_post(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -471,6 +482,7 @@ def delete_post(request, target):
 ################################################################################
 
 
+@login_required
 def add_role(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -484,6 +496,7 @@ def add_role(request, target):
     return JsonResponse(get_action_dict(action))
 
 
+@login_required
 def add_members(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -497,6 +510,7 @@ def add_members(request, target):
     return JsonResponse(get_action_dict(action))
 
 
+@login_required
 def remove_members(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -510,6 +524,7 @@ def remove_members(request, target):
     return JsonResponse(get_action_dict(action))
 
 
+@login_required
 def add_people_to_role(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -524,6 +539,7 @@ def add_people_to_role(request, target):
     return JsonResponse(get_action_dict(action))
 
 
+@login_required
 def remove_people_from_role(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -575,6 +591,7 @@ def get_conditions_given_role(actor, target, role_name):
     return conditions, condition_configurations
 
 
+@login_required
 def get_data_for_role(request, target):
 
     actor = request.user
@@ -644,6 +661,7 @@ def get_permission_info(permission):
     }
 
 
+@login_required
 def add_permission(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -669,13 +687,12 @@ def add_permission(request, target):
     return JsonResponse(action_dict)
 
 
+@login_required
 def update_permission(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
     permission_id = request_data.get("permission_id", None)
     permission_configuration = request_data.get("permission_configuration", None)
-
-    print(request_data)
 
     actors = request_data.get("actors", None)
     roles = request_data.get("roles", None)
@@ -708,6 +725,7 @@ def update_permission(request, target):
     return JsonResponse(action_dict)
 
 
+@login_required
 def delete_permission(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -805,6 +823,7 @@ def get_condition_info(condition):
     }
 
 
+@login_required
 def manage_condition(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -833,6 +852,7 @@ def manage_condition(request, target):
 #############################################
 
 
+@login_required
 def update_approval_condition(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -850,6 +870,7 @@ def update_approval_condition(request):
     return JsonResponse(get_action_dict(action))
     
 
+@login_required
 def update_vote_condition(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -864,6 +885,7 @@ def update_vote_condition(request):
     return JsonResponse(get_action_dict(action))
 
 
+@login_required
 def get_conditional_data(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -891,6 +913,7 @@ def get_conditional_data(request):
     })
 
 
+@login_required
 def get_action_data(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -901,6 +924,7 @@ def get_action_data(request):
     return JsonResponse({ "action_data": process_action(action) })
 
 
+@login_required
 def get_action_data_for_target(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -920,6 +944,7 @@ def get_action_data_for_target(request):
 ####################################
 
 
+@login_required
 def update_owners(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -938,6 +963,7 @@ def update_owners(request, target):
     return JsonResponse(action_dict)
 
 
+@login_required
 def update_governors(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -961,6 +987,7 @@ def update_governors(request, target):
 #############################
 
 
+@login_required
 def get_permissions_and_conditions(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -984,6 +1011,7 @@ def get_permissions_and_conditions(request):
         "permission_pks": permission_pks })
 
 
+@login_required
 def add_permission_to_item(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -1014,6 +1042,7 @@ def add_permission_to_item(request):
     return JsonResponse(action_dict)
 
 
+@login_required
 def delete_permission_from_item(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -1049,6 +1078,7 @@ def delete_permission_from_item(request):
 #####################
 
 
+@login_required
 def get_comment_data(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -1069,6 +1099,7 @@ def get_comment_data(request):
         "comments": comments, "comment_pks": comment_pks })
 
 
+@login_required
 def add_comment(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -1086,6 +1117,7 @@ def add_comment(request):
     return JsonResponse(action_dict)
 
 
+@login_required
 def edit_comment(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -1104,6 +1136,7 @@ def edit_comment(request):
     return JsonResponse(action_dict)
 
 
+@login_required
 def delete_comment(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
