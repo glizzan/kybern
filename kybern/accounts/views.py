@@ -1,16 +1,34 @@
 from django.views import generic
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
+from django.urls import reverse
+from django_registration.views import RegistrationView
+from django_registration.signals import user_registered
 
 from concord.communities.client import CommunityClient
 from accounts.models import Profile
 from groups.models import Group
+from accounts.forms import RegistrationFormWithCode
+
+
+def myview(request):
+    return HttpResponseRedirect(reverse('arch-summary', args=[1945]))
 
 
 # FIXME: this probably doesn't belong here
 class GroupClient(CommunityClient):
     """Easy way to replace the default community model with the one we want to use here, group."""
     community_model = Group
+
+
+class RegistrationViewWithCode(RegistrationView):
+    form_class = RegistrationFormWithCode
+    success_url = "/register/complete/"
+
+    def register(self, form):
+        user = form.save()
+        user_registered.send(sender=self, user=user, request=self.request)
+        return user
 
 
 class IndexView(generic.TemplateView):

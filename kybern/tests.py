@@ -65,10 +65,11 @@ class AccountsTestCase(BaseTestCase):
         self.browser.links.find_by_text('Register').first.click()
         self.browser.fill('username', 'cheynamatthews')
         self.browser.fill('email', 'example@example.com')
+        self.browser.fill('access_code', 'alpha-fhhe')
         self.browser.fill('password1', 'elephant!?')
         self.browser.fill('password2', 'elephant!?')
         self.browser.find_by_id('submit_registration').first.click()
-        self.assertTrue(self.browser.is_text_present('Thank you for registering, cheynamatthews!'))
+        self.assertTrue(self.browser.is_text_present('Thank you for registering!'))
 
     def test_login(self):
         """Tests that we can log in an existing user."""
