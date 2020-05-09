@@ -1,6 +1,14 @@
 import time
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from splinter import Browser
+from django.conf import settings
+
+from accounts.models import User
+from concord.communities.client import CommunityClient
+from groups.models import Group
+
+
+settings.DEBUG = True
 
 
 class BaseTestCase(StaticLiveServerTestCase):
@@ -70,6 +78,7 @@ class AccountsTestCase(BaseTestCase):
         self.browser.fill('password2', 'elephant!?')
         self.browser.find_by_id('submit_registration').first.click()
         self.assertTrue(self.browser.is_text_present('Thank you for registering!'))
+        # FIXME: need to add step of activating account with activation link
 
     def test_login(self):
         """Tests that we can log in an existing user."""
@@ -85,9 +94,6 @@ class AccountsTestCase(BaseTestCase):
 class GroupBasicsTestCase(BaseTestCase):
 
     def setUp(self):
-        from django.contrib.auth.models import User
-        from concord.communities.client import CommunityClient
-        from groups.models import Group
         self.actor = User.objects.first()
         self.client = CommunityClient(actor=self.actor)
         self.client.community_model = Group
@@ -147,9 +153,6 @@ class GroupBasicsTestCase(BaseTestCase):
 class PermissionsTestCase(BaseTestCase):
 
     def setUp(self):
-        from django.contrib.auth.models import User
-        from concord.communities.client import CommunityClient
-        from groups.models import Group
         self.actor = User.objects.first()
         self.client = CommunityClient(actor=self.actor)
         self.client.community_model = Group

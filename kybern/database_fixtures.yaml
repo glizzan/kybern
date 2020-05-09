@@ -118,3 +118,43 @@
     date_joined: 2020-04-23 13:13:19.669037+00:00
     groups: []
     user_permissions: []
+- model: accounts.profile
+  pk: 1
+  fields:
+    user: 1
+    bio: ''
+- model: accounts.profile
+  pk: 2
+  fields:
+    user: 2
+    bio: ''
+- model: accounts.profile
+  pk: 3
+  fields:
+    user: 3
+    bio: ''
+- model: accounts.profile
+  pk: 4
+  fields:
+    user: 4
+    bio: ''
+- model: accounts.profile
+  pk: 5
+  fields:
+    user: 5
+    bio: ''
+- model: accounts.profile
+  pk: 6
+  fields:
+    user: 6
+    bio: ''
+- model: accounts.profile
+  pk: 7
+  fields:
+    user: 7
+    bio: ''
+- model: accounts.profile
+  pk: 8
+  fields:
+    user: 8
+    bio: ''

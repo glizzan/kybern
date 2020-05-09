@@ -1,0 +1,4 @@
+Thanks for joining Kybern!
+
+To activate your account, go here: {{ site }}/activate/{{ activation_key }}/
+

@@ -1,12 +1,11 @@
 from django.views import generic
 from django.shortcuts import get_object_or_404
-from django.contrib.auth.models import User
 from django.urls import reverse
-from django_registration.views import RegistrationView
+from django_registration.backends.activation.views import RegistrationView
 from django_registration.signals import user_registered
 
 from concord.communities.client import CommunityClient
-from accounts.models import Profile
+from accounts.models import Profile, User
 from groups.models import Group
 from accounts.forms import RegistrationFormWithCode
 
@@ -25,10 +24,10 @@ class RegistrationViewWithCode(RegistrationView):
     form_class = RegistrationFormWithCode
     success_url = "/register/complete/"
 
-    def register(self, form):
-        user = form.save()
-        user_registered.send(sender=self, user=user, request=self.request)
-        return user
+    # def register(self, form):
+    #     user = form.save()
+    #     user_registered.send(sender=self, user=user, request=self.request)
+    #     return user
 
 
 class IndexView(generic.TemplateView):

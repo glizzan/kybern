@@ -2,10 +2,11 @@ import importlib, inspect
 
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import User
 
 from concord.communities.models import BaseCommunityModel
 from concord.actions.models import PermissionedModel
+
+from accounts.models import User
 
 
 class Group(BaseCommunityModel):

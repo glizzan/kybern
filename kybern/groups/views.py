@@ -5,7 +5,6 @@ import json
 from django.urls import reverse
 from django.apps import apps
 
-from django.contrib.auth.models import User
 from concord.actions.client import ActionClient
 from concord.communities.client import CommunityClient
 from concord.permission_resources.client import PermissionResourceClient
@@ -13,6 +12,7 @@ from concord.conditionals.client import PermissionConditionalClient, CommunityCo
 from concord.resources.client import CommentClient
 from concord.resources.models import Comment
 
+from accounts.models import User
 from .models import Group, Forum, Post
 from .client import ForumClient
 
