@@ -2,6 +2,7 @@ import time
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from splinter import Browser
 from django.conf import settings
+from selenium import webdriver
 
 from accounts.models import User
 from concord.communities.client import CommunityClient
@@ -9,6 +10,11 @@ from groups.models import Group
 
 
 settings.DEBUG = True
+chrome_options = webdriver.ChromeOptions()
+chrome_options.add_argument('--no-sandbox')
+chrome_options.add_argument('--headless')
+chrome_options.add_argument('--disable-dev-shm-usage')
+chrome_options.add_argument('--window-size=1200,1100')
 
 
 class BaseTestCase(StaticLiveServerTestCase):
@@ -18,7 +24,7 @@ class BaseTestCase(StaticLiveServerTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.browser = Browser('chrome')
+        cls.browser = Browser('chrome', options=chrome_options)
         cls.base_url = cls.live_server_url + "/groups/"
 
     @classmethod
@@ -31,9 +37,6 @@ class BaseTestCase(StaticLiveServerTestCase):
         self.browser.fill('username', username)
         self.browser.fill('password', password)
         self.browser.find_by_id('submit_login').first.click()
-
-    def scroll_to_bottom_of_page(self):
-        self.browser.execute_script("window.scrollTo(0, -document.body.scrollHeight);")
 
     def get_selected_in_multiselect(self):
         names = []
@@ -51,6 +54,7 @@ class BaseTestCase(StaticLiveServerTestCase):
     def select_from_multiselect(self, selection, element_css=".multiselect__element"):
         """Helper method to select options given the custom interface vue-multiselect provides."""
         self.browser.find_by_css(".multiselect__select").first.click()
+        time.sleep(.25)
         for item in self.browser.find_by_css(element_css):
             if selection in item.text:
                 item.click()
@@ -69,6 +73,7 @@ class AccountsTestCase(BaseTestCase):
     def test_register_account(self):
         """Tests that we can register a new user account."""
         self.browser.visit(self.base_url)
+        self.browser.links.find_by_text('Sign In')[0].scroll_to()
         self.browser.links.find_by_text('Sign In').first.click()
         self.browser.links.find_by_text('Register an account').first.click()
         self.browser.fill('username', 'cheynamatthews')
@@ -83,6 +88,7 @@ class AccountsTestCase(BaseTestCase):
     def test_login(self):
         """Tests that we can log in an existing user."""
         self.browser.visit(self.base_url)
+        self.browser.links.find_by_text('Sign In')[0].scroll_to()
         self.browser.links.find_by_text('Sign In').first.click()
         self.browser.fill('username', 'meganrapinoe')
         self.browser.fill('password', 'badlands2020')
@@ -112,11 +118,13 @@ class GroupBasicsTestCase(BaseTestCase):
     def test_add_members_to_group(self):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
-        self.scroll_to_bottom_of_page()
-        self.assertEquals(self.browser.find_by_id('members_member_count').text, "1 people")
+        self.browser.find_by_id('members_member_count')[0].scroll_to()
+        self.assertEquals(self.browser.find_by_id('members_member_count')[0].text, "1 people")
         self.browser.find_by_id('members_changemembers').first.click()
+        time.sleep(.25)
         self.assertEquals(["meganrapinoe"], self.get_selected_in_multiselect())
         self.select_from_multiselect(selection="christenpress")
+        time.sleep(.5)
         self.assertEquals(["meganrapinoe", "christenpress"], self.get_selected_in_multiselect())
         self.browser.find_by_id('save_member_changes').first.click()
         self.browser.find_by_css(".close").first.click()  # close modal
@@ -126,9 +134,9 @@ class GroupBasicsTestCase(BaseTestCase):
     def test_create_role(self):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
-        self.scroll_to_bottom_of_page()
-        roles = [item.text for item in self.browser.find_by_css(".role_name_display")]
-        self.assertEquals(roles, ["members"])
+        role_elements = self.browser.find_by_css(".role_name_display")
+        role_elements[0].scroll_to()
+        self.assertEquals([item.text for item in role_elements], ["members"])
         self.browser.find_by_id('add_role_button').first.click()
         self.browser.fill('role_name', 'forwards')
         self.browser.find_by_id('save_role_button').first.click()
@@ -143,6 +151,7 @@ class GroupBasicsTestCase(BaseTestCase):
         self.assertEquals(self.browser.find_by_id('forwards_member_count').text, "0 people")
         self.browser.find_by_id('forwards_changemembers').first.click()
         self.select_from_multiselect(selection="christenpress")
+        time.sleep(.5)
         self.assertEquals(["christenpress"], self.get_selected_in_multiselect())
         self.browser.find_by_id('save_member_changes').first.click()
         self.browser.find_by_css(".close").first.click()  # close modal
@@ -165,7 +174,7 @@ class PermissionsTestCase(BaseTestCase):
     def test_add_permission_to_role(self):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
-        self.scroll_to_bottom_of_page()
+        self.browser.find_by_id('forwards_editrole')[0].scroll_to()
         self.browser.find_by_id('forwards_editrole').first.click()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(permissions, [])
@@ -184,7 +193,7 @@ class PermissionsTestCase(BaseTestCase):
         # Christen Press, a forward, can remove members
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
-        self.scroll_to_bottom_of_page()
+        self.browser.find_by_id('members_member_count').scroll_to()
         self.assertEquals(self.browser.find_by_id('members_member_count').text, "8 people")
         self.browser.find_by_id('members_changemembers').first.click()
         self.delete_selected_in_multiselect("tobinheath")
@@ -196,7 +205,7 @@ class PermissionsTestCase(BaseTestCase):
         # Emily Sonnett, not a forward, cannot remove members
         self.login_user("emilysonnett", "badlands2020")
         self.go_to_group("USWNT")
-        self.scroll_to_bottom_of_page()
+        self.browser.find_by_id('members_changemembers').scroll_to()
         self.browser.find_by_id('members_changemembers').first.click()
         self.delete_selected_in_multiselect("crystaldunn")
         self.browser.find_by_id('save_member_changes').first.click()
