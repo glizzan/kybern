@@ -70,7 +70,7 @@ class AccountsTestCase(BaseTestCase):
         """Tests that we can register a new user account."""
         self.browser.visit(self.base_url)
         self.browser.links.find_by_text('Sign In').first.click()
-        self.browser.links.find_by_text('Register').first.click()
+        self.browser.links.find_by_text('Register an account').first.click()
         self.browser.fill('username', 'cheynamatthews')
         self.browser.fill('email', 'example@example.com')
         self.browser.fill('access_code', 'alpha-fhhe')
