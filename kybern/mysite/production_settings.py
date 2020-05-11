@@ -1,7 +1,7 @@
 # https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 import os
 
-DEBUG = True
+DEBUG = os.environ.get("DEBUG_MODE", False)
 SECRET_KEY = os.environ['SECRET_KEY']
 
 

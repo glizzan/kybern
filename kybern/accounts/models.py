@@ -9,7 +9,7 @@ class ActiveUsersManager(models.Manager):
         return super().get_queryset().filter(is_active=True)
 
 
-class User(User):
+class User(DjangoUser):
     """Extends django's inbuilt user model to get only active users when calling User.objects.all()"""
 
     objects = ActiveUsersManager()
