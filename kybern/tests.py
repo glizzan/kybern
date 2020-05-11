@@ -4,7 +4,7 @@ from splinter import Browser
 from django.conf import settings
 from selenium import webdriver
 
-from accounts.models import User
+from django.contrib.auth.models import User
 from concord.communities.client import CommunityClient
 from groups.models import Group
 
@@ -19,7 +19,6 @@ chrome_options.add_argument('--window-size=1200,1100')
 
 class BaseTestCase(StaticLiveServerTestCase):
     """BaseTestCase contains all setup & teardown used universally by tests."""
-    fixtures = ['database_fixtures.yaml']
 
     @classmethod
     def setUpClass(cls):
@@ -31,6 +30,12 @@ class BaseTestCase(StaticLiveServerTestCase):
     def tearDownClass(cls):
         super().tearDownClass()
         cls.browser.quit()
+
+    @classmethod
+    def create_users(cls):
+        # TODO: eventually replace this with actual factory methods
+        for user_name in ["meganrapinoe", "christenpress", "tobinheath", "crystaldunn", "julieertz", "adfranch", "caseyshort", "emilysonnett"]:
+	        User.objects.create_user(user_name, 'shaunagm@gmail.com', 'badlands2020')
 
     def login_user(self, username, password):
         self.browser.visit(self.live_server_url + "/login/")
@@ -70,6 +75,9 @@ class BaseTestCase(StaticLiveServerTestCase):
 
 class AccountsTestCase(BaseTestCase):
 
+    def setUp(self):
+        self.create_users()
+
     def test_register_account(self):
         """Tests that we can register a new user account."""
         self.browser.visit(self.base_url)
@@ -100,6 +108,7 @@ class AccountsTestCase(BaseTestCase):
 class GroupBasicsTestCase(BaseTestCase):
 
     def setUp(self):
+        self.create_users()
         self.actor = User.objects.first()
         self.client = CommunityClient(actor=self.actor)
         self.client.community_model = Group
@@ -162,6 +171,7 @@ class GroupBasicsTestCase(BaseTestCase):
 class PermissionsTestCase(BaseTestCase):
 
     def setUp(self):
+        self.create_users()
         self.actor = User.objects.first()
         self.client = CommunityClient(actor=self.actor)
         self.client.community_model = Group
@@ -169,7 +179,10 @@ class PermissionsTestCase(BaseTestCase):
         self.client.set_target(target=self.community)
         self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()])
         self.client.add_role(role_name="forwards")
-        self.client.add_people_to_role(role_name="forwards", people_to_add=[1,2,3])  # HACK: manually looked up in yaml file
+        pinoe = User.objects.get(username="meganrapinoe")
+        press = User.objects.get(username="christenpress")
+        heath = User.objects.get(username="tobinheath")
+        self.client.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
 
     def test_add_permission_to_role(self):
         self.login_user("meganrapinoe", "badlands2020")
@@ -188,6 +201,7 @@ class PermissionsTestCase(BaseTestCase):
 
     def test_adding_permission_changes_site_behavior(self):
 
+        # Add permission to role (same as above, minus asserts)
         self.test_add_permission_to_role()
         
         # Christen Press, a forward, can remove members
