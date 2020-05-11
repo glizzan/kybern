@@ -16,7 +16,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-ALLOWED_HOSTS = ['127.0.0.1', '.herokuapp.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'kybern.herokuapp.com']
 
 
 # Application definition
@@ -45,6 +45,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -133,6 +134,7 @@ ACCOUNT_ACTIVATION_DAYS = 14
 # Check to see if we're in local development or production, and load appropriate settings
 
 if os.environ.get("KYBERN_ENVIRONMENT") and os.environ.get("KYBERN_ENVIRONMENT") == "PRODUCTION":
-    from production_settings import *
+    from .production_settings import *
 else:
-    from local_settings import *
+    from .local_settings import *
+
