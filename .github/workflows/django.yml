@@ -36,7 +36,6 @@ jobs:
     - name: psycopg2 prerequisites
       run: |
         sudo apt-get install python-dev libpq-dev
-        pip install psycopg2
     - name: install chromedriver
       run: |
         wget https://chromedriver.storage.googleapis.com/2.41/chromedriver_linux64.zip

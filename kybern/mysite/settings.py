@@ -16,16 +16,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '_1ds_$#sknsg7rvr4jqv@re7os*$g-!%5+!jjkkqwqdw61d+=d'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', '.herokuapp.com']
 
 
 # Application definition
@@ -138,30 +129,10 @@ LOGIN_URL = '/login/'
 
 ACCOUNT_ACTIVATION_DAYS = 14
 
-MODE = "DEVELOPMENT"
 
-if MODE == "DEVELOPMENT":
+# Check to see if we're in local development or production, and load appropriate settings
 
-    EMAIL_HOST = "localhost"
-    EMAIL_PORT = 1025
-
-
-# Database settings
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#     }
-# }
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'kybern_db',
-        'USER': 'kybern_db_superuser',
-        'PASSWORD': 'elephant',
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
-    }
-}
+if os.environ.get("KYBERN_ENVIRONMENT") and os.environ.get("KYBERN_ENVIRONMENT") == "PRODUCTION":
+    from production_settings import *
+else:
+    from local_settings import *
