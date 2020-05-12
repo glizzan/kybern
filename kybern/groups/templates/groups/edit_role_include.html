@@ -5,7 +5,7 @@
         <b>People with this role can...</b>
 
         <b-list-group v-for="pair in permission_condition_pairs" v-bind:key="pair.permission.id">
-            <b-list-group-item>
+            <b-list-group-item :id=pair_element_id(pair.permission.id)>
                 <div class="btn-group permission-row" role="group" aria-label="Basic example">
                     <b-button variant="light">
                         <small class="permission-display">[[ pair.permission.display ]]</small>
@@ -94,6 +94,9 @@
                 this.clearState()  // clear previous state
                 this.permission_to_edit = permission_id
                 this.permission_mode_from_parent = 'update'
+            },
+            pair_element_id: function(pk) {
+                return "permission_element_" + pk
             },
             add_condition(permission_id) {
                 this.clearState()  // clear previous state

@@ -28,7 +28,7 @@
                     <b-form-radio-group id="btn-radios-1" v-model="button_selected" :options="button_options"
                         buttons name="radios-btn-default" button-variant="outline-primary">
                     </b-form-radio-group>
-                    <b-button @click="update_condition">Submit</b-button>
+                    <b-button @click="update_condition" id="save_vote_choice">Submit</b-button>
             
             </span>
 
@@ -124,7 +124,7 @@ voteConditionComponent = Vue.component('vote-condition-ui', {
             axios = this.prep_axios()
             url = "{{ base_url }}/groups/get_conditional_data/"
             params = { condition_pk: this.condition_pk, condition_type: this.condition_type }
-            axios.post(url, params).then(response => { 
+            return axios.post(url, params).then(response => { 
                 this.condition_details = response.data.condition_details
                 this.permission_details = response.data.permission_details
                 for (field in this.condition_details.fields) {
@@ -145,17 +145,31 @@ voteConditionComponent = Vue.component('vote-condition-ui', {
             params = { condition_pk: this.condition_pk, action_to_take: this.button_selected }
             axios.post(url, params).then(response => {  
 
+                new_action_pk = response.data.action_pk
+
                 // update condition data
-                this.get_conditional_data()
                 this.user_has_taken_action = true
+                this.get_conditional_data().then(response => {
 
-                // update action this was a condition on
-                this.addOrUpdateAction({ action_pk: this.action_details["action_pk"] })
-                   
-                // also call vuex to record this as an action (need to do this for all actions)
-                this.addOrUpdateAction({ action_pk: response.data.action_pk })
+                    if (this.condition_details.status == "waiting") {
 
-            })
+                        // In a vote, *usually* the condition is still waiting after a person's taken action,
+                        // because the condition is only resolved after the voting period ends.  So we'll need
+                        // a separate way to let people know if their vote isn't cast due to a condition.
+
+                    } else {
+
+                        // update action this was a condition on
+                        this.addOrUpdateAction({ action_pk: this.action_details["action_pk"] })
+
+                        // also call vuex to record this as an action (need to do this for all actions)
+                        this.addOrUpdateAction({ action_pk: new_action_pk })
+
+                    }
+
+                }).catch(error => {  console.log("Error refreshing condition data:", error); this.error_message = error })
+                
+            }).catch(error => {  console.log("Error updating condition: ", error); this.error_message = error })
 
         }
     }

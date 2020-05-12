@@ -14,6 +14,8 @@
     }
 
     update_actions = function (response, dispatch) {
+
+        console.log("Updating actions given response data: ", response.data)
          if (response.data.multiple_actions) {
             for (index in response.data.actions) {
                 if (response.data.actions[index].action_pk) {
@@ -24,6 +26,7 @@
             }
          } else {
             if (response.data.action_pk ) {
+                console.log("Adding or updating an action: ", response.data.action_pk )
                 dispatch('addOrUpdateAction', { action_pk: response.data.action_pk })
             } else {
                 console.log("Warning: no action_pk for single!")
@@ -40,10 +43,12 @@
             if (response.data.action_status == "implemented") {
                 implementationCallback(response)
             } else {
-                throw Error(response.data.action_log)
+                console.log("Not implemented due to: ", response.data.action_developer_log)
+                throw response.data.action_log
             }
 
-        }).catch(error => { console.log("Got error: ", error); throw error })
+        }).catch(error => { 
+            console.log("Got error: ", error); throw error })
     }
 
     const store = new Vuex.Store({
@@ -388,23 +393,25 @@
                 state.governor_condition_pk = null
             },
             REPLACE_ACTIONS_FOR_ITEM (state, data) {
-                Vue.set(state.actions, data.item_key, data.action_data)
+                Vue.set(state.actions, data.item_key.toLowerCase(), data.action_data)
             },
             ADD_OR_UPDATE_ACTION (state, data) {
                 // Takes in action data and the item_key for the item the action targets
 
-                if (!state.actions[data.item_key]) {
-                    Vue.set(state.actions, data.item_key, [])
+                item_key = data.item_key.toLowerCase()
+
+                if (!state.actions[item_key]) {
+                    Vue.set(state.actions, item_key, [])
                 } 
 
                 for (index in state.actions[item_key]) {
-                    if (state.actions[data.item_key][index].action_pk == data.action_data.action_pk) {
-                        state.actions[data.item_key].splice(index, 1, data.action_data)
+                    if (state.actions[item_key][index].action_pk == data.action_data.action_pk) {
+                        state.actions[item_key].splice(index, 1, data.action_data)
                         return
                     }
                 }
 
-                state.actions[data.item_key].push(data.action_data)  // If we get here, we're adding the action
+                state.actions[item_key].push(data.action_data)  // If we get here, we're adding the action
             },
             ADD_OR_UPDATE_FORUM (state, data) {
                 for (index in state.forums) {
@@ -667,6 +674,7 @@
                 return standard_get_api_call(url, params, implementationCallback, dispatch)
             },
             addOrUpdateAction ({ commit, state, dispatch}, payload) {
+                console.log("Action called!")
                 url = "{{ base_url }}/groups/get_action_data/";
                 params = { action_pk : payload.action_pk }
                 implementationCallback = (response) => {

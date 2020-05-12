@@ -23,7 +23,7 @@
     </div>
     
     <!-- Should be a choice field populated by current roles -->
-    <div v-if="field.type=='PermissionRoleField'" class="input-group mb-3">
+    <div v-if="field.type=='PermissionRoleField'" class="input-group mb-3 permissionrolefield">
 
         [[ field.display ]]
 
@@ -40,7 +40,7 @@
     </div>
 
     <!-- Should be a multiselect field populated by current members -->
-    <div v-if="field.type=='PermissionActorField'" class="input-group mb-3">
+    <div v-if="field.type=='PermissionActorField'" class="input-group mb-3 permissionactorfield">
 
         [[ field.display ]]
 
