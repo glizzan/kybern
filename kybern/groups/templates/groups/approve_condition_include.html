@@ -11,7 +11,7 @@
                 <b-form-radio-group id="btn-radios-1" v-model="button_selected" :options="button_options"
                     buttons name="radios-btn-default" button-variant="outline-primary">
                 </b-form-radio-group>
-                <b-button @click="update_conditional">Save</b-button>
+                <b-button @click="update_conditional" id="save_approve_choice">Save</b-button>
             </span>
 
             <span v-else>
@@ -35,7 +35,7 @@
             </span>
         </span>
 
-        <span v-if="error_message" class="text-danger">[[ error_message ]]</span> 
+        <span v-if="error_message" class="text-danger mt-3">[[ error_message ]]</span> 
 
 </span>
 </script>
@@ -78,6 +78,7 @@ approvalConditionComponent = Vue.component('approve-condition-ui', {
         },
         condition_status: function() {
             if (this.condition_details) {
+                console.log("New status is: ", this.condition_details.status)
                 return this.condition_details.status
             } else {
                 return null
@@ -90,10 +91,10 @@ approvalConditionComponent = Vue.component('approve-condition-ui', {
             axios = this.prep_axios()
             url = "{{ base_url }}/groups/get_conditional_data/"
             params = { condition_pk: this.condition_pk, condition_type: this.condition_type }
-            axios.post(url, params).then(response => { 
+            return axios.post(url, params).then(response => { 
                 this.permission_details = response.data.permission_details
                 this.condition_details = response.data.condition_details
-            }).catch(error => {  console.log("ERROR in approval dontion get_conditional_data")  })
+            }).catch(error => {  console.log(error)  })
         },
         update_conditional() {
             
@@ -106,17 +107,26 @@ approvalConditionComponent = Vue.component('approve-condition-ui', {
             params = { condition_pk: this.condition_pk, action_to_take: this.button_selected }
             axios.post(url, params).then(response => {  
 
+                new_action_pk = response.data.action_pk
+
                 // update condition data
-                this.get_conditional_data()
                 this.user_has_taken_action = true
+                this.get_conditional_data().then(response => {
 
-                // update action this was a condition on
-                this.addOrUpdateAction({ action_pk: this.action_details["action_pk"] })
-                   
-                // also call vuex to record this as an action (need to do this for all actions)
-                this.addOrUpdateAction({ action_pk: response.data.action_pk })
+                    if (this.condition_status == "waiting") {
+                        // In a limited set of circumstances, there may be a condition on a conditional action
+                        // (for instance, if someone is using a governing or owning authority to act)
+                        this.error_message = "Before your decision to " + this.button_selected + " can be implemented, a condition must be satisfied."
+                    } else {
+                        // update action this was a condition on
+                        this.addOrUpdateAction({ action_pk: this.action_details["action_pk"] })
+                        // also call vuex to record this as an action (need to do this for all actions)
+                        this.addOrUpdateAction({ action_pk: new_action_pk })
+                    }
 
-            })
+                }).catch(error => {  console.log("Error refreshing condition data:", error); this.error_message = error })
+                
+            }).catch(error => {  console.log("Error updating condition: ", error); this.error_message = error })
 
         }
     }

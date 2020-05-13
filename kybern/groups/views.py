@@ -41,6 +41,21 @@ def get_model(model_name):
             pass
 
 
+readable_log_dict = {
+    "action did not meet any permission criteria": "You do not have permission to take this action."
+}
+
+
+def make_action_errors_readable(action):
+    """If needed, gets or creates both a developer-friendly (detailed) log and a user-friendly log."""
+
+    if action.resolution.status in ["accepted", "implemented"]:
+        return action.resolution.log, action.resolution.log     # unlikely to be displayed/accessed
+    if action.resolution.status == "waiting":
+        return "This action cannot be completed until a condition is passed.", action.resolution.log
+    return readable_log_dict.get(action.resolution.log, "We're sorry, there was an error"), action.resolution.log
+
+
 def process_action(action):
 
     if action.resolution.status == "implemented":
@@ -81,14 +96,13 @@ def process_action(action):
 
 
 def get_action_dict(action):
-    action_log = action.resolution.log
-    if (not action_log and action.resolution.status == "waiting"):
-        action_log = "waiting on condition"
+    display_log, developer_log = make_action_errors_readable(action)
     return { 
         "action_created": True if action.resolution.status in ["implemented", "approved", "waiting", "rejected"] else False,
         "action_status": action.resolution.status,
-        "action_log": action_log,
         "action_pk": action.pk,
+        "action_log": display_log,
+        "action_developer_log": developer_log
     }
 
 
@@ -472,7 +486,6 @@ def delete_post(request, target):
 
     action_dict = get_action_dict(action)
     action_dict["deleted_post_pk"] = pk
-    print(action_dict)
     return JsonResponse(action_dict)
     
 
