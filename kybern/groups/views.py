@@ -375,7 +375,8 @@ def add_forum(request, target):
     action, result = forumClient.create_forum(name=name, description=description)
     
     action_dict = get_action_dict(action)
-    action_dict["forum_data"] = serialize_forum_for_vue(result)
+    if action.resolution.status == "implemented":
+        action_dict["forum_data"] = serialize_forum_for_vue(result)
     return JsonResponse(action_dict)
 
 

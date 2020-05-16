@@ -684,7 +684,7 @@
                 return standard_get_api_call(url, params, implementationCallback, dispatch)
             },
             addForum({ commit, state, dispatch}, payload) {
-                url = "{{ base_url }}/groups/1/add_forum/"
+                url = "{{ base_url }}/groups/{{ object.pk}}/add_forum/"
                 params = { name: payload.name, description: payload.description }
                 implementationCallback = (response) => {
                     commit('ADD_OR_UPDATE_FORUM', { forum_data : response.data.forum_data })
@@ -692,7 +692,7 @@
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             editForum({ commit, state, dispatch}, payload) { 
-                url = "{{ base_url }}/groups/1/edit_forum/"
+                url = "{{ base_url }}/groups/{{ object.pk}}/edit_forum/"
                 params = { pk: payload.pk, name: payload.name, description: payload.description }
                 implementationCallback = (response) => {
                     commit('ADD_OR_UPDATE_FORUM', { forum_data : response.data.forum_data })
@@ -700,7 +700,7 @@
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
             deleteForum({ commit, state, dispatch}, payload) { 
-                url = "{{ base_url }}/groups/1/delete_forum/"
+                url = "{{ base_url }}/groups/{{ object.pk}}/delete_forum/"
                 params = { pk: payload.pk }
                 implementationCallback = (response) => {
                     commit('DELETE_FORUM', { pk : response.data.deleted_forum_pk })

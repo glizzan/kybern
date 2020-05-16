@@ -9,15 +9,15 @@ from concord.communities.client import CommunityClient
 from concord.permission_resources.client import PermissionResourceClient
 from concord.conditionals.client import PermissionConditionalClient
 from concord.actions.state_changes import Changes
-from groups.models import Group
+from groups.models import Group, Forum
 
 
 settings.DEBUG = True
 chrome_options = webdriver.ChromeOptions()
-chrome_options.add_argument('--no-sandbox')
-chrome_options.add_argument('--headless')
-chrome_options.add_argument('--disable-dev-shm-usage')
-chrome_options.add_argument('--window-size=1200,1100')
+# chrome_options.add_argument('--no-sandbox')
+# chrome_options.add_argument('--headless')
+# chrome_options.add_argument('--disable-dev-shm-usage')
+# chrome_options.add_argument('--window-size=1200,1100')
 
 
 class BaseTestCase(StaticLiveServerTestCase):
@@ -499,8 +499,108 @@ class VotingConditionTestCase(BaseTestCase):
         self.browser.find_by_xpath('//*[@id="action_history_table_element"]/tbody/tr[1]/td[7]/button').first.click()
         self.assertTrue(self.browser.is_text_present('You are not eligible to vote.'))
 
-
     # def test_vote_has_passed(self):
     #     # FIXME: not sure how to do this, given the one hour vote minimum?
     #     # maybe the vote needs a: [close when X people voted option]
-    #     ...
+
+
+class ForumsTestCase(BaseTestCase):
+
+    def setUp(self):
+
+        self.create_users()
+        self.actor = User.objects.first()
+        self.client = CommunityClient(actor=self.actor)
+        self.client.community_model = Group
+        self.community = self.client.create_community(name="USWNT")
+        self.client.set_target(target=self.community)
+        self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.add_role(role_name="forwards")
+        pinoe = User.objects.get(username="meganrapinoe")
+        press = User.objects.get(username="christenpress")
+        heath = User.objects.get(username="tobinheath")
+        self.client.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
+
+    def test_create_forum(self):
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('new_forum_button').first.click()
+        self.browser.fill('forum_name', 'Strategy Sessions')
+        self.browser.fill('forum_description', 'A place to discuss strategy')
+        self.browser.find_by_id('add_forum_button').first.click()
+        self.browser.find_by_css(".close").first.click()  # close modal
+        self.assertTrue(self.browser.is_text_present('Strategy Sessions'))
+        self.assertTrue(self.browser.is_text_present('A place to discuss strategy'))
+
+    def test_edit_forum(self):
+
+        # Create forum
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('new_forum_button').first.click()
+        self.browser.fill('forum_name', 'Strategy Sessions')
+        self.browser.fill('forum_description', 'A place to discuss strategy')
+        self.browser.find_by_id('add_forum_button').first.click()
+        self.browser.find_by_css(".close").first.click()  # close modal
+
+        # Edit forum
+        time.sleep(.25)
+        forum = Forum.objects.get(name="Strategy Sessions")
+        self.browser.find_by_id(f"edit_forum_{forum.pk}").first.click()
+        self.browser.fill('forum_description', 'A place to make strategy')
+        self.browser.find_by_id('edit_forum_button').first.click()
+        self.browser.find_by_css(".close").first.click()  # close modal
+        time.sleep(.25)
+        self.assertFalse(self.browser.is_text_present('A place to discuss strategy'))
+        self.assertTrue(self.browser.is_text_present('A place to make strategy'))
+
+    def test_delete_forum(self):
+
+        # Create forum
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('new_forum_button').first.click()
+        self.browser.fill('forum_name', 'Strategy Sessions')
+        self.browser.fill('forum_description', 'A place to discuss strategy')
+        self.browser.find_by_id('add_forum_button').first.click()
+        self.browser.find_by_css(".close").first.click()  # close modal
+
+        # Delete forum
+        time.sleep(.25)
+        forum = Forum.objects.get(name="Strategy Sessions")
+        self.browser.find_by_id(f"delete_forum_{forum.pk}").first.click()
+        time.sleep(.25)
+        self.assertFalse(self.browser.is_text_present('Strategy Sessions'))
+        self.assertFalse(self.browser.is_text_present('A place to discuss strategy'))
+
+    def test_add_permission_to_forum(self):
+
+        # Create forum
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('new_forum_button').first.click()
+        self.browser.fill('forum_name', 'Strategy Sessions')
+        self.browser.fill('forum_description', 'A place to discuss strategy')
+        self.browser.find_by_id('add_forum_button').first.click()
+        self.browser.find_by_css(".close").first.click()  # close modal
+
+        # Add permissions
+        self.browser.find_by_css("#permissioned_item > span > button").first.click()
+        permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
+        self.assertEquals(permissions, [])
+        self.browser.find_by_id('add_permission_button').first.click()
+        self.browser.select("permission_select", "groups.state_changes.EditForumChange")
+        element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
+        self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
+        self.browser.find_by_id('save_permission_button').first.click()
+        time.sleep(2)
+        permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
+        self.assertEquals(permissions, ["edit a forum"])
+
+    # def test_add_condition_to_permission_on_forum(self):
+    #     pass
+
+    # def test_add_condition_to_permission_on_forum_actually_works(self):
+    #     basically do the previous test, then go look at the history for the forum
+    #     pass
+
