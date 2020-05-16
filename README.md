@@ -17,7 +17,17 @@
 1. Run existing migrations: `python manage.py migrate`
 1. Start the server: `python manage.py runserver`
 
-You should now be able to view the site. The landing page will give you a 'template not found' error - simply go to /groups/ to get a working landing page.  You will need to register on the site and then log in before you can use it.
+You should now be able to view the site. You will need to register on the site and then log in before you can use most of the functionality.  Registration involves an email confirmation step, so before registering on the site you will need to set up a local email server.  To do this, open a separate terminal window and type:
+
+`python -m smtpd -n -c DebuggingServer localhost:1025` 
+
+Now when you register on the site, an email will be sent to the local server, and will
+be viewable in that separate tab.  Go ahead and register via the browser, using an 
+access code from `accounts/forms.py`.  
+
+The email sent to the local server should include an activation link. Cut and paste this activation link into your browser to active your user. You should see a response in the browser telling you that you are know able to log in - go ahead and do so.  You should
+be all set!
+
 
 ### Updating Concord and re-installing in Kybern
 

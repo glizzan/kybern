@@ -7,7 +7,6 @@ from django_registration.forms import RegistrationForm
 from accounts.models import User
 
 
-
 def validate_access_code(value):
     """The access code field is validated against a list of codes that can be given to users who want to sign up."""
     # FIXME: load these from somewhere else
