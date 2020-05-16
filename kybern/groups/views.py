@@ -60,15 +60,18 @@ def process_action(action):
 
     if action.resolution.status == "implemented":
         action_verb = ""
-        action_description = action.change.description_past_tense() + " " + action.target.get_name()
         follow_up = "They did so because they have the permission %s." % action.resolution.resolved_through
     else:
         action_verb = "tried to "
-        action_description = action.change.description_present_tense() + " " + action.target.get_name()
-        follow_up = "The current status is weird, do something here."
+        follow_up = ""  # TODO: what goes here?
 
-    action_string = "At %s, %s %s%s. %s" % (action.created_at.strftime("%b %d %Y %I:%M%p"), 
-        action.actor.username, action_verb, action_description, follow_up)
+    action_time = action.created_at.strftime("%b %d %Y %I:%M%p")
+    if action.target:
+        action_description = f"{action.change.description_past_tense()} {action.target.get_name()}"
+    else:
+        action_description = action.change.description_past_tense()
+
+    action_string = f"At {action_time}, {action.actor.username} {action_verb}{action_description}. {follow_up}"
 
     # Check for condition  ( FIXME: we need a much more performant way of doing this )
     pcc = PermissionConditionalClient(actor="system")
@@ -81,7 +84,7 @@ def process_action(action):
         "action_target_content_type": action.content_type.pk,
         "description": action.get_description(),
         "created": str(action.created_at),
-        "display_date": action.created_at.strftime("%b %d %Y %I:%M%p"),
+        "display_date": action_time,
         "actor": action.actor.username,
         "status": action.resolution.status,
         "resolution passed by": action.resolution.resolved_through,
@@ -727,8 +730,6 @@ def update_permission(request, target):
         role_data = [ role['name'] for role in roles]
         role_actions = permissionClient.update_roles_on_permission(role_data=role_data, permission=target_permission)
         actions += role_actions
-
-    print(actions)
 
     action_dict = get_multiple_action_dicts(actions)
 
