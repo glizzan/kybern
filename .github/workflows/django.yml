@@ -55,5 +55,6 @@ jobs:
         cd kybern
         python manage.py test
     - name: Lint code
+      run: |
         cd kybern
         flake8 .
