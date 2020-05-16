@@ -4,7 +4,7 @@
 
         <h4 class="text-secondary pb-3">{{ object.name }}'s Forums   
             <span class="pl-3"><b-button variant="outline-secondary" class="btn-sm"
-                v-b-modal.forum_modal>+ add new</b-button></span>
+                v-b-modal.forum_modal id="new_forum_button">+ add new</b-button></span>
         </h4>
     
         <div>[[ delete_error_message ]]</div>
@@ -16,11 +16,12 @@
 
             <template v-slot:footer>
                     <b-button variant="outline-secondary" class="btn-sm" @click="display_forum = pk">
-                            view</b-button>
+                        view</b-button>
                     <b-button variant="outline-secondary" class="btn-sm" v-b-modal.forum_modal 
-                        @click="edit_forum_modal(pk, name, description)">
+                        @click="edit_forum_modal(pk, name, description)" :id="'edit_forum_' + pk">
                         edit</b-button>
-                    <b-button variant="outline-secondary" class="btn-sm" @click="delete_forum(pk)">
+                    <b-button variant="outline-secondary" class="btn-sm" :id="'delete_forum_' + pk" 
+                        @click="delete_forum(pk)">
                         delete</b-button>
                     <permissioned_item :item_id=pk :item_model="'forum'" :item_name=name 
                         :display_style="'inline-button'"></permissioned_item>
@@ -33,18 +34,20 @@
 
         <b-modal id="forum_modal" :title="title_string" size="md" hide-footer @hide="clearState()">
             
-            <b-form-group id="name" label="Forum name:" label-for="forum_name">
-                <b-form-input id="forum_name" v-model="name" required placeholder="Please pick a name">
+            <b-form-group id="name_form_group" label="Forum name:" label-for="forum_name">
+                <b-form-input id="forum_name" name="forum_name" v-model="name" required placeholder="Please pick a name">
                 </b-form-input>
             </b-form-group>
 
-            <b-form-group id="description" label="Forum description:" label-for="forum_description">
-                <b-form-textarea id="forum_description" v-model="description" placeholder="Add a description">
+            <b-form-group id="description_form_group" label="Forum description:" label-for="forum_description">
+                <b-form-textarea id="forum_description" name="forum_description" v-model="description" placeholder="Add a description">
                 </b-form-textarea>
             </b-form-group>
 
-            <b-button v-if=!pk variant="outline-secondary" class="btn-sm"  @click="add_forum">submit</b-button>
-            <b-button v-if=pk variant="outline-secondary" class="btn-sm"  @click="edit_forum">submit</b-button>
+            <b-button v-if=!pk variant="outline-secondary" class="btn-sm" id="add_forum_button" 
+                @click="add_forum">submit</b-button>
+            <b-button v-if=pk variant="outline-secondary" class="btn-sm" id="edit_forum_button" 
+                @click="edit_forum">submit</b-button>
 
             <div>[[ error_message ]]</div>
 
