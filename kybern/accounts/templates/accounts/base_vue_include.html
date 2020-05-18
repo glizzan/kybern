@@ -84,7 +84,8 @@
             role_permissions: {},           // { role_name: [pk, pk, pk], role_name: [pk, pk, pk] }
             item_permissions: {},           // { item_pk + "_" + item_model: [pk, pk, pk] }   
             permissions: {},                // { int(pk) : { name: x, display: x, change_type: x } }
-            permission_configurations: {},  // { int(pk) : { permissionfieldname : permissionfieldvalue } } 
+            permission_configurations: {},  // { int(pk) : { permissionfieldname : permissionfieldvalue } }
+            permission_overrides: {},       // { item_pk + "_" + item_model: { foundational: enabled, governing: disabled } } 
 
             // Action history & conditional action data
             actions: {},                    // { 'group_1' : [ { action_dict }, { action_dict } ] }
@@ -255,6 +256,16 @@
                 }
                 return comments
             },
+            getFoundationalForItem: (state, getters) => (item_key) => {
+                if (state.permission_overrides[item_key]) {
+                    return state.permission_overrides[item_key].foundational
+                }
+            },
+            getGoverningForItem: (state, getters) => (item_key) => {
+                if (state.permission_overrides[item_key]) {
+                    return state.permission_overrides[item_key].governing
+                }
+            }
         },
         mutations: {
             ADD_ROLE (state, data) {
@@ -484,6 +495,12 @@
             },
             DELETE_COMMENT (state, data) {
                 Vue.delete(state.comments, data.pk);
+            },
+            ADD_OR_UPDATE_PERMISSION_OVERRIDE_DATA (state, data) {
+                item_key = data.item_id + "_" + data.item_model
+                Vue.set(state.permission_overrides, item_key, {
+                    "foundational": data.foundational, "governing": data.governing
+                })
             }
         },
         actions: {
@@ -729,6 +746,26 @@
                     //     commit('ADD_OR_UPDATE_CONDITION_CONFIGURATION', { pk : key, 
                     //                                         data : response.data.condition_configurations[key] })                    
                     // }
+                    commit('ADD_OR_UPDATE_PERMISSION_OVERRIDE_DATA', { 
+                        item_id: response.data.item_id, 
+                        item_model: response.data.item_model,
+                        foundational: response.data.foundational,
+                        governing: response.data.governing 
+                    })
+                }
+                return standard_get_api_call(url, params, implementationCallback)
+            },
+            changePermissionOverride ({ commit, state, dispatch }, payload) { 
+                url = "{{ base_url }}/groups/change_item_permission_override/"
+                params = { item_id: payload.item_id, item_model: payload.item_model,
+                    enable_or_disable: payload.enable_or_disable, governing_or_foundational: payload.governing_or_foundational }
+                implementationCallback = (response) => { 
+                    commit('ADD_OR_UPDATE_PERMISSION_OVERRIDE_DATA', { 
+                        item_id: response.data.item_id, 
+                        item_model: response.data.item_model,
+                        foundational: response.data.foundational,
+                        governing: response.data.governing 
+                    })
                 }
                 return standard_get_api_call(url, params, implementationCallback)
             },

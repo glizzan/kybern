@@ -42,6 +42,7 @@ urlpatterns = [
     path('get_permissions_and_conditions/', views.get_permissions_and_conditions, name='get_permissions_and_conditions'),
     path('add_permission_to_item/', views.add_permission_to_item, name='add_permission_to_item'),
     path('delete_permission_from_item/', views.delete_permission_from_item, name='delete_permission_from_item'),
+    path('change_item_permission_override/', views.change_item_permission_override, name='change_item_permission_override'),    
     # comment views
     path('get_comment_data/', views.get_comment_data, name='get_comment_data'),
     path('add_comment/', views.add_comment, name='add_comment'),
