@@ -9,7 +9,6 @@ from django.contrib.auth.decorators import login_required
 
 
 from concord.actions.client import ActionClient
-from concord.communities.client import CommunityClient
 from concord.permission_resources.client import PermissionResourceClient
 from concord.conditionals.client import PermissionConditionalClient, CommunityConditionalClient
 from concord.resources.client import CommentClient
@@ -17,19 +16,13 @@ from concord.resources.models import Comment
 
 from accounts.models import User
 from .models import Group, Forum, Post
-from .client import ForumClient
+from .client import ForumClient, GroupClient
 
 
 
 ##################################
 ### Helper methods and classes ###
 ##################################
-
-
-# FIXME: this probably doesn't belong here
-class GroupClient(CommunityClient):
-    """Easy way to replace the default community model with the one we want to use here, group."""
-    community_model = Group
 
 
 def get_model(model_name):
@@ -342,6 +335,41 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
         context = self.add_forum_data_to_context(context)
         context["base_url"] = "http://" + self.request.get_host()   # FIXME: should check for http vs https
         return context        
+
+
+####################
+### Forums Views ###
+####################
+
+
+@login_required
+def change_group_name(request):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    group_pk = request_data.get("group_pk")
+    new_name = request_data.get("new_name")
+
+    communityClient = GroupClient(actor=request.user)
+    target = communityClient.get_community(community_pk=group_pk)
+    communityClient.set_target(target=target)
+
+    action, result = communityClient.change_name(new_name=new_name)
+    return JsonResponse(get_action_dict(action))
+
+
+@login_required
+def change_group_description(request):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    group_pk = request_data.get("group_pk")
+    new_description = request_data.get("new_description")
+
+    communityClient = GroupClient(actor=request.user)
+    target = communityClient.get_community(community_pk=group_pk)
+    communityClient.set_target(target=target)
+
+    action, result = communityClient.change_group_description(new_description=new_description)
+    return JsonResponse(get_action_dict(action))
 
 
 ####################
@@ -1020,10 +1048,21 @@ def get_permissions_and_conditions(request):
         permission_pks.append(permission.pk)
         permissions.update(serialize_existing_permission_for_vue(permission))
         permission_configurations.update(serialize_existing_permission_configuration_for_vue(permission))
+
+    conditionalClient = PermissionConditionalClient(actor=request.user)
+    existing_conditions = conditionalClient.get_conditions_given_targets(
+            target_pks=[permission.pk for permission in existing_permissions])
+
+    conditions, condition_configurations = {}, {}
+    for condition in existing_conditions:
+        conditions.update(serialize_existing_condition_for_vue(condition))
+        condition_configurations.update(serialize_existing_condition_configuration_for_vue(condition))
         
     return JsonResponse({ "item_id": item_id, "item_model": request_data.get("item_model"), 
         "permissions" : permissions, "permission_configurations" : permission_configurations,
-        "permission_pks": permission_pks })
+        "conditions" : conditions, "condition_configurations": condition_configurations,
+        "permission_pks": permission_pks, "foundational": target.foundational_permission_enabled,
+        "governing": target.governing_permission_enabled })
 
 
 @login_required
@@ -1085,6 +1124,40 @@ def delete_permission_from_item(request):
     action, result = permissionClient.remove_permission(item_pk=permission_id)
     action_dict = get_action_dict(action)
     action_dict.update({ "removed_permission_pk": permission_id, "item_id": item_id, "item_model": request_data.get("item_model") })
+    return JsonResponse(action_dict)
+
+
+@login_required
+def change_item_permission_override(request):
+    """Helper method to manipulate governing and foundational permissions, aka the permission overrides.
+    Takes in item_id and item_model to retrieve the item being acted on, and toggles that indicate 
+    whether the change is to the foundational or governing permission and whether the override is being
+    enabled or disabled."""
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    item_id = request_data.get("item_id")
+    model_class = get_model(request_data.get("item_model"))
+    target = model_class.objects.get(pk=item_id)
+    permissionClient = PermissionResourceClient(actor=request.user, target=target)
+
+    enable_or_disable = request_data.get("enable_or_disable")
+    governing_or_foundational = request_data.get("governing_or_foundational")
+    
+    if governing_or_foundational == "governing":
+        if enable_or_disable == "enable":
+            action, result = permissionClient.enable_governing_permission()
+        elif enable_or_disable == "disable":
+            action, result = permissionClient.disable_governing_permission()
+    elif governing_or_foundational == "foundational":
+        if enable_or_disable == "enable":
+            action, result = permissionClient.enable_foundational_permission()
+        elif enable_or_disable == "disable":
+            action, result = permissionClient.disable_foundational_permission()
+
+    action_dict = get_action_dict(action)
+    action_dict.update({ "item_id": item_id, "item_model": request_data.get("item_model"),
+        "foundational": result.foundational_permission_enabled, "governing": result.governing_permission_enabled
+    })    
     return JsonResponse(action_dict)
 
 
@@ -1167,3 +1240,4 @@ def delete_comment(request):
     action_dict = get_action_dict(action)
     action_dict.update({ 'deleted_comment_pk': comment_pk })
     return JsonResponse(action_dict)
+

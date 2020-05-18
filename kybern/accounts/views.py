@@ -5,20 +5,15 @@ from django_registration.backends.activation.views import RegistrationView
 from django_registration.signals import user_registered
 from django.contrib.auth.mixins import LoginRequiredMixin
 
-from concord.communities.client import CommunityClient
+
 from accounts.models import Profile, User
 from groups.models import Group
+from groups.client import GroupClient
 from accounts.forms import RegistrationFormWithCode
 
 
 def myview(request):
     return HttpResponseRedirect(reverse('arch-summary', args=[1945]))
-
-
-# FIXME: this probably doesn't belong here
-class GroupClient(CommunityClient):
-    """Easy way to replace the default community model with the one we want to use here, group."""
-    community_model = Group
 
 
 class RegistrationViewWithCode(RegistrationView):

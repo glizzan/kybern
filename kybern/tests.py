@@ -5,11 +5,11 @@ from django.conf import settings
 from selenium import webdriver
 
 from django.contrib.auth.models import User
-from concord.communities.client import CommunityClient
 from concord.permission_resources.client import PermissionResourceClient
 from concord.conditionals.client import PermissionConditionalClient
 from concord.actions.state_changes import Changes
 from groups.models import Group, Forum
+from groups.client import GroupClient
 
 
 settings.DEBUG = True
@@ -117,8 +117,7 @@ class GroupBasicsTestCase(BaseTestCase):
     def setUp(self):
         self.create_users()
         self.actor = User.objects.first()
-        self.client = CommunityClient(actor=self.actor)
-        self.client.community_model = Group
+        self.client = GroupClient(actor=self.actor)
         self.community = self.client.create_community(name="USWNT")
 
     def test_create_group(self):
@@ -128,7 +127,7 @@ class GroupBasicsTestCase(BaseTestCase):
         self.browser.fill('name', 'NWSL')
         self.browser.fill('group_description', 'For NWSL players')
         self.browser.find_by_id('create_group_button').first.click()        
-        self.assertTrue(self.browser.is_text_present('view group history'))  # shows we're on group detail page now
+        self.assertTrue(self.browser.is_text_present('edit group'))  # shows we're on group detail page now
         self.assertTrue(self.browser.is_text_present("NWSL's Forums"))  # shows we're on newly created detail page now
 
     def test_add_members_to_group(self):
@@ -180,8 +179,7 @@ class PermissionsTestCase(BaseTestCase):
     def setUp(self):
         self.create_users()
         self.actor = User.objects.first()
-        self.client = CommunityClient(actor=self.actor)
-        self.client.community_model = Group
+        self.client = GroupClient(actor=self.actor)
         self.community = self.client.create_community(name="USWNT")
         self.client.set_target(target=self.community)
         self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()])
@@ -241,8 +239,7 @@ class ActionsTestCase(BaseTestCase):
     def setUp(self):
         self.create_users()
         self.actor = User.objects.first()
-        self.client = CommunityClient(actor=self.actor)
-        self.client.community_model = Group
+        self.client = GroupClient(actor=self.actor)
         self.community = self.client.create_community(name="USWNT")
         self.client.set_target(target=self.community)
         self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()])
@@ -271,8 +268,7 @@ class ActionConditionsTestCase(BaseTestCase):
         # Basic setup
         self.create_users()
         self.actor = User.objects.first()
-        self.client = CommunityClient(actor=self.actor)
-        self.client.community_model = Group
+        self.client = GroupClient(actor=self.actor)
         self.community = self.client.create_community(name="USWNT")
         self.client.set_target(target=self.community)
         self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()])
@@ -332,8 +328,7 @@ class ApprovalConditionsTestCase(BaseTestCase):
         # create group, add members, add roles, add members to role
         self.create_users()
         self.actor = User.objects.first()
-        self.client = CommunityClient(actor=self.actor)
-        self.client.community_model = Group
+        self.client = GroupClient(actor=self.actor)
         self.community = self.client.create_community(name="USWNT")
         self.client.set_target(target=self.community)
         self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()])
@@ -415,8 +410,7 @@ class VotingConditionTestCase(BaseTestCase):
         # create group, add members, add roles, add members to role
         self.create_users()
         self.actor = User.objects.first()
-        self.client = CommunityClient(actor=self.actor)
-        self.client.community_model = Group
+        self.client = GroupClient(actor=self.actor)
         self.community = self.client.create_community(name="USWNT")
         self.client.set_target(target=self.community)
         self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()])
@@ -514,8 +508,7 @@ class ForumsTestCase(BaseTestCase):
 
         self.create_users()
         self.actor = User.objects.first()
-        self.client = CommunityClient(actor=self.actor)
-        self.client.community_model = Group
+        self.client = GroupClient(actor=self.actor)
         self.community = self.client.create_community(name="USWNT")
         self.client.set_target(target=self.community)
         self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()])

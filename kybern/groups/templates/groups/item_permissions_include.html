@@ -6,11 +6,57 @@
             <b-button variant="outline-secondary" class="btn-sm" v-b-modal="modal_id" @click="edit_permissions()">
                 permissions</b-button>
         </span>
+        <span v-else-if="display_style == 'group-display'">
+            <b-button variant="outline-secondary" class="mt-3" v-b-modal="modal_id" @click="edit_permissions()">
+                permissions</b-button>
+        </span>
         <span v-else>
             <span v-b-modal="modal_id" v-on:click="edit_permissions()" class="badge badge-light ml-1"  >🖉</span>
         </span>
 
         <b-modal :id=modal_id :title="title_string" hide-footer> 
+
+            <!-- Permission overrides -->
+
+            <small>
+
+                <p>When the governing permission is turned on, any governor can take any action on the item,
+                with <span class="text-secondary"><u>a few exceptions</u></span>.
+
+                    <span v-if=governing_permission_enabled>
+                        The governing permission is <b>turned on</b>.  
+                        <span class="text-info font-weight-bold" 
+                            @click="change_permission_override('governing', 'disable')">
+                            Click here to turn it off.</span>
+                    </span>
+                    <span v-else>
+                        The governing permission is <b>turned off</b>.  
+                        <span class="text-info font-weight-bold" 
+                            @click="change_permission_override('governing', 'enable')">
+                            Click here to turn it on.</span>
+                    </span>
+                </p>
+
+                <p>When the foundational permission is turned on, only owners can act on the object.  Any 
+                specific permissions set below will not apply, and neither will the governing permission.
+        
+                    <span v-if=foundational_permission_enabled>
+                        The foundational permission is <b>turned on</b>.  
+                        <span class="text-info font-weight-bold" 
+                            @click="change_permission_override('foundational', 'disable')">
+                            Click here to turn it off.</span>
+                    </span>
+                    <span v-else>
+                        The foundational permission is <b>turned off</b>.  
+                        <span class="text-info font-weight-bold" 
+                            @click="change_permission_override('foundational', 'enable')">
+                            Click here to turn it on.</span>
+                    </span>
+                </p>
+
+            </small>
+
+            <!-- Specific permissions -->
         
             <b-list-group v-for="pair in permission_condition_pairs" v-bind:key="pair.permission.id">
                 <b-list-group-item>
@@ -72,29 +118,38 @@
         },
         computed: { 
             ...Vuex.mapState(['permission_options', 'item_permissions', 'conditions']),
-            ...Vuex.mapGetters(['getPermissionConditionPairsForItem']),
+            ...Vuex.mapGetters(['getPermissionConditionPairsForItem', 'getFoundationalForItem',
+                'getGoverningForItem']),
             title_string: function() {
                 return "Permissions for " + this.item_name
             },
+            item_key: function() {
+                if (this.item_id && this.item_model) {
+                    return this.item_id + "_" + this.item_model
+                }
+            },
             modal_id: function() {
-                return "item_permission_modal" + "_" + this.item_id + "_" + this.item_model
+                return "item_permission_modal" + "_" + this.item_key
             },
             item_permission_options: function() {
                 return this.permission_options[this.item_model]
-            }
+            },
+            governing_permission_enabled: function() { if (this.item_key) { return this.getGoverningForItem(this.item_key) } },
+            foundational_permission_enabled: function() { if (this.item_key) { return this.getFoundationalForItem(this.item_key) } },
         },
         watch: { 
             item_permissions: function (val) {  this.update_pairs() },
             conditions: function (val) { this.update_pairs() }
         },
         methods: { 
-            ...Vuex.mapActions(['getPermissionsAndConditionsForItem', 'removePermissionFromItem']),
+            ...Vuex.mapActions(['getPermissionsAndConditionsForItem', 'removePermissionFromItem',
+                'changePermissionOverride']),
             update_pairs() {
-                this.permission_condition_pairs = this.getPermissionConditionPairsForItem(this.item_id + "_" + this.item_model)
+                this.permission_condition_pairs = this.getPermissionConditionPairsForItem(this.item_key)
             },
             edit_permissions() {
                 this.getPermissionsAndConditionsForItem({ item_id: this.item_id, item_model: this.item_model })
-                .then(response => { this.update_pairs() }).catch(error => {  console.log("AHHH"); this.error_message = error })
+                .then(response => { this.update_pairs() }).catch(error => {  this.error_message = error })
             },
             edit_permission(permission_id) {
                 this.clearState()  // clear previous state
@@ -128,6 +183,14 @@
             },
             delete_condition(permission_id, condition_id) {
                 this.removeCondition({ condition_id : condition_id, permission_id: permission_id }).catch(error => { 
+                    this.error_message = error.message
+                })
+            },
+            change_permission_override(governing_or_foundational, enable_or_disable) {
+                this.changePermissionOverride({
+                    item_id : this.item_id, item_model: this.item_model, enable_or_disable: enable_or_disable,
+                    governing_or_foundational: governing_or_foundational })
+                .catch(error => { 
                     this.error_message = error.message
                 })
             }
