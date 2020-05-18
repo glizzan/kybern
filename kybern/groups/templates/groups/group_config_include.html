@@ -1,0 +1,84 @@
+<!-- Interface for editing group, its permissions and history -->
+
+<span id="group_config">
+
+    <div class="card">
+        <h5 class="card-header">[[ group_name ]]</h5>
+        <div class="card-body">
+            <p class="card-text">[[ group_description ]]</p>
+        </div>
+    </div>
+
+    <b-button variant="outline-secondary" class="mt-3" v-b-modal.edit_group_modal>edit group</b-button>
+
+    <permissioned_item :item_id=item_id :item_model=item_model :item_name=group_name 
+        :display_style="'group-display'"></permissioned_item>
+
+    <action-history :item_id=item_id :item_model=item_model :item_name=group_name></action-history>  
+
+
+    <b-modal id="edit_group_modal" title="edit your group" size="md" hide-footer>
+            
+        <b-form-group id="name" label="Group name:" label-for="group_name">
+            <b-form-input id="group_name" v-model="edited_group_name" required>
+            </b-form-input>
+        </b-form-group>
+    
+        <b-form-group id="description" label="Group description:" label-for="group_description">
+            <b-form-textarea id="group_description" v-model="edited_group_description" required 
+                placeholder="Add a group description">
+            </b-form-textarea>
+        </b-form-group>
+    
+        <b-button variant="outline-secondary" class="btn-sm"  @click="save_edited_group">save</b-button>
+    
+        <div>[[ error_message ]]</div>
+    
+    </b-modal>
+
+</span>
+
+
+<script type="application/javascript">
+
+    var groupConfigApp = new Vue({
+        delimiters: ['[[', ']]'],
+        el: '#group_config',
+        store,
+        data: {
+            item_id: {{ object.pk }},
+            item_model: 'group',
+            group_name: '{{ object.name|escapejs }}',
+            group_description: '{{ object.group_description|escapejs }}',
+            edited_group_name: '{{ object.name|escapejs }}',
+            edited_group_description: '{{ object.group_description|escapejs }}',
+            error_message: ''
+        },
+        methods: { 
+            ...Vuex.mapActions(['addOrUpdateAction']),
+            save_edited_group() {
+                if (this.group_name != this.edited_group_name ) {
+                    axios = this.prep_axios()
+                    url = "{{ base_url }}/groups/change_group_name/"
+                    params = { group_pk: this.item_id, new_name: this.edited_group_name }
+                    axios.post(url, params)
+                    .then(response => { 
+                        this.group_name = this.edited_group_name
+                        this.addOrUpdateAction({ action_pk: response.data.action_pk }) })
+                    .catch(error => { this.error_message = error })
+                } 
+                if (this.group_description != this.edited_group_description) {
+                    axios = this.prep_axios()
+                    url = "{{ base_url }}/groups/change_group_description/"
+                    params = { group_pk: this.item_id, new_description: this.edited_group_description }
+                    axios.post(url, params)
+                    .then(response => { 
+                        this.group_description = this.edited_group_description
+                        this.addOrUpdateAction({ action_pk: response.data.action_pk }) })
+                    .catch(error => { this.error_message = error })
+                }
+            }
+        }
+    });
+
+</script>

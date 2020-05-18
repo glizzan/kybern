@@ -9,7 +9,6 @@ from django.contrib.auth.decorators import login_required
 
 
 from concord.actions.client import ActionClient
-from concord.communities.client import CommunityClient
 from concord.permission_resources.client import PermissionResourceClient
 from concord.conditionals.client import PermissionConditionalClient, CommunityConditionalClient
 from concord.resources.client import CommentClient
@@ -17,19 +16,13 @@ from concord.resources.models import Comment
 
 from accounts.models import User
 from .models import Group, Forum, Post
-from .client import ForumClient
+from .client import ForumClient, GroupClient
 
 
 
 ##################################
 ### Helper methods and classes ###
 ##################################
-
-
-# FIXME: this probably doesn't belong here
-class GroupClient(CommunityClient):
-    """Easy way to replace the default community model with the one we want to use here, group."""
-    community_model = Group
 
 
 def get_model(model_name):
@@ -342,6 +335,41 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
         context = self.add_forum_data_to_context(context)
         context["base_url"] = "http://" + self.request.get_host()   # FIXME: should check for http vs https
         return context        
+
+
+####################
+### Forums Views ###
+####################
+
+
+@login_required
+def change_group_name(request):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    group_pk = request_data.get("group_pk")
+    new_name = request_data.get("new_name")
+
+    communityClient = GroupClient(actor=request.user)
+    target = communityClient.get_community(community_pk=group_pk)
+    communityClient.set_target(target=target)
+
+    action, result = communityClient.change_name(new_name=new_name)
+    return JsonResponse(get_action_dict(action))
+
+
+@login_required
+def change_group_description(request):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    group_pk = request_data.get("group_pk")
+    new_description = request_data.get("new_description")
+
+    communityClient = GroupClient(actor=request.user)
+    target = communityClient.get_community(community_pk=group_pk)
+    communityClient.set_target(target=target)
+
+    action, result = communityClient.change_group_description(new_description=new_description)
+    return JsonResponse(get_action_dict(action))
 
 
 ####################
@@ -1099,6 +1127,7 @@ def delete_permission_from_item(request):
     return JsonResponse(action_dict)
 
 
+@login_required
 def change_item_permission_override(request):
     """Helper method to manipulate governing and foundational permissions, aka the permission overrides.
     Takes in item_id and item_model to retrieve the item being acted on, and toggles that indicate 

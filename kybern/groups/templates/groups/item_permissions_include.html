@@ -6,6 +6,10 @@
             <b-button variant="outline-secondary" class="btn-sm" v-b-modal="modal_id" @click="edit_permissions()">
                 permissions</b-button>
         </span>
+        <span v-else-if="display_style == 'group-display'">
+            <b-button variant="outline-secondary" class="mt-3" v-b-modal="modal_id" @click="edit_permissions()">
+                permissions</b-button>
+        </span>
         <span v-else>
             <span v-b-modal="modal_id" v-on:click="edit_permissions()" class="badge badge-light ml-1"  >🖉</span>
         </span>

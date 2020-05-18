@@ -1,9 +1,21 @@
 from django.contrib.contenttypes.models import ContentType
 
 from concord.actions.client import BaseClient
+from concord.communities.client import CommunityClient
 
-from .models import Forum, Post
-from .state_changes import (AddForumChange, DeleteForumChange, EditForumChange, AddPostChange, EditPostChange, DeletePostChange)
+from .models import Forum, Post, Group
+from .state_changes import (ChangeGroupDescriptionChange, AddForumChange, DeleteForumChange, 
+    EditForumChange, AddPostChange, EditPostChange, DeletePostChange)
+
+
+class GroupClient(CommunityClient):
+    community_model = Group
+
+    # state changes
+
+    def change_group_description(self, new_description):
+        change = ChangeGroupDescriptionChange(new_description=new_description)
+        return self.create_and_take_action(change)
 
 
 class ForumClient(BaseClient):

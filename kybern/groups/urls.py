@@ -7,6 +7,9 @@ urlpatterns = [
     path('', views.GroupListView.as_view(), name='group_list'),
     path('create/', views.GroupCreateView.as_view(), name='group_create'),
     path('<int:pk>/', views.GroupDetailView.as_view(), name='group_detail'),
+    # group change views
+    path('change_group_name/', views.change_group_name, name='change_group_name'),
+    path('change_group_description/', views.change_group_description, name='change_group_description'),
     # role & membership views
     path('add_role/<int:target>/', views.add_role, name='add_role_to_group'),
     path('add_people_to_role/<int:target>/', views.add_people_to_role, name='add_people_to_role'),

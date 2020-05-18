@@ -120,6 +120,7 @@ voteConditionComponent = Vue.component('vote-condition-ui', {
         this.get_conditional_data()
     },
     methods: {
+        ...Vuex.mapActions(['addOrUpdateAction']),
         get_conditional_data() {
             axios = this.prep_axios()
             url = "{{ base_url }}/groups/get_conditional_data/"
