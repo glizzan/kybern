@@ -739,13 +739,13 @@
                         commit('ADD_OR_UPDATE_PERMISSION_CONFIGURATION', { pk : key, 
                                                     data : response.data.permission_configurations[key] })                      
                     }
-                    // for (key in response.data.conditions) {
-                    //     commit('ADD_OR_UPDATE_CONDITION', { pk : key, data : response.data.conditions[key] })
-                    // }
-                    // for (key in response.data.condition_configurations) {
-                    //     commit('ADD_OR_UPDATE_CONDITION_CONFIGURATION', { pk : key, 
-                    //                                         data : response.data.condition_configurations[key] })                    
-                    // }
+                    for (key in response.data.conditions) {
+                        commit('ADD_OR_UPDATE_CONDITION', { pk : key, data : response.data.conditions[key] })
+                    }
+                    for (key in response.data.condition_configurations) {
+                        commit('ADD_OR_UPDATE_CONDITION_CONFIGURATION', { pk : key, 
+                                                            data : response.data.condition_configurations[key] })                    
+                    }
                     commit('ADD_OR_UPDATE_PERMISSION_OVERRIDE_DATA', { 
                         item_id: response.data.item_id, 
                         item_model: response.data.item_model,

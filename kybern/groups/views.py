@@ -1020,9 +1020,19 @@ def get_permissions_and_conditions(request):
         permission_pks.append(permission.pk)
         permissions.update(serialize_existing_permission_for_vue(permission))
         permission_configurations.update(serialize_existing_permission_configuration_for_vue(permission))
+
+    conditionalClient = PermissionConditionalClient(actor=request.user)
+    existing_conditions = conditionalClient.get_conditions_given_targets(
+            target_pks=[permission.pk for permission in existing_permissions])
+
+    conditions, condition_configurations = {}, {}
+    for condition in existing_conditions:
+        conditions.update(serialize_existing_condition_for_vue(condition))
+        condition_configurations.update(serialize_existing_condition_configuration_for_vue(condition))
         
     return JsonResponse({ "item_id": item_id, "item_model": request_data.get("item_model"), 
         "permissions" : permissions, "permission_configurations" : permission_configurations,
+        "conditions" : conditions, "condition_configurations": condition_configurations,
         "permission_pks": permission_pks, "foundational": target.foundational_permission_enabled,
         "governing": target.governing_permission_enabled })
 
