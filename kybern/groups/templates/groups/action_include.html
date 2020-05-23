@@ -137,6 +137,7 @@ actionHistoryComponent = Vue.component('action-history', {
         this.action_to_view_comments_on = null
       },
       launch_condition_modal(item) {  
+        console.log("Item launching: ", item)
         this.condition_type = item.has_condition.type
         this.condition_pk = item.has_condition.pk
         this.action_details = item

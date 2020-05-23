@@ -18,19 +18,17 @@
         <!-- If we're updating an existing permission (or configuring a new permission that has been selected) -->
         <span v-if="mode == 'update' || permission_selected">
 
-            <!-- If we've got fields to configure, or this is a permission for an item so we need to set actors and/or roles -->
-            <span v-if="configuration_fields.length > 0 || !this.role_to_edit ">
-
-                <p class="mt-3"><b>Configure your permission</b></p>
-
-                <span v-if="!role_to_edit">
-                    {% include 'groups/role_and_actor_fields_include.html' %}
-                </span>
-
-                {% include 'groups/configuration_fields_include.html' %}
-
+            <!-- If this is an item permission, so we need to set actors & roles -->
+            <span v-if="!role_to_edit" class="mb-3">
+                <p class="mt-3 font-weight-bold">Give people this permission</p>
+                {% include 'groups/role_and_actor_fields_include.html' %}
             </span>
 
+            <!-- If there are fields to configure -->
+            <span v-if="configuration_fields.length > 0" class="mb-3">
+                <p class="mt-3 font-weight-bold">Configure your permission</p>
+                {% include 'groups/configuration_fields_include.html' %}
+            </span>
 
             <b-button v-if="permission_selected && mode =='create'" size="sm" 
                 class="mt-3" @click="add_permission()" id="save_permission_button">Save new permission</b-button>
@@ -60,6 +58,7 @@
                 mode: 'start',
                 configuration_fields: [],
                 error_message: '',
+                toggle_error_message: '',
                 // only used for permission field on item (not on roles)
                 permission_roles_selected: [],
                 permission_actors_selected: []
@@ -92,10 +91,17 @@
             ...Vuex.mapState(['permissions']),
             ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getPermissionConfigurationFields', 
                 'getPermissionConfigurationFieldsWithData', 'select_field_is_multiple', 'role_to_options',
-                'user_pk_to_options'])
+                'user_pk_to_options']),
+            anyone_can_take_permission() {
+                if (this.permission_to_edit) {
+                    return this.permissions[this.permission_to_edit].anyone
+                } else {
+                    return false    // "anyone" can't be set to true when permission is first created
+                }
+            }
         },
         methods: {
-            ...Vuex.mapActions(['addPermission', 'updatePermission', 'addPermissionToItem']),
+            ...Vuex.mapActions(['addPermission', 'updatePermission', 'addPermissionToItem', 'toggleAnyone']),
             switch_to_create_mode() {
                 // helper function to reset necessary state
                 this.$emit("clearState");
@@ -129,6 +135,11 @@
                     .then(response => { this.$emit("clearState"); })
                     .catch(error => {  this.error_message = error })
                 }
+            },
+            toggle_anyone(enable_or_disable) {
+                this.toggleAnyone({ permission_id: this.permission_to_edit, enable_or_disable: enable_or_disable })
+                .then(response => { this.$emit("clearState"); })
+                .catch(error => {  this.toggle_error_message = error })
             }
         }
     });

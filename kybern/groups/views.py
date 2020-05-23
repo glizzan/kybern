@@ -123,38 +123,50 @@ def get_multiple_action_dicts(actions):
     }
 
 
-def serialize_existing_permission_for_vue(permission):
+def serialize_existing_permission_for_vue(permission, pk_as_key=True):
     """  (note: this matches format specified in vuex store)
     permissions: {{ permissions }},         
         // { int(pk) : { name: x, display: x, change_type: x } } """
-    return { permission.pk : { "name": permission.full_description(), "display": permission.full_description(), 
-            "change_type": permission.change_type, "actors": permission.get_actors(), "roles": permission.get_role_names() } }
+    permission_dict = { "name": permission.full_description(), "display": permission.display_string(), 
+            "change_type": permission.change_type, "actors": permission.get_actors(), "roles": permission.get_role_names(),
+            "anyone": permission.anyone }
+    if pk_as_key:
+        return { permission.pk : permission_dict }
+    return permission_dict
 
 
-def serialize_existing_permission_configuration_for_vue(permission):
+def serialize_existing_permission_configuration_for_vue(permission, pk_as_key=True):
     """  (note: this matches format specified in vuex store)
     permission_configurations: {{ permission_configurations }},
         // { int(pk) : { permissionfieldname : permissionfieldvalue } }       
     """
-    return { permission.pk: permission.get_configuration() } 
+    permission_dict = permission.get_configuration() 
+    if pk_as_key:
+        return { permission.pk : permission_dict }
+    return permission_dict
 
 
-def serialize_existing_condition_for_vue(condition):
+def serialize_existing_condition_for_vue(condition, pk_as_key=True):
     """ (note: this matches format specified in vuex store)
     conditions: {{ conditions }},         
         // { int(pk) : { name: x, display: x, conditioned_object_pk: x } }       
     """
-    return { condition.pk :  { 'name' : condition.condition_name(), 'display': condition.condition_description(), 
-        'conditioned_object_pk': condition.conditioned_object_id } }
+    condition_dict = { 'name' : condition.condition_name(), 'display': condition.condition_description(), 
+            'conditioned_object_pk': condition.conditioned_object_id } 
+    if pk_as_key:
+        return { condition.pk :  condition_dict }
+    return condition_dict 
 
 
-def serialize_existing_condition_configuration_for_vue(condition):
+def serialize_existing_condition_configuration_for_vue(condition, pk_as_key=True):
     """ (note: this matches format specified in vuex store)
     condition_configurations: {{ condition_configurations }},
         // { int(pk) : { conditionfieldname : conditionfieldvalue } }       
     """
-    return { condition.pk: condition.condition_data.get_configurable_fields_with_data() }
-
+    condition_dict = condition.condition_data.get_configurable_fields_with_data() 
+    if pk_as_key:
+        return { condition.pk :  condition_dict }
+    return condition_dict 
 
 def serialize_existing_comment_for_vue(comment):
     """ Serializes comment from Django model to JSOn-serializable dict.
@@ -479,7 +491,8 @@ def add_post(request, target):
     action, result = forumClient.add_post(forum_pk, title, content)
     
     action_dict = get_action_dict(action)
-    action_dict["post_data"] = serialize_post_for_vue(result)
+    if action.resolution.status == "implemented":
+        action_dict["post_data"] = serialize_post_for_vue(result)
     return JsonResponse(action_dict)
 
 
@@ -846,8 +859,9 @@ def permission_condition_helper(request, request_data, target, action_type):
         condition_data, permission_data = process_configuration_data(configuration_data)
 
     if action_type == "add":
-        return conditionalClient.add_condition(condition_type=condition_type.lower(),
+        action, result = conditionalClient.add_condition(condition_type=condition_type.lower(),
             condition_data=condition_data, permission_data=permission_data)
+        return action, result
 
     if action_type == "update":
         return conditionalClient.change_condition(condition_pk=condition_id,
@@ -1161,6 +1175,27 @@ def change_item_permission_override(request):
     return JsonResponse(action_dict)
 
 
+@login_required
+def toggle_anyone(request):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    permission_id = request_data.get("permission_id")
+    enable_or_disable = request_data.get("enable_or_disable")
+
+    permissionClient = PermissionResourceClient(actor=request.user)
+    target_permission = permissionClient.get_permission(pk=permission_id)
+
+    if enable_or_disable == "enable":
+        action, result = permissionClient.give_anyone_permission(permission_pk=target_permission.pk)
+    elif enable_or_disable == "disable":
+        action, result = permissionClient.remove_anyone_from_permission(permission_pk=target_permission.pk)
+
+    action_dict = get_action_dict(action)
+    action_dict.update({ "permission": get_permission_info(result) })
+
+    return JsonResponse(action_dict)
+
+
 #####################
 ### Comment views ###
 #####################
@@ -1241,3 +1276,68 @@ def delete_comment(request):
     action_dict.update({ 'deleted_comment_pk': comment_pk })
     return JsonResponse(action_dict)
 
+
+########################
+### Membership Views ###
+########################
+
+
+def get_membership_condition_for_vue(condition, setting):
+    return {
+        "condition_setting": setting,
+        "condition_data": serialize_existing_condition_for_vue(condition, pk_as_key=False),
+        "condition_configuration": serialize_existing_condition_configuration_for_vue(condition, pk_as_key=False)
+    }
+
+
+@login_required
+def get_membership_configuration(request, target):
+
+    communityClient = GroupClient(actor=request.user)
+    target = communityClient.get_community(community_pk=target)
+    communityClient.set_target(target=target)
+
+    setting, permission, condition = communityClient.get_membership_setting(extra_data=True)
+    if permission:
+        permission = serialize_existing_permission_for_vue(permission, pk_as_key=False)
+    if condition:
+        condition = get_membership_condition_for_vue(condition, setting)
+
+    return JsonResponse({ "membership_option_selected": setting, "permission": permission, "condition": condition })
+
+
+@login_required
+def set_membership_configuration(request, target):
+
+    communityClient = GroupClient(actor=request.user)
+    target = communityClient.get_community(community_pk=target)
+    communityClient.set_target(target=target)
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    new_setting = request_data.get("new_setting")
+    extra_data = request_data.get("extra_data", None)
+
+    container = communityClient.change_membership_setting(new_setting=new_setting, extra_data=extra_data)
+    action_dict = get_multiple_action_dicts(container.get_actions())
+
+    setting, permission, condition = communityClient.get_membership_setting(extra_data=True)
+    if permission:
+        permission = serialize_existing_permission_for_vue(permission, pk_as_key=False)
+    if condition:
+        condition = get_membership_condition_for_vue(condition, setting)
+
+    action_dict.update({ "membership_option_selected": setting, "permission": permission, "condition": condition })
+
+    return JsonResponse(action_dict)
+
+
+
+
+
+
+
+
+
+
+
+        

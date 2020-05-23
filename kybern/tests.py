@@ -202,7 +202,7 @@ class PermissionsTestCase(BaseTestCase):
         self.browser.find_by_id('save_permission_button').first.click()
         time.sleep(.5)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
-        self.assertEquals(permissions, ["remove members from community"])
+        self.assertEquals(permissions, ["those with role forwards have permission to remove members from community"])
 
     def test_adding_permission_changes_site_behavior(self):
 
@@ -292,7 +292,7 @@ class ActionConditionsTestCase(BaseTestCase):
         self.browser.find_by_id('forwards_editrole').first.click()
         time.sleep(.25)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
-        self.assertEquals(permissions, ["add role to community"])
+        self.assertEquals(permissions, ["those with role forwards have permission to add role to community"])
         css_selector = "#permission_element_" + str(self.permission.pk) + " > div > button.btn.btn-secondary"
         self.browser.find_by_css(css_selector).first.click()
         self.browser.select("condition_select", "VoteCondition")
@@ -447,7 +447,6 @@ class VotingConditionTestCase(BaseTestCase):
         time.sleep(.25)
         self.browser.find_by_id('save_vote_choice').first.click()
         time.sleep(.25)
-        time.sleep(2)
         self.assertTrue(self.browser.is_text_present('The results so far are 1 yeas and 0 nays with 0 abstentions.'))
         self.assertTrue(self.browser.is_text_present("Thank you for voting! No further action from you is needed.")) 
 
@@ -593,7 +592,7 @@ class ForumsTestCase(BaseTestCase):
         self.browser.find_by_id('save_permission_button').first.click()
         time.sleep(2)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
-        self.assertEquals(permissions, ["edit a forum"])
+        self.assertEquals(permissions, ["those with role forwards have permission to edit a forum"])
 
     # def test_add_condition_to_permission_on_forum(self):
     #     pass

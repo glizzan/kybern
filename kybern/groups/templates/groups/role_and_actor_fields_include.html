@@ -1,33 +1,64 @@
-<!-- Should be a choice field populated by current roles -->
-<div class="input-group mb-3 permissionrolefield">
 
-    Roles who have this permission
+<span v-if="anyone_can_take_permission" class="text-left">
 
-    <vue-multiselect v-model=permission_roles_selected :multiple=true :options=rolesAsOptions :allow-empty="true"
-        :close-on-select="true" placeholder="Select roles" 
-        label="name" track-by="name">
-        <template slot="selection" slot-scope="{ values, search, isOpen }">
-            <span v-if="!isOpen">
-                Selected: [[ values ]]
-            </span>
-        </template>
-    </vue-multiselect>
+    <p>Anyone can take the action described by this permission. You can remove the permission from anyone, 
+        and give it to the previous roles and/or actors specified.</p>
 
-</div>
+    <b-button variant="outline-secondary" size="sm" @click="toggle_anyone('disable')">
+        Remove from anyone</b-button>
 
-<!-- Should be a multiselect field populated by current members -->
-<div class="input-group mb-3 permissionactorfield">
+    <span>[[ toggle_error_message ]]</span>
+    <br />
+    
+</span>
 
-    Actors who have this permission
+<span v-else class="text-left">
 
-    <vue-multiselect v-model=permission_actors_selected :multiple=true :options=groupMembersAsOptions :allow-empty="true"
-        :close-on-select="true" placeholder="Select actors" 
-        label="name" track-by="pk">
-        <template slot="selection" slot-scope="{ values, search, isOpen }">
-            <span v-if="!isOpen">
-                Selected: [[ values ]]
-            </span>
-        </template>
-    </vue-multiselect>
+    <span v-if="mode == 'update'" class="pb-3">
+        <!-- We don't show this on create, since all permissions must have a role or actor specified.
+        Permissions can only be assigned to "anyone" on update. -->
 
-</div>
+        <p>Give this permission to specific roles or actors below, or give it to everyone: 
+        <b-button variant="outline-secondary" size="sm" @click="toggle_anyone('enable')">
+            Give to everyone</b-button></p>
+
+        <span>[[ toggle_error_message ]]</span>
+        <br />
+        
+    </span>
+
+    <!-- Should be a choice field populated by current roles -->
+    <div class="input-group mb-3 permissionrolefield">
+
+        Roles who have this permission
+    
+        <vue-multiselect v-model=permission_roles_selected :multiple=true :options=rolesAsOptions :allow-empty="true"
+            :close-on-select="true" placeholder="Select roles" 
+            label="name" track-by="name">
+            <template slot="selection" slot-scope="{ values, search, isOpen }">
+                <span v-if="!isOpen">
+                    Selected: [[ values ]]
+                </span>
+            </template>
+        </vue-multiselect>
+    
+    </div>
+    
+    <!-- Should be a multiselect field populated by current members -->
+    <div class="input-group mb-3 permissionactorfield">
+    
+        Actors who have this permission
+    
+        <vue-multiselect v-model=permission_actors_selected :multiple=true :options=groupMembersAsOptions :allow-empty="true"
+            :close-on-select="true" placeholder="Select actors" 
+            label="name" track-by="pk">
+            <template slot="selection" slot-scope="{ values, search, isOpen }">
+                <span v-if="!isOpen">
+                    Selected: [[ values ]]
+                </span>
+            </template>
+        </vue-multiselect>
+    
+    </div>
+
+</span>
