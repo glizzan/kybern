@@ -5,7 +5,7 @@
         <b>People with this role can...</b>
 
         <b-list-group v-for="pair in permission_condition_pairs" v-bind:key="pair.permission.id">
-            <b-list-group-item :id=pair_element_id(pair.permission.id)>
+            <b-list-group-item :id=pair_element_id(pair.permission.id) v-if="!anyone_toggle_on(pair.permission.id)">
                 <div class="btn-group permission-row" role="group" aria-label="Basic example">
                     <b-button variant="light">
                         <small class="permission-display">[[ pair.permission.display ]]</small>
@@ -61,7 +61,7 @@
             }
         },
         computed: {
-            ...Vuex.mapState(['permission_options']),
+            ...Vuex.mapState(['permission_options', 'permissions']),
             ...Vuex.mapGetters(['getPermissionConditionPairsForRole']),
             title_string: function () {
                 return "Edit role '" + this.role_to_edit + "'"
@@ -93,6 +93,10 @@
             },
             pair_element_id: function(pk) {
                 return "permission_element_" + pk
+            },
+            anyone_toggle_on(permission_id) {
+                // If a permission's toggle gives anyone permission, it's not really for that role anymore
+                return this.permissions[permission_id].anyone
             },
             add_condition(permission_id) {
                 this.clearState()  // clear previous state

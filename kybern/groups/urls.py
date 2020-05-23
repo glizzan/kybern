@@ -17,6 +17,8 @@ urlpatterns = [
     path('add_members/<int:target>/', views.add_members, name='add_members'),
     path('remove_members/<int:target>/', views.remove_members, name='remove_members'),
     path('get_data_for_role/<int:target>/', views.get_data_for_role, name='get_data_for_role'),
+    path('get_membership_configuration/<int:target>/', views.get_membership_configuration, name='get_membership_configuration'),
+    path('set_membership_configuration/<int:target>/', views.set_membership_configuration, name='set_membership_configuration'),
     # permission views
     path('add_permission/<int:target>/', views.add_permission, name='add_permission'),
     path('update_permission/<int:target>/', views.update_permission, name='update_permission'),
@@ -46,6 +48,7 @@ urlpatterns = [
     path('add_permission_to_item/', views.add_permission_to_item, name='add_permission_to_item'),
     path('delete_permission_from_item/', views.delete_permission_from_item, name='delete_permission_from_item'),
     path('change_item_permission_override/', views.change_item_permission_override, name='change_item_permission_override'),    
+    path('toggle_anyone/', views.toggle_anyone, name='toggle_anyone'),        
     # comment views
     path('get_comment_data/', views.get_comment_data, name='get_comment_data'),
     path('add_comment/', views.add_comment, name='add_comment'),

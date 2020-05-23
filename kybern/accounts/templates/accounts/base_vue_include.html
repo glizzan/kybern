@@ -15,7 +15,6 @@
 
     update_actions = function (response, dispatch) {
 
-        console.log("Updating actions given response data: ", response.data)
          if (response.data.multiple_actions) {
             for (index in response.data.actions) {
                 if (response.data.actions[index].action_pk) {
@@ -26,7 +25,6 @@
             }
          } else {
             if (response.data.action_pk ) {
-                console.log("Adding or updating an action: ", response.data.action_pk )
                 dispatch('addOrUpdateAction', { action_pk: response.data.action_pk })
             } else {
                 console.log("Warning: no action_pk for single!")
@@ -58,6 +56,8 @@
             members: {{ current_members|safe }},    // [ pk, pk, pk, pk ]
             roles: {{ roles|safe }},                // [ 'rolename', 'rolename', 'rolename' ]
             users: {{ users|safe }},                // [ { name: 'username', pk: pk } ]
+            current_membership_option: "",         // ie "invite only", "anyone can join"
+            membership_config_data: { "permission": null, "condition": null },         // { permission: null, condition: null }
 
             // Leadership data
             governance_info: {{ governance_info|safe }},                    // Text string explaining governance structure
@@ -501,6 +501,13 @@
                 Vue.set(state.permission_overrides, item_key, {
                     "foundational": data.foundational, "governing": data.governing
                 })
+            },
+            SET_MEMBERSHIP_OPTION_SELECTED (state, data) {
+                state.current_membership_option = data.selection
+            },
+            SET_MEMBERSHIP_CONFIG_DATA (state, data) {
+                Vue.set(state.membership_config_data, "condition", data.condition_data)
+                Vue.set(state.membership_config_data, "permission", data.permission_data)
             }
         },
         actions: {
@@ -691,7 +698,6 @@
                 return standard_get_api_call(url, params, implementationCallback, dispatch)
             },
             addOrUpdateAction ({ commit, state, dispatch}, payload) {
-                console.log("Action called!")
                 url = "{{ base_url }}/groups/get_action_data/";
                 params = { action_pk : payload.action_pk }
                 implementationCallback = (response) => {
@@ -795,10 +801,22 @@
                         commit('DELETE_CONDITION_CONFIGURATION', { pk: condlist[0] })
                         commit('DELETE_CONDITION', { pk: condlist[0] })        
                     }
+                    commit('REMOVE_PERMISSION_FROM_ROLES', { pk: response.data.removed_permission_pk } )
                     commit('REMOVE_PERMISSION_FROM_ITEM', { pk: response.data.removed_permission_pk, 
                         item_id : response.data.item_id, item_model: response.data.item_model })
                     commit('DELETE_PERMISSION_CONFIGURATION', { pk: response.data.removed_permission_pk })
                     commit('DELETE_PERMISSION', { pk: response.data.removed_permission_pk })
+                    
+                }
+                return standard_action_api_call(url, params, implementationCallback, dispatch)
+            },
+            toggleAnyone ({ commit, getters, dispatch }, payload) { 
+                url = "{{ base_url }}/groups/toggle_anyone/";
+                params = { permission_id : payload.permission_id, enable_or_disable: payload.enable_or_disable } 
+                implementationCallback = (response) => {
+                    pk = response.data.permission.pk
+                    permission_data = response.data.permission.permission_data[0]
+                    commit('ADD_OR_UPDATE_PERMISSION', { pk : pk, data : permission_data })
                 }
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
             },
@@ -879,7 +897,30 @@
                     commit('DELETE_COMMENT', { pk: response.data.deleted_comment_pk })
                 }
                 return standard_action_api_call(url, params, implementationCallback, dispatch)
-            }  
+            },
+            getMembershipConfigurationData ({ commit, state }, payload) { 
+                url = "{{ base_url }}/groups/get_membership_configuration/{{ object.pk}}/"
+                implementationCallback = (response) => { 
+                    commit('SET_MEMBERSHIP_OPTION_SELECTED', { selection: response.data.membership_option_selected })
+                    commit('SET_MEMBERSHIP_CONFIG_DATA', { 
+                        condition_data: response.data.condition,
+                        permission_data: response.data.permission })
+                }
+            return standard_get_api_call(url, {}, implementationCallback)
+            },
+            setMembershipConfiguration({ commit, state, dispatch }, payload) { 
+                url = "{{ base_url }}/groups/set_membership_configuration/{{ object.pk}}/"
+                params = { new_setting: payload.membership_option_selected,
+                    extra_data: payload.extra_data }
+                implementationCallback = (response) => { 
+                    commit('SET_MEMBERSHIP_OPTION_SELECTED', { selection: response.data.membership_option_selected })
+                    commit('SET_MEMBERSHIP_CONFIG_DATA', { 
+                        condition_data: response.data.condition,
+                        permission_data: response.data.permission })
+                }
+                // TODO: not really a standard get, but we're not returning actions to handle 
+                return standard_get_api_call(url, params, implementationCallback, dispatch)
+            },
         }
     })
 
