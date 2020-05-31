@@ -6,6 +6,7 @@
 1. Go to the directory which contains your clone of the Concord repo.  If you followed the installation instructions in the Concord repo, this directory is called 'Glizzan'.
 1. Clone your fork: `git clone <your name>/kybern`
 1. Change into the directory you just cloned: `cd kybern`
+1. Install postgres and set up the database (see instructions below) or swap the backend in settings.py by uncommenting the sqlite3 backend and commenting the postgres backend.
 1. Create Python3 virtual environment: `python3 -m venv testenv`
 1. Activate the virtual environment: `source testenv/bin/activate`
 1. Check pip for upgrades: `pip install --upgrade pip`
@@ -13,7 +14,6 @@
 1. Go to glizzan-concord and run the following command to create a package to install in Kybern: `bash ./create_dist.sh`
 1. Return to the kybern directory and install the newly created package: `pip install ../glizzan-concord/dist/concord-0.0.1.tar.gz`
 1. Change into subdirectory: `cd kybern`
-1. Install postgres and set up the database (see instructions below) or swap the backend in settings.py by uncommenting the sqlite3 backend and commenting the postgres backend.
 1. Run existing migrations: `python manage.py migrate`
 1. Start the server: `python manage.py runserver`
 
@@ -48,3 +48,9 @@ Remember that if you make a db change in Concord, you'll need to run makemigrati
 1. to leave postgres, type `exit`
 
 As long as you're just developing locally, you can keep the default password 'elephant' but make sure to change  it for anything production-like.
+
+Note for installing postgres on Mac OSX: If you're using [Postgres.app](https://postgresapp.com/), you'll need to modify your python PATH so that the instillation file can find your pg_config file in order to install all of the requirements.
+
+For example, add this line to your `.rc` configuration file:
+
+`PATH=$PATH:/Applications/Postgres.app/Contents/Versions/<current_version>/bin`
