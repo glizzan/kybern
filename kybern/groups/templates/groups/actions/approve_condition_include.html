@@ -94,8 +94,9 @@ approvalConditionComponent = Vue.component('approve-condition-ui', {
     methods: {
         ...Vuex.mapActions(['addOrUpdateAction']),
         get_conditional_data() {
-            console.log("Getting conditional data for ", this.condition_pk, this.condition_type)
-            axios = this.prep_axios()
+            axios.defaults.xsrfCookieName = 'csrftoken';
+            axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
+            axios.defaults.headers = { "headers": { 'Content-Type': "application/json" } }
             url = "{{ base_url }}/groups/get_conditional_data/"
             params = { condition_pk: this.condition_pk, condition_type: this.condition_type }
             return axios.post(url, params).then(response => { 
@@ -109,7 +110,10 @@ approvalConditionComponent = Vue.component('approve-condition-ui', {
             // extensible, although presumably there *is* a way to make vuex handle this extensibly, 
             // but that's a bit above my paygrade for now.
 
-            axios = this.prep_axios()
+            axios.defaults.xsrfCookieName = 'csrftoken';
+            axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
+            axios.defaults.headers = { "headers": { 'Content-Type': "application/json" } }
+
             url = "{{ base_url }}/groups/update_approval_condition/"
             params = { condition_pk: this.condition_pk, action_to_take: this.button_selected }
             axios.post(url, params).then(response => {  

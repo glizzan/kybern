@@ -2,8 +2,6 @@
 
         <leadership-component></leadership-component>    <!-- root component is also a b-card -->
 
-        <membership-component></membership-component>  
-
         <b-card header="Other Roles">
 
             <p class="card-text mt-2">
@@ -15,7 +13,7 @@
 
             <b-list-group>
 
-                    <b-list-group-item v-for="role in allRoles" v-bind:key="role.id" 
+                    <b-list-group-item v-for="role in roles" v-bind:key="role.id" 
                         class="d-flex justify-content-between align-items-center" :id="role.name + '_role'"> 
                             <span class="role_info">
                                  <span class="role_name_display">[[ role.name ]]</span>
@@ -26,7 +24,7 @@
                                 <b-badge variant="primary" pill v-b-modal.edit_role_modal
                                     v-on:click="role_to_edit = role.name" :id="role.name + '_editrole'">
                                     edit role</b-badge>
-                                <b-badge variant="secondary" pill v-b-modal.change_membership_modal
+                                <b-badge variant="secondary" pill v-b-modal.role_membership_modal
                                     v-on:click="role_to_change_membership = role.name" :id="role.name + '_changemembers'">
                                     change members</b-badge>
                             </div>
@@ -35,11 +33,12 @@
             </b-list-group>
 
         </b-card>
-
+    
+    
     <add-role-modal></add-role-modal>
-    <change-membership-modal :role_selected=role_to_change_membership></change-membership-modal>
+    <change-role-membership-modal :role_selected=role_to_change_membership></change-role-membership-modal>
     <edit-role-modal :role_to_edit=role_to_edit></edit-role-modal>
-
+    
 </div>
 
 <script type="application/javascript">
@@ -54,8 +53,7 @@
             role_to_edit: '',                           // propfor edit-role-modal
         },
         computed: {
-            ...Vuex.mapState(['roles']),
-            ...Vuex.mapGetters(['allRoles'])
+            ...Vuex.mapState({ roles: state => state.governance.roles }),
         },
         methods: {
         }

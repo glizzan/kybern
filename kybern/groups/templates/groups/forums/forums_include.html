@@ -64,7 +64,7 @@
 
 </div>
 
-{% include 'groups/forum_detail_include.html' %}
+{% include 'groups/forums/forum_detail_include.html' %}
 
 
 <script type="application/javascript"> 
@@ -83,7 +83,7 @@
             display_forum: null
         },
         computed: {
-            ...Vuex.mapState(['forums']),
+            ...Vuex.mapState({ forums: state => state.forums.forums }),
             title_string: function() {
                 if (this.name) {
                     return "Edit forum '" + this.name + "'"
@@ -106,7 +106,8 @@
             },
             add_forum() { 
                 this.addForum({ name: this.name, description: this.description })
-                .catch(error => {  this.error_message = error })
+                .then(response => { this.$bvModal.hide("forum_modal") })
+                .catch(error => {  console.log(error), this.error_message = error })
                 // close modal on success (in then)
             }, 
             edit_forum() {

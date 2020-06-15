@@ -21,13 +21,13 @@
             <!-- If this is an item permission, so we need to set actors & roles -->
             <span v-if="!role_to_edit" class="mb-3">
                 <p class="mt-3 font-weight-bold">Give people this permission</p>
-                {% include 'groups/role_and_actor_fields_include.html' %}
+                {% include 'groups/permissions/role_and_actor_fields_include.html' %}
             </span>
 
             <!-- If there are fields to configure -->
             <span v-if="configuration_fields.length > 0" class="mb-3">
                 <p class="mt-3 font-weight-bold">Configure your permission</p>
-                {% include 'groups/configuration_fields_include.html' %}
+                {% include 'groups/permissions/configuration_fields_include.html' %}
             </span>
 
             <b-button v-if="permission_selected && mode =='create'" size="sm" 
@@ -71,8 +71,7 @@
             },
             permission_to_edit: function (val) {
                 if (this.permission_to_edit) {
-                    this.configuration_fields = Object.values(this.getPermissionConfigurationFieldsWithData(this.permission_to_edit))
-                
+                    this.configuration_fields = Object.values(this.getPermissionConfigurationFieldsWithData(this.permission_to_edit))               
                     if (this.item_id && this.item_model) { // only do this for permission on item
                         role_list = this.permissions[this.permission_to_edit].roles
                         actor_list = this.permissions[this.permission_to_edit].actors
@@ -88,7 +87,7 @@
             }
         },
         computed: {
-            ...Vuex.mapState(['permissions']),
+            ...Vuex.mapState({ permissions: state => state.permissions.permissions }),
             ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getPermissionConfigurationFields', 
                 'getPermissionConfigurationFieldsWithData', 'select_field_is_multiple', 'role_to_options',
                 'user_pk_to_options']),
@@ -109,32 +108,37 @@
                 this.permission_selected = ''
                 this.configuration_fields = []
             },
-            add_permission() {
+            item_or_role() {
                 if (this.role_to_edit) {
-                    this.addPermission({ permission_selected : this.permission_selected, role : [this.role_to_edit],
-                    configuration : this.configuration_fields })
-                    .then(response => { this.permission_selected = ''; this.$emit("clearState"); })
-                    .catch(error => {  this.error_message = error })
+                    return ["role", [this.role_to_edit]]
                 } else if (this.item_id && this.item_model) {
-                    this.addPermissionToItem({ item_id: this.item_id, item_model: this.item_model,
-                        permission_selected : this.permission_selected, configuration : this.configuration_fields,
-                        roles: this.permission_roles_selected, actors: this.permission_actors_selected })
-                    .then(response => { this.permission_selected = ''; this.permission_actors = [],
-                        this.permission_roles = []; this.$emit("clearState"); })
-                    .catch(error => {  this.error_message = error })
+                    return ["item", this.permission_roles_selected ]
                 }
             },
+            add_permission() {
+
+                [item_or_role, roles] = this.item_or_role()
+
+                this.addPermission({ item_or_role : item_or_role, item_id : this.item_id, item_model: this.item_model,
+                    permission_selected : this.permission_selected, configuration : this.configuration_fields, 
+                    roles: roles, actors: this.permission_actors_selected 
+                }).then(response => {
+                    this.permission_selected = ''; 
+                    this.permission_actors = [];
+                    this.permission_roles = [];
+                    this.$emit("clearState");
+                }).catch(error => {  this.error_message = error })
+                
+            },
             update_permission() {
-                if (this.role_to_edit) {
-                    this.updatePermission({ permission_id: this.permission_to_edit, configuration : this.configuration_fields })
-                    .then(response => { this.$emit("clearState"); })
-                    .catch(error => {  this.error_message = error })
-                } else if (this.item_id && this.item_model) { 
-                    this.updatePermission({ permission_id: this.permission_to_edit, configuration : this.configuration_fields,
-                        roles: this.permission_roles_selected, actors: this.permission_actors_selected })
-                    .then(response => { this.$emit("clearState"); })
-                    .catch(error => {  this.error_message = error })
-                }
+
+                [item_or_role, roles] = this.item_or_role()
+
+                this.updatePermission({ item_or_role: item_or_role, item_id : this.item_id, item_model: this.item_model,
+                    permission_id: this.permission_to_edit, configuration : this.configuration_fields, 
+                    roles: roles, actors: this.permission_actors_selected
+                }).then(response => { this.$emit("clearState"); }).catch(error => {  this.error_message = error })
+                    
             },
             toggle_anyone(enable_or_disable) {
                 this.toggleAnyone({ permission_id: this.permission_to_edit, enable_or_disable: enable_or_disable })

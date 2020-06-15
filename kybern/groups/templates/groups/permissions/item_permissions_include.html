@@ -58,36 +58,35 @@
 
             <!-- Specific permissions -->
         
-            <b-list-group v-for="pair in permission_condition_pairs" v-bind:key="pair.permission.id">
+            <b-list-group v-for="permission in item_permission_objects" v-bind:key="permission.pk">
                 <b-list-group-item>
                     <div class="btn-group" role="group" aria-label="Basic example">
                         <b-button variant="light">
-                            <small class="permission-display">[[ pair.permission.display ]]</small>
-                            <span v-on:click="edit_permission(pair.permission.id)" class="badge badge-light ml-1"  >🖉</span>
-                            <span v-on:click="delete_permission(pair.permission.id)" class="badge badge-light ml-1"  >🗑</span>
+                            <small class="permission-display">[[ permission.display ]]</small>
+                            <span v-on:click="edit_permission(permission.pk)" class="badge badge-light ml-1"  >🖉</span>
+                            <span v-on:click="delete_permission(permission.pk)" class="badge badge-light ml-1"  >🗑</span>
                         </b-button>
-                        <b-button v-if="pair.condition" variant="secondary">
-                            <small>[[ pair.condition.display ]]</small>
-                            <span v-on:click="edit_condition(pair.permission.id, pair.condition.id)" class="badge badge-secondary ml-1">🖉</span>
-                            <span v-on:click="delete_condition(pair.permission.id, pair.condition.id)" 
-                                                                                class="badge badge-secondary ml-1"  >🗑</span>
+                        <b-button v-if="permission.condition" variant="secondary">
+                            <small>on the condition that [[ permission.condition.how_to_pass ]]</small>
+                            <span v-on:click="edit_condition(permission.pk)" class="badge badge-secondary ml-1">🖉</span>
+                            <span v-on:click="delete_condition(permission.pk)" class="badge badge-secondary ml-1"  >🗑</span>
                         </b-button>
-                        <b-button v-else v-on:click="add_condition(pair.permission.id)" variant="secondary"
+                        <b-button v-else v-on:click="add_condition(permission.pk)" variant="secondary"
                             ><small>add condition</small></b-button>
                     </div>
                 </b-list-group-item>
             </b-list-group>
 
-            <p v-if="!permission_condition_pairs.length">No permissions have been set yet.</p>
+            <p v-if="!item_permission_objects.length">No permissions have been set yet.</p>
 
             <div class="mb-3" v-if="error_message">[[ error_message ]]</div>
 
             <manage-permission :permission_to_edit=permission_to_edit :mode_from_parent=permission_mode_from_parent
                 :item_id=item_id :item_model=item_model :permission_options=item_permission_options @clearState=clearState>
             </manage-permission>
-            <manage-condition :condition_to_edit=condition_to_edit :mode_from_parent=condition_mode_from_parent 
-                :permission_to_condition=permission_to_condition :called_for="'permission'" @clearState=clearState>
-            </manage-condition> 
+            <manage-permission-condition :permission_to_condition=permission_to_condition :mode_from_parent=condition_mode_from_parent 
+                @clearState=clearState>
+            </manage-permission-condition> 
         
         </b-modal>
 
@@ -111,15 +110,16 @@
                 permission_mode_from_parent: 'start',
                 // props for condition component
                 permission_to_condition: null,
-                condition_to_edit: null,
-                condition_mode_from_parent: 'start',
-                permission_condition_pairs: []
+                condition_mode_from_parent: 'start'
             }
         },
         computed: { 
-            ...Vuex.mapState(['permission_options', 'item_permissions', 'conditions']),
-            ...Vuex.mapGetters(['getPermissionConditionPairsForItem', 'getFoundationalForItem',
-                'getGoverningForItem']),
+            ...Vuex.mapState({
+                permission_options: state => state.permissions.permission_options,
+                item_permissions: state => state.permissions.item_permissions 
+            }),
+            ...Vuex.mapGetters(['permissionsForItem', 'getPermissionConditionPairsForItem', 
+                'getFoundationalForItem', 'getGoverningForItem']),
             title_string: function() {
                 return "Permissions for " + this.item_name
             },
@@ -134,22 +134,18 @@
             item_permission_options: function() {
                 return this.permission_options[this.item_model]
             },
+            item_permission_objects: function() {
+                return this.permissionsForItem(this.item_key)
+            },
             governing_permission_enabled: function() { if (this.item_key) { return this.getGoverningForItem(this.item_key) } },
             foundational_permission_enabled: function() { if (this.item_key) { return this.getFoundationalForItem(this.item_key) } },
         },
-        watch: { 
-            item_permissions: function (val) {  this.update_pairs() },
-            conditions: function (val) { this.update_pairs() }
-        },
         methods: { 
-            ...Vuex.mapActions(['getPermissionsAndConditionsForItem', 'removePermissionFromItem',
-                'changePermissionOverride', 'removeCondition']),
-            update_pairs() {
-                this.permission_condition_pairs = this.getPermissionConditionPairsForItem(this.item_key)
-            },
+            ...Vuex.mapActions(['getPermissionsForItem', 'removePermission', 'changePermissionOverride', 
+                'removeCondition']),
             edit_permissions() {
-                this.getPermissionsAndConditionsForItem({ item_id: this.item_id, item_model: this.item_model })
-                .then(response => { this.update_pairs() }).catch(error => {  this.error_message = error })
+                this.getPermissionsForItem({ item_id: this.item_id, item_model: this.item_model })
+                .catch(error => {  this.error_message = error })
             },
             edit_permission(permission_id) {
                 this.clearState()  // clear previous state
@@ -161,30 +157,27 @@
                 this.permission_to_condition = permission_id
                 this.condition_mode_from_parent = 'create'
             },
-            edit_condition(permission_id, condition_id) {
+            edit_condition(permission_id) {
                 this.clearState()  // clear previous state
                 this.permission_to_condition = permission_id
-                this.condition_to_edit = condition_id
                 this.condition_mode_from_parent = 'update'
             },
             clearState() {
-                this.update_pairs()
                 this.permission_to_edit = null
                 this.permission_to_condition = null
-                this.condition_to_edit = null
                 this.permission_mode_from_parent = 'start'
                 this.condition_mode_from_parent = 'start'
             },
             delete_permission(permission_id) {
-                this.removePermissionFromItem({ item_id : this.item_id, item_model: this.item_model, 
-                    permission_id: permission_id })
-                .then(response => { this.update_pairs() })
+                this.removePermission({ item_id : this.item_id, item_model: this.item_model, 
+                    permission_id: permission_id, item_or_role: "item" })
                 .catch(error => {  this.error_message = error })
             },
-            delete_condition(permission_id, condition_id) {
-                this.removeCondition({ condition_id : condition_id, permission_id: permission_id }).catch(error => { 
-                    this.error_message = error.message
+            delete_condition(permission_id) {
+                this.removeCondition({ permission_id: permission_id,
+                    permission_or_leadership: "permission"
                 })
+                .catch(error => { this.error_message = error.message })
             },
             change_permission_override(governing_or_foundational, enable_or_disable) {
                 this.changePermissionOverride({

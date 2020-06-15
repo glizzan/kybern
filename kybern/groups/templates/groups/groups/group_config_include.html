@@ -48,34 +48,32 @@
         data: {
             item_id: {{ object.pk }},
             item_model: 'group',
-            group_name: '{{ object.name|escapejs }}',
-            group_description: '{{ object.group_description|escapejs }}',
             edited_group_name: '{{ object.name|escapejs }}',
             edited_group_description: '{{ object.group_description|escapejs }}',
             error_message: ''
         },
+        computed: {
+            ...Vuex.mapState({ group_name: state => state.group_name, group_description: state => state.group_description })                
+        },
         methods: { 
-            ...Vuex.mapActions(['addOrUpdateAction']),
+            ...Vuex.mapActions(['changeGroupName', 'changeGroupDescription']),
             save_edited_group() {
+
                 if (this.group_name != this.edited_group_name ) {
-                    axios = this.prep_axios()
-                    url = "{{ base_url }}/groups/change_group_name/"
-                    params = { group_pk: this.item_id, new_name: this.edited_group_name }
-                    axios.post(url, params)
-                    .then(response => { 
-                        this.group_name = this.edited_group_name
-                        this.addOrUpdateAction({ action_pk: response.data.action_pk }) })
+
+                    this.changeGroupName({ group_pk: this.item_id, new_name: this.edited_group_name })
+                    .then(response => { this.group_name = this.edited_group_name })
                     .catch(error => { this.error_message = error })
+
                 } 
+
                 if (this.group_description != this.edited_group_description) {
-                    axios = this.prep_axios()
-                    url = "{{ base_url }}/groups/change_group_description/"
-                    params = { group_pk: this.item_id, new_description: this.edited_group_description }
-                    axios.post(url, params)
-                    .then(response => { 
-                        this.group_description = this.edited_group_description
-                        this.addOrUpdateAction({ action_pk: response.data.action_pk }) })
+
+                    this.changeGroupDescription({ group_pk: this.item_id, 
+                        new_description: this.edited_group_description })
+                    .then(response => { this.group_description = this.edited_group_description })
                     .catch(error => { this.error_message = error })
+
                 }
             }
         }

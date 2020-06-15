@@ -10,13 +10,14 @@ from django.contrib.auth.decorators import login_required
 
 from concord.actions.client import ActionClient
 from concord.permission_resources.client import PermissionResourceClient
-from concord.conditionals.client import PermissionConditionalClient, CommunityConditionalClient
+from concord.conditionals.client import ConditionalClient
 from concord.resources.client import CommentClient
 from concord.resources.models import Comment
 
 from accounts.models import User
 from .models import Group, Forum, Post
 from .client import ForumClient, GroupClient
+from .decorators import reformat_input_data
 
 
 
@@ -67,9 +68,9 @@ def process_action(action):
     action_string = f"At {action_time}, {action.actor.username} {action_verb}{action_description}. {follow_up}"
 
     # Check for condition  ( FIXME: we need a much more performant way of doing this )
-    pcc = PermissionConditionalClient(actor="system")
-    condition = pcc.get_condition_item_given_action(action_pk=action.pk)
-
+    conditionalClient = ConditionalClient(actor="system")
+    conditions = conditionalClient.get_condition_items_for_action(action_pk=action.pk)
+    
     return {
         "action_pk": action.pk,
         "action_target_pk": action.object_id,
@@ -83,10 +84,8 @@ def process_action(action):
         "resolution passed by": action.resolution.resolved_through,
         "display": action_string,
         "has_condition": {
-            "exists": True if condition else False,
-            "pk": condition.pk if condition else None,
-            "type": condition.__class__.__name__ if condition else None,
-            "status": condition.condition_status() if condition else None
+            "exists": True if conditions else False,
+            "conditions": [ { "pk": condition.pk, "type": condition.__class__.__name__ } for condition in conditions ]
         }
     }
 
@@ -127,46 +126,22 @@ def serialize_existing_permission_for_vue(permission, pk_as_key=True):
     """  (note: this matches format specified in vuex store)
     permissions: {{ permissions }},         
         // { int(pk) : { name: x, display: x, change_type: x } } """
+
     permission_dict = { "name": permission.full_description(), "display": permission.display_string(), 
             "change_type": permission.change_type, "actors": permission.get_actors(), "roles": permission.get_role_names(),
-            "anyone": permission.anyone }
+            "anyone": permission.anyone, "fields": permission.get_configuration() }
+
+    if permission.has_condition():
+        condition_data = permission.get_condition_data(info="basic")
+        condition_data["fields"] = permission.get_condition_data(info="fields")
+    else:
+        condition_data = None
+    permission_dict.update({ "condition": condition_data })
+
     if pk_as_key:
         return { permission.pk : permission_dict }
     return permission_dict
 
-
-def serialize_existing_permission_configuration_for_vue(permission, pk_as_key=True):
-    """  (note: this matches format specified in vuex store)
-    permission_configurations: {{ permission_configurations }},
-        // { int(pk) : { permissionfieldname : permissionfieldvalue } }       
-    """
-    permission_dict = permission.get_configuration() 
-    if pk_as_key:
-        return { permission.pk : permission_dict }
-    return permission_dict
-
-
-def serialize_existing_condition_for_vue(condition, pk_as_key=True):
-    """ (note: this matches format specified in vuex store)
-    conditions: {{ conditions }},         
-        // { int(pk) : { name: x, display: x, conditioned_object_pk: x } }       
-    """
-    condition_dict = { 'name' : condition.condition_name(), 'display': condition.condition_description(), 
-            'conditioned_object_pk': condition.conditioned_object_id } 
-    if pk_as_key:
-        return { condition.pk :  condition_dict }
-    return condition_dict 
-
-
-def serialize_existing_condition_configuration_for_vue(condition, pk_as_key=True):
-    """ (note: this matches format specified in vuex store)
-    condition_configurations: {{ condition_configurations }},
-        // { int(pk) : { conditionfieldname : conditionfieldvalue } }       
-    """
-    condition_dict = condition.condition_data.get_configurable_fields_with_data() 
-    if pk_as_key:
-        return { condition.pk :  condition_dict }
-    return condition_dict 
 
 def serialize_existing_comment_for_vue(comment):
     """ Serializes comment from Django model to JSOn-serializable dict.
@@ -201,12 +176,12 @@ def serialize_forums_for_vue(forums):
 
 class GroupListView(LoginRequiredMixin, generic.ListView):
     model = Group
-    template_name = 'groups/group_list.html'
+    template_name = 'groups/groups/group_list.html'
 
 
 class GroupCreateView(LoginRequiredMixin, generic.edit.CreateView):
     model = Group
-    template_name = 'groups/group_create.html'
+    template_name = 'groups/groups/group_create.html'
     fields = ['name', 'group_description', 'governing_permission_enabled',
         'foundational_permission_enabled']
 
@@ -221,14 +196,13 @@ class GroupCreateView(LoginRequiredMixin, generic.edit.CreateView):
 
 class GroupDetailView(LoginRequiredMixin, generic.DetailView):
     model = Group
-    template_name = 'groups/group_detail.html'
+    template_name = 'groups/groups/group_detail.html'
 
     def prep_clients(self):
         self.communityClient = GroupClient(actor=self.request.user, target=self.object)
         self.permissionClient = PermissionResourceClient(actor=self.request.user, target=self.object)
         self.actionClient = ActionClient(actor=self.request.user, target=self.object)
-        self.conditionalClient = PermissionConditionalClient(actor=self.request.user)
-        self.leadershipConditionalClient = CommunityConditionalClient(actor=self.request.user, target=self.object)
+        self.conditionalClient = ConditionalClient(actor=self.request.user)
         self.forumClient = ForumClient(actor=self.request.user, target=self.object)
 
     def add_user_data_to_context(self, context):
@@ -237,12 +211,9 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
         context['owners'] = self.communityClient.target.roles.get_owners()
         context['governors'] = self.communityClient.target.roles.get_governors()
         context['governance_info'] = json.dumps(self.communityClient.get_governance_info_as_text())
+        context['owner_condition'] = json.dumps(self.communityClient.get_condition_data(leadership_type="owner"))
+        context['governor_condition'] = json.dumps(self.communityClient.get_condition_data(leadership_type="governor"))
 
-        owner_condition = self.leadershipConditionalClient.get_condition_template_for_owner()
-        governor_condition = self.leadershipConditionalClient.get_condition_template_for_governor()
-        context['owner_condition_pk'] = json.dumps(owner_condition.pk if owner_condition else None)
-        context['governor_condition_pk'] = json.dumps(governor_condition.pk if governor_condition else None)
-        
         # Role/Member info
         context['username_map'] = { person.pk : person.username for person in User.objects.all() }
         context['current_members'] = [member.pk for member in self.communityClient.get_members()]
@@ -261,7 +232,7 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
         
         (note: this matches format specified in vuex store)     
         permission_options: {{ permission_options }},
-            // { model_name: [ { value: x , text: x } ], model_name: [ { value: x , text: x } ] }
+            // { model_name: [ { value: x , text: x } ], model_name: [ { value: x , text: x }  ] }
         permission_configuration_options: {{ permission_configuration_options }},
             // { fieldname: { display: x, type: x, required: x, value: x, field_name: x } }
         """
@@ -315,22 +286,6 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
             condition_configuration.update({ condition.__name__ : condition.get_configurable_fields() })
         context["condition_configuration_options"] = json.dumps(condition_configuration)
 
-        # Get & serialize existing conditions
-        owner_condition = self.leadershipConditionalClient.get_condition_template_for_owner()
-        governor_condition = self.leadershipConditionalClient.get_condition_template_for_governor()
-        serialized_conditions = {}
-        for condition in [owner_condition, governor_condition]:
-            if condition:
-                serialized_conditions.update(serialize_existing_condition_for_vue(condition))
-        context["conditions"] = json.dumps(serialized_conditions)
-
-        # Get & serialize existing condition configurations
-        serialized_condition_configurations = {}
-        for condition in [owner_condition, governor_condition]:
-            if condition:
-                serialized_condition_configurations.update(serialize_existing_condition_configuration_for_vue(condition))
-        context["condition_configurations"] = json.dumps(serialized_condition_configurations)
-
         return context
 
     def add_forum_data_to_context(self, context):
@@ -366,7 +321,9 @@ def change_group_name(request):
     communityClient.set_target(target=target)
 
     action, result = communityClient.change_name(new_name=new_name)
-    return JsonResponse(get_action_dict(action))
+    action_dict = get_action_dict(action)
+    action_dict["group_name"] = new_name
+    return JsonResponse(action_dict)
 
 
 @login_required
@@ -381,7 +338,9 @@ def change_group_description(request):
     communityClient.set_target(target=target)
 
     action, result = communityClient.change_group_description(new_description=new_description)
-    return JsonResponse(get_action_dict(action))
+    action_dict = get_action_dict(action)
+    action_dict["group_description"] = new_description
+    return JsonResponse(action_dict)
 
 
 ####################
@@ -623,30 +582,12 @@ def get_permissions_given_role(actor, target, role_name):
     existing_permissions = PermissionResourceClient(actor=actor, target=target).\
         get_permissions_associated_with_role_for_target(role_name=role_name)
 
-    permission_pks, permissions, permission_configurations = [], {}, {}
+    permission_pks, permissions = [], {}
     for permission in existing_permissions:
         permission_pks.append(permission.pk)
         permissions.update(serialize_existing_permission_for_vue(permission))
-        permission_configurations.update(serialize_existing_permission_configuration_for_vue(permission))
         
-    return permission_pks, permissions, permission_configurations
-
-
-def get_conditions_given_role(actor, target, role_name):
-
-    # get permissions & the associated conditions
-    existing_permissions = PermissionResourceClient(actor=actor, target=target).\
-        get_permissions_for_role(role_name=role_name)
-    conditionalClient = PermissionConditionalClient(actor=actor)
-    existing_conditions = conditionalClient.get_conditions_given_targets(
-            target_pks=[permission.pk for permission in existing_permissions])
-
-    conditions, condition_configurations = {}, {}
-    for condition in existing_conditions:
-        conditions.update(serialize_existing_condition_for_vue(condition))
-        condition_configurations.update(serialize_existing_condition_configuration_for_vue(condition))
-
-    return conditions, condition_configurations
+    return permission_pks, permissions
 
 
 @login_required
@@ -658,85 +599,39 @@ def get_data_for_role(request, target):
     request_data = json.loads(request.body.decode('utf-8'))
     role_name = request_data['role_name']
     
-    permission_pks, permissions, permission_configurations = get_permissions_given_role(actor, target, role_name)
-    conditions, condition_configurations = get_conditions_given_role(actor, target, role_name)
+    permission_pks, permissions = get_permissions_given_role(actor, target, role_name)
 
-    return JsonResponse({ "permissions" : permissions, "permission_configurations" : permission_configurations,
-        "conditions" : conditions, "condition_configurations" : condition_configurations,
-        "role_permissions": permission_pks })
-
-
-def reformat_permission_field(field):
-    if field["type"] == "PermissionRoleField":
-        if "other_data" in field and "multiple" in field["other_data"] and field["other_data"]["multiple"] == False:
-            field["value"] = field["value"]["name"]   # Single select treated differently
-        else:
-            field["value"] = [data["name"] for data in field["value"]] if field["value"] else []
-    elif field["type"] == "PermissionActorField":
-        try:
-            field["value"] = [data["value"] for data in field["value"]] if field["value"] else []
-        except:
-            # if the above doesn't work, try to get by pk
-            field["value"] = [data["pk"] for data in field["value"]] if field["value"] else []
-        # make sure individual items in list are ints
-        field["value"] = [int(pk) for pk in field["value"]]
-    return field
-
-
-def reformat_permission_data(permission_configuration):
-    """
-    [{'field_name': 'role_name', 'display': 'Roles people can be added to', 'type': 'PermissionRoleField', 'required': False, 'value': [{'name': 'romans'}]}]
-
-    """
-    fields = {}
-    for field in permission_configuration:
-        field = reformat_permission_field(field)
-        fields.update({
-            field["field_name"] : field["value"]
-        })
-    return fields
-
-
-def process_configuration_data(configuration_data):
-    """Splits configuration data into condition_data and permission_data."""
-    configuration_data = json.loads(configuration_data) if type(configuration_data) == str else configuration_data
-    condition_data = []
-    permission_data = []
-    for field in configuration_data:
-        field = reformat_permission_field(field)
-        if field["type"] in ["PermissionRoleField", "PermissionActorField"]:
-            permission_data.append(field)
-        else:
-            condition_data.append(field)
-    return condition_data, permission_data
+    return JsonResponse({ "permissions" : permissions, "role_permissions": permission_pks })
 
 
 def get_permission_info(permission):
     return {
         "pk": permission.pk,
-        "permission_data": list(serialize_existing_permission_for_vue(permission).values()),
-        "configuration_data": list(serialize_existing_permission_configuration_for_vue(permission).values())
+        "permission_data": list(serialize_existing_permission_for_vue(permission).values())
     }
 
 
+def get_permission_target_helper(request, target, item_or_role, item_id, item_model):
+
+    if item_or_role == "item":                  # If an item has been passed in, make it the target
+        model_class = get_model(item_model)
+        return model_class.objects.get(pk=item_id)
+    if item_or_role == "role":    # Otherwise the role the community is set on is the target
+        communityClient = GroupClient(actor=request.user)
+        return communityClient.get_community(community_pk=target)
+
+
 @login_required
-def add_permission(request, target):
+@reformat_input_data
+def add_permission(request, target, permission_type, item_or_role, permission_actors=None, 
+        permission_roles=None, permission_configuration=None, item_id=None, item_model=None):
 
-    request_data = json.loads(request.body.decode('utf-8'))
-    permission_type = request_data.get("permission_type", None)
-    permission_actors = request_data.get("permission_actors", None)
-    permission_roles = request_data.get("permission_roles", None)
-    permission_configuration = request_data.get("permission_configuration", None)
-
-    reformatted_permission_data = reformat_permission_data(permission_configuration)
-
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
+    target = get_permission_target_helper(request, target, item_or_role, item_id, item_model)
     permissionClient = PermissionResourceClient(actor=request.user, target=target)
 
     action, result = permissionClient.add_permission(permission_type=permission_type, 
         permission_actors=permission_actors, permission_roles=permission_roles, 
-        permission_configuration=reformatted_permission_data)
+        permission_configuration=permission_configuration)
 
     action_dict = get_action_dict(action)
     permission_info = get_permission_info(result) if action.resolution.status == "implemented" else None
@@ -746,30 +641,24 @@ def add_permission(request, target):
 
 
 @login_required
-def update_permission(request, target):
+@reformat_input_data
+def update_permission(request, target, permission_id, item_or_role, permission_actors=None,
+        permission_roles=None, permission_configuration=None, item_id=None, item_model=None):
 
-    request_data = json.loads(request.body.decode('utf-8'))
-    permission_id = request_data.get("permission_id", None)
-    permission_configuration = request_data.get("permission_configuration", None)
-
-    actors = request_data.get("actors", None)
-    roles = request_data.get("roles", None)
-
-    reformatted_permission_data = reformat_permission_data(permission_configuration)
-
-    permissionClient = PermissionResourceClient(actor=request.user)
+    target = get_permission_target_helper(request, target, item_or_role, item_id, item_model)
+    permissionClient = PermissionResourceClient(actor=request.user, target=target)
     target_permission = permissionClient.get_permission(pk=permission_id)
-    permissionClient.set_target(target=target_permission)
-    actions = permissionClient.update_configuration(configuration_dict=reformatted_permission_data, 
+
+    actions = permissionClient.update_configuration(configuration_dict=permission_configuration, 
         permission=target_permission)
 
-    if actors:
-        actor_data = [ actor['pk'] for actor in actors]
-        actor_actions = permissionClient.update_actors_on_permission(actor_data=actor_data, permission=target_permission)
+    if permission_actors:
+        actor_actions = permissionClient.update_actors_on_permission(actor_data=permission_actors, 
+            permission=target_permission)
         actions += actor_actions
-    if roles:
-        role_data = [ role['name'] for role in roles]
-        role_actions = permissionClient.update_roles_on_permission(role_data=role_data, permission=target_permission)
+    if permission_roles:
+        role_actions = permissionClient.update_roles_on_permission(role_data=permission_roles, 
+            permission=target_permission)
         actions += role_actions
 
     action_dict = get_multiple_action_dicts(actions)
@@ -782,26 +671,11 @@ def update_permission(request, target):
 
 
 @login_required
-def delete_permission(request, target):
+@reformat_input_data
+def delete_permission(request, target, permission_id, item_or_role, item_id=None, item_model=None):
 
-    request_data = json.loads(request.body.decode('utf-8'))
-    permission_id = request_data.get("permission_id", None)
-
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
+    target = get_permission_target_helper(request, target, item_or_role, item_id, item_model)
     permissionClient = PermissionResourceClient(actor=request.user, target=target)
-    permission_target = permissionClient.get_permission(pk=permission_id)
-    conditionalClient = PermissionConditionalClient(actor=request.user, target=permission_target)
-
-    # try to remove condition
-    condition = conditionalClient.get_condition_template()
-    if condition:
-        action, result = conditionalClient.remove_condition(condition=condition)
-        if action.resolution.status != "implemented":
-            message = """In order to delete a permission, any conditions set on the permission must first be 
-                deleted. The following condition on this permission could not be deleted: %s 
-                It could not be deleted because: %s""" % (condition.get_name(), action.resolution.log)
-            return JsonResponse({ "action_status": "failure", "action_log" : message })
 
     # now remove permission
     action, result = permissionClient.remove_permission(item_pk=permission_id)
@@ -814,94 +688,60 @@ def delete_permission(request, target):
 ### Views for setting conditions ###
 ####################################
 
-
-def leadership_condition_helper(request, request_data, target, action_type):
-
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
-    conditionalClient = CommunityConditionalClient(actor=request.user, target=target)
-
-    called_for = request_data.get("called_for")
-    condition_id = request_data.get("condition_id", None)
-    condition_type = request_data.get("condition_type", None)
-    configuration_data = request_data.get("condition_configuration", None)
-    if configuration_data:
-        condition_data, permission_data = process_configuration_data(configuration_data)
-
-    if action_type == "add":
-
-        if called_for == "owner":
-            return conditionalClient.add_condition_to_owners(condition_data=condition_data,
-                permission_data=permission_data, condition_type=condition_type)
-        elif called_for == "governor":
-            return conditionalClient.add_condition_to_governors(condition_data=condition_data,
-                permission_data=permission_data, condition_type=condition_type)
-
-    if action_type == "update":
-        return conditionalClient.change_condition(condition_pk=condition_id,
-            condition_data=condition_data, permission_data=permission_data)
-
-    if action_type == "delete":
-        condition = conditionalClient.get_condition_template()
-        return conditionalClient.remove_condition(condition=condition)
-
-
-def permission_condition_helper(request, request_data, target, action_type):
-
-    target_permission_id = request_data.get("target_permission_id", None)
-    target_permission = PermissionResourceClient(actor=request.user).get_permission(pk=target_permission_id)
-    conditionalClient = PermissionConditionalClient(actor=request.user, target=target_permission)
-
-    condition_type = request_data.get("condition_type", None)
-    condition_id = request_data.get("condition_id", None)
-    configuration_data = request_data.get("condition_configuration", None)
-    if configuration_data:
-        condition_data, permission_data = process_configuration_data(configuration_data)
-
-    if action_type == "add":
-        action, result = conditionalClient.add_condition(condition_type=condition_type.lower(),
-            condition_data=condition_data, permission_data=permission_data)
-        return action, result
-
-    if action_type == "update":
-        return conditionalClient.change_condition(condition_pk=condition_id,
-            condition_data=condition_data, permission_data=permission_data)
-
-    if action_type == "delete":
-        condition = conditionalClient.get_condition_template()
-        return conditionalClient.remove_condition(condition=condition)
-
-
-def get_condition_info(condition):
-    return {
-        "pk": condition.pk,
-        "condition_data": list(serialize_existing_condition_for_vue(condition).values()),
-        "configuration_data": list(serialize_existing_condition_configuration_for_vue(condition).values())
-    }
+# NOTE that there are no "update condition" functions, for now we simply use add as update and overwrite the whole thing
 
 
 @login_required
-def manage_condition(request, target):
+@reformat_input_data
+def add_condition(request, target, condition_type, permission_or_leadership, target_permission_id=None,
+    leadership_type=None, condition_data=None, permission_data=None):
 
-    request_data = json.loads(request.body.decode('utf-8'))
-    target_type = request_data.get("target_type")
-    request_type = request_data.get("request_type")
+    communityClient = GroupClient(actor=request.user)
+    target = communityClient.get_community(community_pk=target)
 
-    if target_type == "community":
-        action, result = leadership_condition_helper(request, request_data, target, request_type)
-    else:
-        action, result = permission_condition_helper(request, request_data, target, request_type)
+    if permission_or_leadership == "permission":
 
-    if request_type in ["add", "update"]:
-        condition_info = get_condition_info(result) if action.resolution.status == "implemented" else None
-        action_dict = get_action_dict(action)
-        action_dict.update({ "condition_info": get_condition_info(result) })
-        return JsonResponse(action_dict)
+        permClient = PermissionResourceClient(actor=request.user, target=target)
+        action, result = permClient.add_condition_to_permission(permission_pk=target_permission_id,
+            condition_type=condition_type, condition_data=condition_data, permission_data=permission_data)
+        if action.resolution.status == "implemented": 
+            condition_data = result.get_condition_data(info="all")
+        
+    elif permission_or_leadership == "leadership":
 
-    if request_type == "delete":
-        action_dict = get_action_dict(action)
-        action_dict.update({ "deleted_condition_pk": request_data.get("condition_id") })
-        return JsonResponse(action_dict)
+        communityClient.set_target(target=target)
+        action, result = communityClient.add_leadership_condition(condition_type=condition_type, 
+            leadership_type=leadership_type, condition_data=condition_data, permission_data=permission_data)
+        if action.resolution.status == "implemented":
+            condition_data = target.get_condition_data(leadership_type=leadership_type, info="all")
+
+    action_dict = get_action_dict(action)
+    action_dict.update({ "condition_info": condition_data, "permission_or_leadership": permission_or_leadership,
+        "leadership_type": leadership_type, "target_permission_id": target_permission_id })
+    return JsonResponse(action_dict)
+
+
+@login_required
+@reformat_input_data
+def remove_condition(request, target, permission_or_leadership, target_permission_id=None, leadership_type=None):
+
+    communityClient = GroupClient(actor=request.user)
+    target = communityClient.get_community(community_pk=target)
+
+    if permission_or_leadership == "permission":
+
+        permClient = PermissionResourceClient(actor=request.user, target=target)
+        action, result = permClient.remove_condition_from_permission(permission_pk=target_permission_id)
+    
+    elif permission_or_leadership == "leadership":
+
+        communityClient.set_target(target=target)
+        action, result = communityClient.remove_leadership_condition(leadership_type=leadership_type)    
+
+    action_dict = get_action_dict(action)
+    action_dict.update({ "permission_or_leadership": permission_or_leadership,
+        "leadership_type": leadership_type, "target_permission_id": target_permission_id })
+    return JsonResponse(action_dict)
 
 
 #############################################
@@ -916,7 +756,7 @@ def update_approval_condition(request):
     condition_pk = request_data.get("condition_pk", None)
     action_to_take = request_data.get("action_to_take", None)
 
-    conditionalClient = PermissionConditionalClient(actor=request.user)
+    conditionalClient = ConditionalClient(actor=request.user)
     approvalClient = conditionalClient.get_approval_condition_as_client(pk=condition_pk)
 
     if action_to_take == "approve":
@@ -934,7 +774,7 @@ def update_vote_condition(request):
     condition_pk = request_data.get("condition_pk", None)
     action_to_take = request_data.get("action_to_take", None)
 
-    conditionalClient = PermissionConditionalClient(actor=request.user)
+    conditionalClient = ConditionalClient(actor=request.user)
     voteClient = conditionalClient.get_vote_condition_as_client(pk=condition_pk)
     
     action, result = voteClient.vote(vote=action_to_take)
@@ -949,7 +789,7 @@ def get_conditional_data(request):
     condition_pk = request_data.get("condition_pk", None)
     condition_type = request_data.get("condition_type", None)
 
-    conditionalClient = PermissionConditionalClient(actor=request.user)
+    conditionalClient = ConditionalClient(actor=request.user)
     condition = conditionalClient.get_condition_item(condition_pk=condition_pk, condition_type=condition_type)
 
     # for permission on condition, does user have permission? 
@@ -1040,12 +880,73 @@ def update_governors(request, target):
 
 
 #############################
-### Item permission views ###
+### Misc permission views ###
 #############################
+
+# @login_required
+# def add_permission_to_item(request):
+
+#     request_data = json.loads(request.body.decode('utf-8'))
+
+#     item_id = request_data.get("item_id")
+#     model_class = get_model(request_data.get("item_model"))
+#     target = model_class.objects.get(pk=item_id)
+
+#     permission_type = request_data.get("permission_type", None)
+#     permission_actors = request_data.get("permission_actors", None)
+#     permission_roles = request_data.get("permission_roles", None)
+#     permission_configuration = request_data.get("permission_configuration", None)
+
+#     permission_actors = [selection['pk'] for selection in permission_actors]
+#     permission_roles = [selection['name'] for selection in permission_roles]
+#     reformatted_permission_data = reformat_permission_data(permission_configuration)
+
+#     permissionClient = PermissionResourceClient(actor=request.user, target=target)
+
+#     action, result = permissionClient.add_permission(permission_type=permission_type, 
+#         permission_actors=permission_actors, permission_roles=permission_roles, 
+#         permission_configuration=reformatted_permission_data)
+
+#     action_dict = get_action_dict(action)
+#     permission_info = get_permission_info(result) if action.resolution.status == "implemented" else None
+#     action_dict.update({ "permission": permission_info, "item_id": item_id, "item_model": request_data.get("item_model") })
+
+#     return JsonResponse(action_dict)
+
+
+# @login_required
+# def delete_permission_from_item(request):
+
+#     request_data = json.loads(request.body.decode('utf-8'))
+
+#     permission_id = request_data.get("permission_id", None)
+
+#     item_id = request_data.get("item_id")
+#     model_class = get_model(request_data.get("item_model"))
+#     target = model_class.objects.get(pk=item_id)
+#     permissionClient = PermissionResourceClient(actor=request.user, target=target)
+#     permission_target = permissionClient.get_permission(pk=permission_id)
+#     conditionalClient = PermissionConditionalClient(actor=request.user, target=permission_target)
+
+#     # try to remove condition
+#     condition = conditionalClient.get_condition_template()
+#     if condition:
+#         action, result = conditionalClient.remove_condition(condition=condition)
+#         if action.resolution.status != "implemented":
+#             message = """In order to delete a permission, any conditions set on the permission must first be 
+#                 deleted. The following condition on this permission could not be deleted: %s 
+#                 It could not be deleted because: %s""" % (condition.get_name(), action.resolution.log)
+#             return JsonResponse({ "action_status": "failure", "action_log" : message })
+
+#     # now remove permission
+#     action, result = permissionClient.remove_permission(item_pk=permission_id)
+#     action_dict = get_action_dict(action)
+#     action_dict.update({ "removed_permission_pk": permission_id, "item_id": item_id, "item_model": request_data.get("item_model") })
+#     return JsonResponse(action_dict)
 
 
 @login_required
-def get_permissions_and_conditions(request):
+def get_permissions(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
 
@@ -1057,88 +958,14 @@ def get_permissions_and_conditions(request):
 
     existing_permissions = permClient.get_all_permissions()
 
-    permission_pks, permissions, permission_configurations = [], {}, {}
+    permission_pks, permissions = [], {}
     for permission in existing_permissions:
         permission_pks.append(permission.pk)
         permissions.update(serialize_existing_permission_for_vue(permission))
-        permission_configurations.update(serialize_existing_permission_configuration_for_vue(permission))
 
-    conditionalClient = PermissionConditionalClient(actor=request.user)
-    existing_conditions = conditionalClient.get_conditions_given_targets(
-            target_pks=[permission.pk for permission in existing_permissions])
-
-    conditions, condition_configurations = {}, {}
-    for condition in existing_conditions:
-        conditions.update(serialize_existing_condition_for_vue(condition))
-        condition_configurations.update(serialize_existing_condition_configuration_for_vue(condition))
-        
-    return JsonResponse({ "item_id": item_id, "item_model": request_data.get("item_model"), 
-        "permissions" : permissions, "permission_configurations" : permission_configurations,
-        "conditions" : conditions, "condition_configurations": condition_configurations,
-        "permission_pks": permission_pks, "foundational": target.foundational_permission_enabled,
+    return JsonResponse({ "item_id": item_id, "item_model": request_data.get("item_model"), "permissions": permissions,
+        "permission_pks": permission_pks, "foundational": target.foundational_permission_enabled, 
         "governing": target.governing_permission_enabled })
-
-
-@login_required
-def add_permission_to_item(request):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-
-    item_id = request_data.get("item_id")
-    model_class = get_model(request_data.get("item_model"))
-    target = model_class.objects.get(pk=item_id)
-
-    permission_type = request_data.get("permission_type", None)
-    permission_actors = request_data.get("permission_actors", None)
-    permission_roles = request_data.get("permission_roles", None)
-    permission_configuration = request_data.get("permission_configuration", None)
-
-    permission_actors = [selection['pk'] for selection in permission_actors]
-    permission_roles = [selection['name'] for selection in permission_roles]
-    reformatted_permission_data = reformat_permission_data(permission_configuration)
-
-    permissionClient = PermissionResourceClient(actor=request.user, target=target)
-
-    action, result = permissionClient.add_permission(permission_type=permission_type, 
-        permission_actors=permission_actors, permission_roles=permission_roles, 
-        permission_configuration=reformatted_permission_data)
-
-    action_dict = get_action_dict(action)
-    permission_info = get_permission_info(result) if action.resolution.status == "implemented" else None
-    action_dict.update({ "permission": permission_info, "item_id": item_id, "item_model": request_data.get("item_model") })
-
-    return JsonResponse(action_dict)
-
-
-@login_required
-def delete_permission_from_item(request):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-
-    permission_id = request_data.get("permission_id", None)
-
-    item_id = request_data.get("item_id")
-    model_class = get_model(request_data.get("item_model"))
-    target = model_class.objects.get(pk=item_id)
-    permissionClient = PermissionResourceClient(actor=request.user, target=target)
-    permission_target = permissionClient.get_permission(pk=permission_id)
-    conditionalClient = PermissionConditionalClient(actor=request.user, target=permission_target)
-
-    # try to remove condition
-    condition = conditionalClient.get_condition_template()
-    if condition:
-        action, result = conditionalClient.remove_condition(condition=condition)
-        if action.resolution.status != "implemented":
-            message = """In order to delete a permission, any conditions set on the permission must first be 
-                deleted. The following condition on this permission could not be deleted: %s 
-                It could not be deleted because: %s""" % (condition.get_name(), action.resolution.log)
-            return JsonResponse({ "action_status": "failure", "action_log" : message })
-
-    # now remove permission
-    action, result = permissionClient.remove_permission(item_pk=permission_id)
-    action_dict = get_action_dict(action)
-    action_dict.update({ "removed_permission_pk": permission_id, "item_id": item_id, "item_model": request_data.get("item_model") })
-    return JsonResponse(action_dict)
 
 
 @login_required
@@ -1282,56 +1109,99 @@ def delete_comment(request):
 ########################
 
 
-def get_membership_condition_for_vue(condition, setting):
-    return {
-        "condition_setting": setting,
-        "condition_data": serialize_existing_condition_for_vue(condition, pk_as_key=False),
-        "condition_configuration": serialize_existing_condition_configuration_for_vue(condition, pk_as_key=False)
-    }
+# def get_membership_condition_for_vue(condition, setting):
+#     return {
+#         "condition_setting": setting,
+#         "condition_data": serialize_existing_condition_for_vue(condition, pk_as_key=False),
+#         "condition_configuration": serialize_existing_condition_configuration_for_vue(condition, pk_as_key=False)
+#     }
 
 
-@login_required
-def get_membership_configuration(request, target):
+# @login_required
+# def get_membership_configuration(request, target):
 
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
-    communityClient.set_target(target=target)
+#     communityClient = GroupClient(actor=request.user)
+#     target = communityClient.get_community(community_pk=target)
+#     communityClient.set_target(target=target)
 
-    setting, permission, condition = communityClient.get_membership_setting(extra_data=True)
-    if permission:
-        permission = serialize_existing_permission_for_vue(permission, pk_as_key=False)
-    if condition:
-        condition = get_membership_condition_for_vue(condition, setting)
+#     setting, permission, condition = communityClient.get_membership_setting(extra_data=True)
+#     if permission:
+#         permission = serialize_existing_permission_for_vue(permission, pk_as_key=False)
+#     if condition:
+#         condition = get_membership_condition_for_vue(condition, setting)
 
-    return JsonResponse({ "membership_option_selected": setting, "permission": permission, "condition": condition })
-
-
-@login_required
-def set_membership_configuration(request, target):
-
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
-    communityClient.set_target(target=target)
-
-    request_data = json.loads(request.body.decode('utf-8'))
-    new_setting = request_data.get("new_setting")
-    extra_data = request_data.get("extra_data", None)
-
-    container = communityClient.change_membership_setting(new_setting=new_setting, extra_data=extra_data)
-    action_dict = get_multiple_action_dicts(container.get_actions())
-
-    setting, permission, condition = communityClient.get_membership_setting(extra_data=True)
-    if permission:
-        permission = serialize_existing_permission_for_vue(permission, pk_as_key=False)
-    if condition:
-        condition = get_membership_condition_for_vue(condition, setting)
-
-    action_dict.update({ "membership_option_selected": setting, "permission": permission, "condition": condition })
-
-    return JsonResponse(action_dict)
+#     return JsonResponse({ "membership_option_selected": setting, "permission": permission, "condition": condition })
 
 
+# @login_required
+# def set_membership_configuration(request, target):
 
+#     communityClient = GroupClient(actor=request.user)
+#     target = communityClient.get_community(community_pk=target)
+#     communityClient.set_target(target=target)
+
+#     request_data = json.loads(request.body.decode('utf-8'))
+#     new_setting = request_data.get("new_setting")
+#     extra_data = request_data.get("extra_data", None)
+
+#     container = communityClient.change_membership_setting(new_setting=new_setting, extra_data=extra_data)
+#     action_dict = get_multiple_action_dicts(container.get_actions())
+
+#     setting, permission, condition = communityClient.get_membership_setting(extra_data=True)
+#     if permission:
+#         permission = serialize_existing_permission_for_vue(permission, pk_as_key=False)
+#     if condition:
+#         condition = get_membership_condition_for_vue(condition, setting)
+
+#     action_dict.update({ "membership_option_selected": setting, "permission": permission, "condition": condition })
+
+#     return JsonResponse(action_dict)
+
+
+# @login_required
+# def get_user_permissions(request, target):
+
+#     communityClient = GroupClient(actor=request.user)
+#     target = communityClient.get_community(community_pk=target)
+#     communityClient.set_target(target=target)
+#     user_permissions = {}
+
+#     setting, permission, condition = communityClient.get_membership_setting(extra_data=True)
+
+#     permissionClient = PermissionResourceClient(actor=request.user)
+#     from concord.actions.state_changes import Changes
+
+#     # get user_can_invite permission
+#     if setting == "invite only":
+#         if permissionClient.check_permission(target=target, permission_type=Changes.Communities.AddMembers):
+#             user_permissions['user_can_invite'] = True
+#     else:
+#         user_permissions['user_can_invite']
+
+#     # get user_can_respond_to_asks permission
+#     if setting == "anyone can ask":
+
+#         user_permissions['user_can_respond_to_asks'] = False  # set default
+
+#         # FIXME: this is kind of hacky, we need a way to match the permission types the templates are asking
+#         # about to the permission types we're querying the backend about
+#         types_to_check = []
+#         if condition.condition_data.condition_type == "approvalcondition":
+#             types_to_check += [Changes.Conditionals.Approve, Changes.Conditionals.Reject]
+#         elif condition.condition_data.condition_type == "votecondition":
+#             types_to_check.append(Changes.Conditionals.Vote)
+
+#         for permission_type in types_to_check:
+#             if permissionClient.check_condition_permission(permission_type=permission_type, condition_template=condition):
+#                 user_permissions['user_can_respond_to_asks'] = True   # likely will want to save more detailed data than this
+
+#     # get user_can_remove permission
+#     if permissionClient.check_permission(target=target, permission_type=Changes.Communities.RemoveMembers):
+#         user_permissions['user_can_remove'] = True
+#     else:
+#         user_permissions['user_can_remove'] = False
+    
+#     return JsonResponse({ "user_permissions": user_permissions })
 
 
 

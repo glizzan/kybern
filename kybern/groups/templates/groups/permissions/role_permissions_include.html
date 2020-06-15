@@ -4,27 +4,27 @@
 
         <b>People with this role can...</b>
 
-        <b-list-group v-for="pair in permission_condition_pairs" v-bind:key="pair.permission.id">
-            <b-list-group-item :id=pair_element_id(pair.permission.id) v-if="!anyone_toggle_on(pair.permission.id)">
+        <b-list-group v-for="permission in role_permissions" v-bind:key="permission.pk">
+            <b-list-group-item :id=pair_element_id(permission.pk) v-if="!anyone_toggle_on(permission.pk)">
                 <div class="btn-group permission-row" role="group" aria-label="Basic example">
                     <b-button variant="light">
-                        <small class="permission-display">[[ pair.permission.display ]]</small>
-                        <span v-on:click="edit_permission(pair.permission.id)" class="badge badge-light ml-1"  >🖉</span>
-                        <span v-on:click="delete_permission(pair.permission.id)" class="badge badge-light ml-1"  >🗑</span>
+                        <small class="permission-display">[[ permission.display ]]</small>
+                        <span v-on:click="edit_permission(permission.pk)" class="badge badge-light ml-1"  >🖉</span>
+                        <span v-on:click="delete_permission(permission.pk)" class="badge badge-light ml-1"  >🗑</span>
                     </b-button>
-                    <b-button v-if="pair.condition" variant="secondary">
+                    <b-button v-if="permission.condition" variant="secondary">
                         <small>[[ pair.condition.display ]]</small>
-                        <span v-on:click="edit_condition(pair.permission.id, pair.condition.id)" class="badge badge-secondary ml-1">🖉</span>
-                        <span v-on:click="delete_condition(pair.permission.id, pair.condition.id)" 
+                        <span v-on:click="edit_condition(permission.pk)" class="badge badge-secondary ml-1">🖉</span>
+                        <span v-on:click="delete_condition(permission.pk)" 
                                                                             class="badge badge-secondary ml-1"  >🗑</span>
                     </b-button>
-                    <b-button v-else v-on:click="add_condition(pair.permission.id)" variant="secondary"
+                    <b-button v-else v-on:click="add_condition(permission.pk)" variant="secondary"
                         ><small>add condition</small></b-button>
                 </div>
             </b-list-group-item>
         </b-list-group>
 
-        <p v-if="!permission_condition_pairs.length">This role has no permissions yet.</p>
+        <p v-if="!role_permissions.length">This role has no permissions yet.</p>
 
         <div class="mb-3 text-danger" v-if="error_message">
             [[ error_message ]]
@@ -33,9 +33,9 @@
         <manage-permission :permission_to_edit=permission_to_edit :mode_from_parent=permission_mode_from_parent
             :role_to_edit=role_to_edit :permission_options=group_permission_options @clearState=clearState>
         </manage-permission>
-        <manage-condition :condition_to_edit=condition_to_edit :mode_from_parent=condition_mode_from_parent 
-            :permission_to_condition=permission_to_condition :called_for="'permission'" @clearState=clearState>
-        </manage-condition>
+        <manage-permission-condition :mode_from_parent=condition_mode_from_parent :called_for="'permission'" 
+            :permission_to_condition=permission_to_condition @clearState=clearState>
+        </manage-permission-condition>
 
     </b-modal>
 
@@ -56,21 +56,23 @@
                 permission_mode_from_parent: 'start',
                 // props for condition component
                 permission_to_condition: null,
-                condition_to_edit: null,
                 condition_mode_from_parent: 'start'
             }
         },
         computed: {
-            ...Vuex.mapState(['permission_options', 'permissions']),
-            ...Vuex.mapGetters(['getPermissionConditionPairsForRole']),
+            ...Vuex.mapState({ 
+                permission_options: state => state.permissions.permission_options,
+                permissions: state => state.permissions.permissions
+                }),
+            ...Vuex.mapGetters(['permissionsForRole']),           
             title_string: function () {
                 return "Edit role '" + this.role_to_edit + "'"
             },
-            permission_condition_pairs: function () {
-                // should return this format { 'permission': { 'id': 1, 'display': name }, 'condition': null or id+display }
+            role_permissions: function () {
                 if (this.role_to_edit) {
-                    return this.getPermissionConditionPairsForRole(this.role_to_edit)
+                    return this.permissionsForRole(this.role_to_edit)
                 } else {
+                    console.log("No role to get permissions for")
                     return []
                 }
             },
@@ -103,35 +105,33 @@
                 this.permission_to_condition = permission_id
                 this.condition_mode_from_parent = 'create'
             },
-            edit_condition(permission_id, condition_id) {
+            edit_condition(permission_id) {
                 this.clearState()  // clear previous state
                 this.permission_to_condition = permission_id
-                this.condition_to_edit = condition_id
                 this.condition_mode_from_parent = 'update'
             },
             clearState() {
                 this.mode = ''
                 this.permission_to_edit = ''
                 this.permission_to_condition = ''
-                this.condition_to_edit = ''
                 this.permission_mode_from_parent = 'start'
                 this.condition_mode_from_parent = 'start'
             },
             prepEditRole() {
                 this.refreshRoleData({ role: this.role_to_edit }).catch(error => { 
                     this.error_message = error.message
-                    // this.error_message = "We had trouble getting data for role " + this.role_to_edit
                 })
             },
             delete_permission(id) {
-                this.removePermission({ permission_id : id }).catch(error => { 
+                this.removePermission({ permission_id : id, item_or_role : "role" }).catch(error => { 
                     this.error_message = error.message
                 })
             },
-            delete_condition(permission_id, condition_id) {
-                this.removeCondition({ condition_id : condition_id, permission_id: permission_id }).catch(error => { 
-                    this.error_message = error.message
-                })
+            delete_condition(permission_id) {
+                this.removeCondition({ 
+                    permission_id: permission_id,
+                    permission_or_leadership: "permission"
+                }).catch(error => {  this.error_message = error.message })
             }
         }
     });
