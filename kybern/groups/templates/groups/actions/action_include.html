@@ -102,14 +102,10 @@ actionHistoryComponent = Vue.component('action-history', {
           }
     },
     computed: {
-      ...Vuex.mapState(['actions']),
+      ...Vuex.mapState({ actions: state => state.concord_actions.actions }),
       item_actions: function() {
         item_key = this.item_id + "_" + this.item_model
-        if (this.actions[item_key]) {
-          return this.actions[item_key]
-        } else {
-          return []
-        }
+        if (this.actions[item_key]) { return this.actions[item_key] } else { return [] }
       },
       modal_id: function() {
         return "action_history_modal_" + this.item_id + "_" + this.item_model
@@ -137,9 +133,10 @@ actionHistoryComponent = Vue.component('action-history', {
         this.action_to_view_comments_on = null
       },
       launch_condition_modal(item) {  
-        console.log("Item launching: ", item)
-        this.condition_type = item.has_condition.type
-        this.condition_pk = item.has_condition.pk
+        // for now, we assume there's only one condition on the item, but that's not strictly garaunteed to be true
+        condition = item.has_condition.conditions[0]
+        this.condition_type = condition.type
+        this.condition_pk = condition.pk
         this.action_details = item
         }
     }

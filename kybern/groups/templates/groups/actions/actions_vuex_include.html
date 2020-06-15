@@ -1,0 +1,75 @@
+
+<script type="application/javascript"> 
+
+const ActionsVuexModule = {
+
+    state: {
+        actions: {},                    // { 'group_1' : [ { action_dict }, { action_dict } ] }
+    },
+    mutations: {
+        REPLACE_ACTIONS_FOR_ITEM (state, data) {
+                Vue.set(state.actions, data.item_key.toLowerCase(), data.action_data)
+            },
+        ADD_OR_UPDATE_ACTION (state, data) {
+            // Takes in action data and the item_key for the item the action targets
+
+            item_key = data.item_key.toLowerCase()
+
+            if (!state.actions[item_key]) {
+                Vue.set(state.actions, item_key, [])
+            } 
+
+            for (index in state.actions[item_key]) {
+                if (state.actions[item_key][index].action_pk == data.action_data.action_pk) {
+                    state.actions[item_key].splice(index, 1, data.action_data)
+                    return
+                }
+            }
+
+            state.actions[item_key].push(data.action_data)  // If we get here, we're adding the action
+        }
+    },
+    actions: { 
+        updateActions ({ state, commit, rootState, dispatch }, payload) {
+            // Given a single action or multiple actions, calls addOrUpdateAction with those pks,
+            // triggering updates of their data
+
+            data =  payload.response.data
+            
+            if (data.multiple_actions) {
+                for (index in data.actions) { 
+                    dispatch('addOrUpdateAction', { action_pk: data.actions[index].action_pk })
+                }
+            } else {
+                dispatch('addOrUpdateAction', { action_pk: data.action_pk })
+            }       
+
+        },
+        loadActions({ state, commit, rootState, dispatch }, payload) { 
+
+            url = "{{ base_url }}/groups/get_action_data_for_target/";
+            params = { item_id: payload.item_id, item_model: payload.item_model }
+            implementationCallback = (response) => {
+                item_key = payload.item_id + "_" + payload.item_model
+                commit('REPLACE_ACTIONS_FOR_ITEM', { action_data : response.data.action_data, item_key : item_key })
+            }
+            return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+        
+        },
+        addOrUpdateAction ({ state, commit, rootState, dispatch }, payload) {
+
+            url = "{{ base_url }}/groups/get_action_data/";
+            params = { action_pk : payload.action_pk }
+
+            axios.post(url, params).then(response => {  
+                action_data = response.data.action_data
+                item_key = action_data.action_target_pk + "_" + action_data.action_target_model
+                commit('ADD_OR_UPDATE_ACTION', { action_data : action_data, item_key : item_key })
+            })     
+            .catch(error => {  console.log(error); throw error })
+
+        }
+    }
+}
+
+</script>

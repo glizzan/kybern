@@ -87,7 +87,6 @@ forumComponent = Vue.component('forum-component', {
         this.getPostData({ forum_pk: this.forum_id }).catch(error => { this.error_message = "Error getting post data from server " })
     },
     computed: {
-        // ...Vuex.mapState(['posts']),
         ...Vuex.mapGetters(['getForum', 'getPostsForForum', 'getUserName']),
         title_string: function() {
             if (this.pk && this.post_title ) {
@@ -117,8 +116,8 @@ forumComponent = Vue.component('forum-component', {
         },
         add_post() {
             this.addPost({ forum_pk: this.forum_id, title: this.post_title, content: this.post_content })
-                .then(response => { this.post_title = '', this.post_content = '' })
-                .catch(error => {  this.error_message = error })
+                .then(response => { consoloe.log("YES"), this.post_title = '', this.post_content = '' })
+                .catch(error => {  consoloe.log("NO"), this.error_message = error })
         },
         edit_post() {
             this.editPost({ pk: this.pk, title: this.post_title, content: this.post_content })

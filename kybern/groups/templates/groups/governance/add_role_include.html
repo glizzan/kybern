@@ -37,7 +37,9 @@
                 new_role_name: '',
             }
         },
-        computed: { ...Vuex.mapState(['roles']) },   // Gets existing roles from data store
+        computed: { 
+        ...Vuex.mapState({ roles: state => state.governance.roles }),
+        },   // Gets existing roles from data store
         methods: {
             ...Vuex.mapActions(['addRole']),
             submitRoleName(bvModalEvt) {

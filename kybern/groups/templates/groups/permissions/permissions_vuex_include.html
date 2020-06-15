@@ -1,0 +1,375 @@
+<!-- Contains vuex module for permissions and their nested conditions. Note that condition items set
+on actions are in the actions module. -->
+
+
+<script type="application/javascript"> 
+
+    const PermissionsVuexModule = { 
+
+        state: { 
+
+            // Permission & condition options   
+            permission_options: {{ permission_options|safe }},
+                // [ { value: x , text: x } ]
+            permission_configuration_options: {{ permission_configuration_options|safe }},
+                // { permission_type: { fieldname: { display: x, type: x, required: x, value: x, field_name: x } }
+            condition_options: {{ condition_options|safe }},
+                // [ { value: x , text: x } ]
+            condition_configuration_options: {{ condition_configuration_options|safe }},
+                // { condition_type: { fieldname: { display: x, type: x, required: x, value: x, field_name: x } }         
+
+            // Permission data (loaded opportunistically)
+            permissions: {},                // { int(pk) : { name: x, display: x, change_type: x } }
+            permission_overrides: {},       // { item_pk + "_" + item_model: { foundational: enabled, governing: disabled } } 
+
+            // Logged in user permissions
+            current_user_permissions: {},    // { 'permission': boolean, 'permission': boolean }
+
+            // Permissions associated with roles and items
+            role_permissions: {},           // { role_name: [pk, pk, pk], role_name: [pk, pk, pk] }
+            item_permissions: {},           // { item_pk + "_" + item_model: [pk, pk, pk] }   
+
+            // Governance conditions
+            owner_condition: {{ owner_condition|safe }},         // None or ???
+            governor_condition: {{ governor_condition|safe }},    // None or ??
+
+        },
+
+        getters: { 
+            get_permission_given_pk: (state, getters) => (pk, as_dict) => {
+                if (as_dict) {
+                    return { [pk] : state.permissions[pk] }
+                } else {
+                    permission = state.permissions[pk]
+                    permission["pk"] = pk
+                    return permission
+                }
+            },
+            get_list_of_permissions_given_pks: (state, getters) => (pk_list) => {
+                matching_permissions = []
+                for (index in pk_list) {
+                    matching_permissions.push(getters.get_permission_given_pk(pk_list[index]))
+                }
+                return matching_permissions
+            },
+            permissionsForRole: (state, getters) => (role_name) => { 
+                permission_pks = state.role_permissions[role_name]
+                return getters.get_list_of_permissions_given_pks(permission_pks)
+            },
+            permissionsForItem: (state, getters) => (item_key) => { 
+                permission_pks = state.item_permissions[item_key]
+                return getters.get_list_of_permissions_given_pks(permission_pks)               
+            },
+            getPermissionConfigurationFields: (state, getters) => (permission_type) => {
+                // JSON stringify + parse create a new copy of the fields so we don't accidentally mutate state by reference
+                return JSON.parse( JSON.stringify( state.permission_configuration_options[permission_type] ))
+            },
+            getConditionConfigurationFields: (state, getters) => (condition_type) => { 
+                for (key in state.condition_configuration_options) {
+                    if (key.toLowerCase() == condition_type.toLowerCase()) {
+                        configuration = state.condition_configuration_options[key]
+                        break
+                    }
+                }
+                // JSON stringify + parse create a new copy of the fields so we don't accidentally mutate state by reference
+                return JSON.parse( JSON.stringify( configuration ))
+            },
+            fix_permission_field_values: (state, getters) => (field) => {
+                if (field.type == "PermissionRoleField") {
+                    field.value = getters.role_to_options(field.value)
+                } else if (field.type == "PermissionActorField") {
+                    field.value = getters.user_pk_to_options(field.value)
+                }
+                return field
+            },
+            mapPermissionDataToFields: (state, getters) => (fields, existing_data) => {
+                // Loops through data-less configuration fields looking for existing data to override
+                // default values.
+                new_fields = Object.keys(fields).map(function(field_name) {
+                    if (existing_data[field_name]) {
+                        fields[field_name].value = existing_data[field_name]
+                        fields[field_name] = getters.fix_permission_field_values(fields[field_name])
+                        return fields[field_name]
+                    }
+                });
+                return new_fields
+            },
+            getPermissionConditionConfigurationFieldsWithData: (state, getters) => (permission_id) => { 
+                fields = state.permissions[permission_id]["condition"]["fields"]
+                for (field_index in fields) {
+                    fields[field_index] = getters.fix_permission_field_values(fields[field_index])
+                }
+                return fields
+            },
+            getLeadershipConditionConfigurationFieldsWithData: (state, getters) => (leadership_type) => {
+                if (leadership_type == "owner") { fields = state.owner_condition["fields"] }
+                else if (leadership_type == "governor") { fields = state.governor_condition["fields"] }
+                for (field_index in fields) {
+                    fields[field_index] = getters.fix_permission_field_values(fields[field_index])
+                }
+                return fields
+            },
+            getPermissionConfigurationFieldsWithData: (state, getters) => (permission_id) => { 
+                permission = state.permissions[permission_id]
+                field_options = getters.getPermissionConfigurationFields(permission.change_type)
+                return getters.mapPermissionDataToFields(field_options, permission["fields"])
+            },
+            getFoundationalForItem: (state, getters) => (item_key) => {
+                if (state.permission_overrides[item_key]) {
+                    return state.permission_overrides[item_key].foundational
+                }
+            },
+            getGoverningForItem: (state, getters) => (item_key) => {
+                if (state.permission_overrides[item_key]) {
+                    return state.permission_overrides[item_key].governing
+                }
+            },
+            select_field_is_multiple: (state, getters) => (field) => { 
+                if (field.hasOwnProperty("other_data") && field["other_data"].hasOwnProperty("multiple")) {
+                    return field["other_data"]["multiple"]
+                } else {
+                    return true  // By default, select fields allow multiple
+                }
+            }
+        },
+
+        mutations: { 
+
+            ADD_OR_UPDATE_PERMISSION (state, data) {
+                Vue.set(state.permissions, data.pk, data.data) // { name: x, display: x, change_type: x } }
+            },
+            ADD_PERMISSION_TO_ROLE (state, data ) {
+                permission_index = state.role_permissions[data.role].indexOf(data.pk)
+                if (permission_index == -1) { state.role_permissions[data.role].push(data.pk) }
+            },
+            REMOVE_PERMISSION_FROM_ROLES (state, data ) {
+                for (role in state.role_permissions) {
+                    permission_index = state.role_permissions[role].indexOf(data.pk)
+                    if (permission_index > -1) { 
+                        state.role_permissions[role].splice(permission_index, 1) 
+                    }
+                }
+            },
+            REPLACE_ROLE_PERMISSIONS (state, data) {
+                Vue.set(state.role_permissions, data.role, data.pks)
+            },
+            DELETE_PERMISSION (state, data) {
+                Vue.delete(state.permissions, data.pk);
+            },
+            REPLACE_ITEM_PERMISSIONS (state, data) {
+                item_key = data.item_id + "_" + data.item_model
+                Vue.set(state.item_permissions, item_key, data.pks)
+            },
+            ADD_PERMISSION_TO_ITEM (state, data ) {
+                item_key = data.item_id + "_" + data.item_model
+                permission_index = state.item_permissions[item_key].indexOf(data.permission_pk)
+                if (permission_index == -1) { state.item_permissions[item_key].push(data.permission_pk) }
+            },
+            REMOVE_PERMISSION_FROM_ITEM (state, data) {
+                item_key = data.item_id + "_" + data.item_model
+                permission_index = state.item_permissions[item_key].indexOf(data.pk)
+                if (permission_index > -1) { state.item_permissions[item_key].splice(permission_index, 1) }
+            },
+            ADD_OR_UPDATE_CURRENT_USER_PERMISSIONS (state, data) {
+                for (permission in data.user_permissions) {
+                    Vue.set(state.current_user_permissions, permission, data.user_permissions[permission])
+                }
+            },
+            ADD_OR_UPDATE_PERMISSION_OVERRIDE_DATA (state, data) {
+                item_key = data.item_id + "_" + data.item_model
+                Vue.set(state.permission_overrides, item_key, {
+                    "foundational": data.foundational, "governing": data.governing
+                })
+            },
+
+            // Condition Mutations
+
+            ADD_CONDITION_TO_PERMISSION (state, data) { 
+                Vue.set(state.permissions[data.pk], "condition", data.condition_data)
+            },
+            REMOVE_CONDITION_FROM_PERMISSION (state, data) { 
+                Vue.set(state.permissions[data.pk], "condition", null)
+            },
+            ADD_LEADERSHIP_CONDITION (state, data) { 
+                if (data.leadership_type == "owner") {
+                    Vue.set(state, "owner_condition", data.condition_data)
+                } else if (data.leadership_type == "governor") {
+                    Vue.set(state, "governor_condition", data.condition_data)
+                }
+            },
+            REMOVE_LEADERSHIP_CONDITION (state, data) { 
+                if (data.leadership_type == "owner") {
+                    Vue.set(state, "owner_condition", null)
+                } else if (data.leadership_type == "governor") {
+                    Vue.set(state, "governor_condition", null)
+                }
+            }
+
+        },
+
+        actions: { 
+
+            // Permission Actions
+          
+            addPermission ({ commit, state, dispatch }, payload) { 
+
+                url = "{{ base_url }}/groups/add_permission/{{ object.pk}}/"
+                
+                params = { item_or_role: payload.item_or_role, item_id: payload.item_id, 
+                    item_model: payload.item_model, permission_type : payload.permission_selected, 
+                    permission_roles : payload.roles, permission_actors : payload.actors, 
+                    permission_configuration : payload.configuration }
+                    
+                implementationCallback = (response) => { 
+                    pk = response.data.permission.pk
+                    permission_data = response.data.permission.permission_data[0]
+                    commit('ADD_OR_UPDATE_PERMISSION', { pk : pk, data : permission_data })
+
+                    if (payload.item_or_role == "role") {
+                        commit('ADD_PERMISSION_TO_ROLE', { pk : pk, role: payload.roles })
+                    } else {
+                        commit('ADD_PERMISSION_TO_ITEM', { permission_pk: pk, item_id: payload.item_id, 
+                            item_model: payload.item_model })
+                    }                    
+                }
+
+                return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
+
+            updatePermission ({ commit, state, dispatch }, payload) {             
+                url = "{{ base_url }}/groups/update_permission/{{ object.pk}}/"
+                params = { permission_id : payload.permission_id, item_or_role: payload.item_or_role, 
+                    item_id: payload.item_id, item_model: payload.item_model,  
+                    permission_roles : payload.roles, permission_actors : payload.actors, permission_configuration : payload.configuration }
+                    
+                implementationCallback = (response) => { 
+                    pk = response.data.permission.pk
+                    permission_data = response.data.permission.permission_data[0]
+                    commit('ADD_OR_UPDATE_PERMISSION', { pk : pk, data : permission_data })
+                }
+                return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
+            
+            removePermission ({ commit, getters, dispatch }, payload) {  
+                url = "{{ base_url }}/groups/delete_permission/{{ object.pk}}/";
+                params = { permission_id : payload.permission_id, item_or_role: payload.item_or_role, 
+                    item_id: payload.item_id, item_model: payload.item_model }
+                implementationCallback = (response) => {
+
+                    commit('REMOVE_PERMISSION_FROM_ROLES', { pk: response.data.removed_permission_pk } )
+
+                    if (payload.item_or_role == "item") {
+                        commit('REMOVE_PERMISSION_FROM_ITEM', { pk: response.data.removed_permission_pk, 
+                        item_id : payload.item_id, item_model: payload.item_model })
+                    }
+                    
+                    commit('DELETE_PERMISSION', { pk: response.data.removed_permission_pk })
+                }
+                return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
+
+            // Condition Actions
+
+            addCondition ({ commit, state, dispatch }, payload) {  
+                url = "{{ base_url }}/groups/add_condition/{{ object.pk}}/";
+                params = { condition_type: payload.condition_type, permission_or_leadership: payload.permission_or_leadership,
+                    target_permission_id: payload.permission_id, leadership_type: payload.leadership_type,
+                    combined_condition_data : payload.combined_condition_data }
+                    
+                implementationCallback = (response) => { 
+                    if (response.data.permission_or_leadership == "permission") {
+                        commit('ADD_CONDITION_TO_PERMISSION', { pk: response.data.target_permission_id, 
+                            condition_data: response.data.condition_info })
+                    } else {
+                        commit('ADD_LEADERSHIP_CONDITION', { 'leadership_type': response.data.leadership_type, 
+                            condition_data: response.data.condition_info })
+                    }
+                }
+                return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback })
+            },
+
+            removeCondition ({ commit, state, dispatch }, payload) {  
+                url = "{{ base_url }}/groups/remove_condition/{{ object.pk}}/";
+                params = { permission_or_leadership: payload.permission_or_leadership, 
+                    target_permission_id : payload.permission_id, leadership_type: payload.leadership_type }
+                implementationCallback = (response) => { 
+                    if (response.data.permission_or_leadership == "permission") {
+                        commit('REMOVE_CONDITION_FROM_PERMISSION', { pk: response.data.target_permission_id })
+                    } else {
+                        commit('REMOVE_LEADERSHIP_CONDITION', { 'leadership_type': response.data.leadership_type })
+                    }
+                }
+                return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
+
+            // Misc other actions
+
+            getPermissionsForItem({ commit, state, dispatch}, payload) { 
+                url = "{{ base_url }}/groups/get_permissions/"
+                params = { item_id: payload.item_id, item_model: payload.item_model }
+                implementationCallback = (response) => { 
+                    commit('REPLACE_ITEM_PERMISSIONS', { item_id: response.data.item_id, 
+                                                         item_model: response.data.item_model, 
+                                                         pks: response.data.permission_pks })
+                    for (key in response.data.permissions) { 
+                        commit('ADD_OR_UPDATE_PERMISSION', { pk : key, data : response.data.permissions[key] })                    
+                    }
+                    commit('ADD_OR_UPDATE_PERMISSION_OVERRIDE_DATA', { 
+                        item_id: response.data.item_id, 
+                        item_model: response.data.item_model,
+                        foundational: response.data.foundational,
+                        governing: response.data.governing 
+                    })
+                }
+                return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
+
+            changePermissionOverride ({ commit, state, dispatch }, payload) { 
+                url = "{{ base_url }}/groups/change_item_permission_override/"
+                params = { item_id: payload.item_id, item_model: payload.item_model,
+                    enable_or_disable: payload.enable_or_disable, governing_or_foundational: payload.governing_or_foundational }
+                implementationCallback = (response) => { 
+                    commit('ADD_OR_UPDATE_PERMISSION_OVERRIDE_DATA', { 
+                        item_id: response.data.item_id, 
+                        item_model: response.data.item_model,
+                        foundational: response.data.foundational,
+                        governing: response.data.governing 
+                    })
+                }
+                return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
+
+            toggleAnyone ({ commit, getters, dispatch }, payload) { 
+                url = "{{ base_url }}/groups/toggle_anyone/";
+                params = { permission_id : payload.permission_id, enable_or_disable: payload.enable_or_disable } 
+                implementationCallback = (response) => {
+                    pk = response.data.permission.pk
+                    permission_data = response.data.permission.permission_data[0]
+                    commit('ADD_OR_UPDATE_PERMISSION', { pk : pk, data : permission_data })
+                }
+            return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
+
+            getUserPermissions ({ commit, state, dispatch }, payload) { 
+                url = "{{ base_url }}/groups/get_user_permissions/{{ object.pk}}/"
+                implementationCallback = (response) => { 
+                    commit('ADD_OR_UPDATE_CURRENT_USER_PERMISSIONS', { user_permissions: response.data.user_permissions })
+                }
+                return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
+
+            refreshRoleData ({ commit, state, dispatch }, payload) { 
+                url = "{{ base_url }}/groups/get_data_for_role/{{ object.pk}}/"
+                params = { role_name : payload.role }
+                implementationCallback = (response) => { 
+                    commit('REPLACE_ROLE_PERMISSIONS', { role: payload.role, pks: response.data.role_permissions })
+                    for (key in response.data.permissions) { 
+                        commit('ADD_OR_UPDATE_PERMISSION', { pk : key, data : response.data.permissions[key] })                    
+                    }
+                }
+                return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            }
+        }
+    }
+
+</script>

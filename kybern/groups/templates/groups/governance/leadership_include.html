@@ -62,9 +62,8 @@
                 Unless you have a small, new group, you probably don't want this, so we recommend setting a 
                 condition.  Here's the condition currently set:</p>
 
-            <manage-condition :condition_to_edit=owner_condition_pk :called_for="'owner'"
-                :mode_from_parent=owner_condition_mode_from_parent> 
-            </manage-condition>
+            <manage-leadership-condition :called_for="'owner'" :mode_from_parent=owner_condition_mode_from_parent> 
+            </manage-leadership-condition>
 
             <p class="font-weight-bold">Governors</p>
 
@@ -114,9 +113,8 @@
                 of appointing governors is so they can act efficiently, but can still be useful.  Here's the condition
                 currently set:</p>
 
-            <manage-condition :condition_to_edit=governor_condition_pk :called_for="'governor'"
-                :mode_from_parent=governor_condition_mode_from_parent> 
-            </manage-condition>
+            <manage-leadership-condition :called_for="'governor'":mode_from_parent=governor_condition_mode_from_parent> 
+            </manage-leadership-condition>
 
             <p class="font-weight-bold">Just so you know</p>
 
@@ -171,7 +169,12 @@
             }
         },
         computed: {
-            ...Vuex.mapState(['roles', 'governance_info', 'owner_condition_pk', 'governor_condition_pk']),
+            ...Vuex.mapState({
+                roles: state => state.governance.roles,
+                governance_info: state => state.governance.governance_info,
+                owner_condition_pk: state => state.governance.owner_condition_pk,
+                governor_condition_pk: state => state.governance.governor_condition_pk
+            }),
             ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getUserName', 'leadershipAsOptions']),
             title_string: function() {
                 return "Change leadership of " + "{{ object.name }}"

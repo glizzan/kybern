@@ -1,0 +1,24 @@
+<script type="text/x-template" id="group_membership_template">
+
+    <span>
+        
+    </span>
+    
+</script>
+
+<script type="application/javascript">
+
+
+    Vue.component('vue-multiselect', window.VueMultiselect.default)
+
+    groupMembershipComponent = Vue.component('group-membership-component', {
+        delimiters: ['[[', ']]'],
+        template: '#group_membership_template',
+        store,
+        data: function() {
+            return {   
+            }
+        }
+    });
+
+</script>
