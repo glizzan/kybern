@@ -1,0 +1,115 @@
+<script type="text/x-template" id="manage_group_membership_modal_template">
+
+    <span>   <!-- Root element -->
+
+        <b-button class="btn-sm mb-3" @click="prep_modal" v-b-modal.manage_group_members_modal>
+            View and change members</b-button>
+
+        <b-modal id="manage_group_members_modal" title="Change group membership" hide-footer>
+
+
+            <!-- If you have remove permission, show delete option, otherwise just show members -->
+            <span v-if="current_user_permissions.user_can_remove">
+                <div class="mt-3 mb-2"><b>Current Members</b> (click the x to remove from group):</div>
+                <b-badge v-for="member in groupMembersAsOptions" v-bind:key="member.pk" 
+                    pill variant="info" class="mx-1">[[ member.name ]]
+                    <span @click="remove_member(member.pk)">x</span>
+                </b-badge>
+            </span>
+            <span v-else>
+                <b>Current Members:</b><b-badge v-for="member in groupMembersAsOptions" v-bind:key="member.pk" 
+                    pill variant="info" class="mx-1">[[ member.name ]]</b-badge>
+                <div v-if="view_only" class="mt-3">You do not have permission to add or remove members.</div>
+            </span>
+
+
+            <!-- If group is invite only, and user has invite permission -->
+            <span v-if="membership_setting == 'invite only' && current_user_permissions.user_can_invite">
+
+                <div class="mt-3 font-weight-bold">You have permission to invite people to join the group</div>
+
+                <span id="change_membership_multiselect">
+                    <vue-multiselect v-model="people_selected" :options="nonmembersAsOptions" :multiple="true" 
+                    :close-on-select="true" :clear-on-select="false" placeholder="No one selected" 
+                    label="name" track-by="pk" class="mt-3">
+                        <template slot="selection" slot-scope="{ values, search, isOpen }">
+                            <span v-if="!isOpen">
+                                Selected: [[ values ]]
+                            </span>
+                        </template>
+                    </vue-multiselect>
+                </span>
+
+                <!-- TODO: display invitations and/or remove invited people from options to invite again? -->
+
+                <b-button class="btn-sm my-3" @click="invite_members()">Invite pepople</b-button>
+
+            </span>
+
+
+            <!-- If group is 'anyone can ask', and user can respond to asks -->
+            <span v-if="membership_setting == 'anyone can ask' && current_user_permissions.user_can_respond_to_asks">
+                <h3>You have permission to approve members</h3>
+                <!-- Show interface -->
+            </span>
+
+
+            <div class="mb-3" v-if="error_message"> [[ error_message ]] </div>
+    
+
+        </b-modal>
+        
+    </span>
+
+
+</script>
+
+
+<script type="application/javascript"> 
+
+    manageGroupMembershipComponent = Vue.component('manage-group-membership-modal', {
+        delimiters: ['[[', ']]'],
+        template: '#manage_group_membership_modal_template',
+        props: ['membership_setting'],
+        store,
+        data: function() {
+            return {
+                error_message: '',
+                people_selected: []
+            }
+        },
+        computed: {
+            ...Vuex.mapState({ current_user_permissions: state => state.permissions.current_user_permissions }),
+            ...Vuex.mapGetters(['groupMembersAsOptions', 'nonmembersAsOptions']),
+            view_only: function() {
+                if (!this.current_user_permissions.user_can_remove && 
+                    !this.current_user_permissions.user_can_invite && 
+                    !this.current_user_permissions.user_can_respond_to_asks) {
+                    return true
+                } 
+                return false
+            }
+        },
+        methods: {
+            ...Vuex.mapActions(['addMembers', 'removeMembers', 'getUserPermissions']),
+            prep_modal() {
+                this.getUserPermissions()
+                // if setting = asks, check for asks
+            },
+            remove_member(pk) {
+                this.removeMembers({ user_pks: [pk] }).catch(error => {  this.error_message = error })
+            },
+            invite_members() {
+                this.addMembers({ user_pks: this.people_selected.map(person => person.pk) })
+                    .catch(error => {  
+                        if (error == "This action cannot be completed until a condition is passed.") {
+                            this.error_message = "An invitation has been sent. This person will not be added to the group until they accept the invitiation."
+                        } else {
+                            this.error_message = error
+                        }
+                    })
+            }
+        }
+    });
+
+</script>

@@ -1,0 +1,124 @@
+<script type="text/x-template" id="add_permission_component_template">
+
+    <span>
+
+        <span v-if="error_message" class="text-danger">[[ error_message ]]</span>
+
+        <span v-if="!add_permission_button_clicked">
+
+            <b-button size="sm" v-on:click="add_permission_button_clicked=true" variant="outline-dark"
+                class="my-2" id="add_permission_button">Add Permission</b-button>
+
+        </span>
+
+        <span v-if="add_permission_button_clicked">
+
+            <span v-if="!permission_selected">
+
+                <b>Select permission to add</b> 
+                <template><div>
+                    <b-form-select v-model="permission_selected" :options="item_permission_options" :select-size="4"
+                        name="permission_select">
+                    </b-form-select>
+                </div></template>
+
+            </span>
+
+            <span v-else>
+
+                <!-- If a role was not passed in, that means we need to ask the user for what roles and
+                    actors should be given this permission. -->
+                <span v-if="!role_to_edit" class="mb-3">
+                    <p class="mt-3 font-weight-bold">Give people this permission</p>
+                    {% include 'groups/permissions/role_and_actor_fields_include.html' %}
+                </span>
+
+                <!-- If there are fields to configure -->
+                <span v-if="configuration_fields.length > 0" class="mb-3">
+                    <p class="mt-3 font-weight-bold">Configure your permission</p>
+                    {% include 'groups/permissions/configuration_fields_include.html' %}
+                </span>
+
+                <b-button size="sm" class="mt-3" @click="add_permission()" id="save_permission_button">
+                    Save permission</b-button>
+
+                <b-button size="sm" class="mt-3" @click="clearState()" id="discard_permission_button">
+                    Discard</b-button>
+
+            </span>
+
+        </span>
+
+    </span>
+
+</script>
+
+<script type="application/javascript">
+
+    addPermissionComponent = Vue.component('add-permission', {
+        delimiters: ['[[', ']]'],
+        template: '#add_permission_component_template',
+        props: ['default_selection', 'role_to_edit', 'item_id', 'item_model'],  // item_model is required
+        store,
+        data: function() {
+            return {
+                permission_exists: false,
+                add_permission_button_clicked: false,
+                permission_selected: '',
+                configuration_fields: [],
+                error_message: '',
+                permission_roles_selected: [],
+                permission_actors_selected: []
+            }
+        },
+        created () {
+            this.permission_selected = this.default_selection
+        },
+        watch: {
+            permission_selected: function (val) {
+                if (this.permission_selected) {
+                    this.configuration_fields = Object.values(this.getPermissionConfigurationFields(this.permission_selected))
+                }
+            }
+        },
+        computed: {
+            ...Vuex.mapState({ 
+                permissions: state => state.permissions.permissions,
+                permission_options: state => state.permissions.permission_options, 
+                }),
+            ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getPermissionConfigurationFields', 
+                'select_field_is_multiple', 'role_to_options', 'user_pk_to_options']),
+            item_or_role() { 
+                if (this.role_to_edit) { return "role"} 
+                else if (this.item_id && this.item_model) { return "item" }
+            },
+            item_permission_options() {
+                return this.permission_options[this.item_model]
+            }
+        },
+        methods: {
+            ...Vuex.mapActions(['addPermission']),
+            clearState() { 
+                if (!this.default_selection) { this.permission_selected = '' }
+                this.add_permission_button_clicked = false
+                this.permission_actors_selected = []
+                this.permission_roles_selected = []
+                this.configuration_fields = []
+            },
+            get_roles() {
+                if (this.item_or_role == "role") { return [this.role_to_edit] }
+                else if (this.item_or_role == "item") { return this.permission_roles_selected }
+            },
+            add_permission() {
+                this.addPermission({ item_or_role : this.item_or_role, item_id : this.item_id, item_model: this.item_model,
+                    permission_selected : this.permission_selected, configuration : this.configuration_fields, 
+                    roles: this.get_roles(), actors: this.permission_actors_selected 
+                }).then(response => { this.clearState() 
+                }).catch(error => {  this.error_message = error })
+            }
+        }
+    });
+
+</script>
+
+

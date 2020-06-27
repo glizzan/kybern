@@ -1,5 +1,5 @@
 
-<span v-if="anyone_can_take_permission" class="text-left">
+<span v-if="permission_exists && anyone_can_take_permission" class="text-left">
 
     <p>Anyone can take the action described by this permission. You can remove the permission from anyone, 
         and give it to the previous roles and/or actors specified.</p>
@@ -14,9 +14,9 @@
 
 <span v-else class="text-left">
 
-    <span v-if="mode == 'update'" class="pb-3">
+    <span v-if="permission_exists" class="pb-3">
         <!-- We don't show this on create, since all permissions must have a role or actor specified.
-        Permissions can only be assigned to "anyone" on update. -->
+        Permissions can only be assigned to "anyone" on update, aka when permission exists. -->
 
         <p>Give this permission to specific roles or actors below, or give it to everyone: 
         <b-button variant="outline-secondary" size="sm" @click="toggle_anyone('enable')">

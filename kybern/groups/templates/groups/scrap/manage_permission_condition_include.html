@@ -1,0 +1,107 @@
+<script type="text/x-template" id="permission_condition_template">
+
+    <div class="border m-2 p-2 text-center"> 
+
+        <!-- If we're creating a new condition -->
+        <span v-if="mode == 'create' && !condition_selected ">
+            <b>Select condition to add</b> 
+                <template><div>
+                    <b-form-select v-model="condition_selected" :options="condition_options" :select-size="4"
+                        name="condition_select">
+                    </b-form-select>
+                </div></template> 
+            </span>
+        </span>
+
+        <!-- If we're updating an existing condition (or configuring a new condition that has been selected) -->
+        <span v-if="mode == 'update' || condition_selected">
+
+                <p class="mt-3"><b>Configure your condition</b></p>
+                {% include 'groups/permissions/configuration_fields_include.html' %}
+
+            <!-- Save configuration -->
+            <b-button size="sm" class="mt-3" @click="add_condition()" id="save_condition_button">
+                <span v-if="condition_selected && mode == 'create'">Save condition</span>
+                <span v-if="existing_condition && mode == 'update'">Save changes</span>
+            </b-button>
+
+        </span>
+
+        <div class="mb-3 text-danger" v-if="error_message">
+            [[ error_message ]]
+        </div>
+
+    </div>
+
+</script>
+
+<script type="application/javascript">
+
+    conditionComponent = Vue.component('manage-permission-condition', {
+        delimiters: ['[[', ']]'],
+        template: '#permission_condition_template',
+        store, 
+        props: ['mode_from_parent', 'permission_to_condition'],
+        data: function() {
+            return {
+                condition_selected: '',
+                mode: 'start',
+                configuration_fields: [],
+                error_message : ''
+            }
+        },
+        watch: {
+            // The parent of the condition include can change the mode - overrides current mode (on change, not permanently)
+            mode_from_parent: function (val) { this.mode = val; },                           
+            condition_selected: function (val) {  this.update_configuration_fields() },
+            permission_to_condition: function (val) {  this.update_configuration_fields() }
+        },
+        computed: {
+            ...Vuex.mapState({ 
+                condition_options: state => state.permissions.condition_options,
+                permissions: state => state.permissions.permissions
+                }),
+            ...Vuex.mapGetters(['getConditionConfigurationFields', 'getConditionConfigurationFieldsWithData', 
+                'select_field_is_multiple', 'rolesAsOptions', 'groupMembersAsOptions']),
+            existing_condition: function() {
+                if (this.permission_to_condition && 
+                            this.permissions[this.permission_to_condition]["condition"]) {
+                    return this.permissions[this.permission_to_condition]["condition"]
+                }  else {
+                    return null
+                }
+            }
+        },
+        created (){ this.update_configuration_fields() },
+        methods: {
+            ...Vuex.mapActions(['addCondition', 'updateCondition', 'removeCondition']),
+            update_configuration_fields(){
+                // Note that only one of condition_selected or condition_to_edit should be defined
+                if (this.condition_selected) {
+                    field_data = this.getConditionConfigurationFields(this.condition_selected)
+                    this.configuration_fields = Object.values(field_data)
+                }
+                if (this.existing_condition) {
+                    field_data = this.getConditionConfigurationFieldsWithData(this.permission_to_condition)
+                    this.configuration_fields = Object.values(field_data)
+                }
+            },
+            add_condition(){
+                if (this.condition_selected) { condition_type = this.condition_selected }
+                else { condition_type = this.existing_condition["type"] }
+
+                this.addCondition({ 
+                    condition_type : condition_type, 
+                    permission_or_leadership : "permission",
+                    permission_id : this.permission_to_condition,
+                    combined_condition_data: this.configuration_fields 
+                }).then(response => { 
+                    this.$emit("clearState"); 
+                    this.condition_selected = ''; 
+                    this.mode = 'start';
+                }).catch(error => {  this.error_message = error })
+            }
+        }
+    });
+
+</script>

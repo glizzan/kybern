@@ -1,6 +1,8 @@
 <script type="text/x-template" id="permission_condition_template">
 
-    <div class="border m-2 p-2 text-center"> 
+    <div> 
+
+        <span v-if="error_message" class="text-danger">[[ error_message ]]</span>
 
         <!-- If we're creating a new condition -->
         <span v-if="mode == 'create' && !condition_selected ">
@@ -27,21 +29,17 @@
 
         </span>
 
-        <div class="mb-3 text-danger" v-if="error_message">
-            [[ error_message ]]
-        </div>
-
     </div>
 
 </script>
 
 <script type="application/javascript">
 
-    conditionComponent = Vue.component('manage-permission-condition', {
+    conditionComponent = Vue.component('permission-condition', {
         delimiters: ['[[', ']]'],
         template: '#permission_condition_template',
         store, 
-        props: ['mode_from_parent', 'permission_to_condition'],
+        props: ['mode_from_parent', 'permission'],
         data: function() {
             return {
                 condition_selected: '',
@@ -61,20 +59,16 @@
                 condition_options: state => state.permissions.condition_options,
                 permissions: state => state.permissions.permissions
                 }),
-            ...Vuex.mapGetters(['getConditionConfigurationFields', 'getConditionConfigurationFieldsWithData', 
+            ...Vuex.mapGetters(['getConditionConfigurationFields', 'getPermissionConditionConfigurationFieldsWithData', 
                 'select_field_is_multiple', 'rolesAsOptions', 'groupMembersAsOptions']),
             existing_condition: function() {
-                if (this.permission_to_condition && 
-                            this.permissions[this.permission_to_condition]["condition"]) {
-                    return this.permissions[this.permission_to_condition]["condition"]
-                }  else {
-                    return null
-                }
+                if (this.permission.condition) { return this.permission.condition } 
+                else { return null }
             }
         },
         created (){ this.update_configuration_fields() },
         methods: {
-            ...Vuex.mapActions(['addCondition', 'updateCondition', 'removeCondition']),
+            ...Vuex.mapActions(['addCondition']),
             update_configuration_fields(){
                 // Note that only one of condition_selected or condition_to_edit should be defined
                 if (this.condition_selected) {
@@ -82,7 +76,7 @@
                     this.configuration_fields = Object.values(field_data)
                 }
                 if (this.existing_condition) {
-                    field_data = this.getConditionConfigurationFieldsWithData(this.permission_to_condition)
+                    field_data = this.getPermissionConditionConfigurationFieldsWithData(this.permission.pk)
                     this.configuration_fields = Object.values(field_data)
                 }
             },
@@ -93,23 +87,14 @@
                 this.addCondition({ 
                     condition_type : condition_type, 
                     permission_or_leadership : "permission",
-                    permission_id : this.permission_to_condition,
+                    permission_id : this.permission.pk,
                     combined_condition_data: this.configuration_fields 
                 }).then(response => { 
-                    this.$emit("clearState"); 
                     this.condition_selected = ''; 
                     this.mode = 'start';
                 }).catch(error => {  this.error_message = error })
-            },
-            remove_condition() {
-                this.removeCondition({
-                    permission_or_leadership: "permission",
-                    permission_id: this.permission_to_condition
-                }).then(response => { 
-                    this.$emit("clearState"); 
-                    this.mode = 'start'; 
-                }).catch(error => { this.error_message = error.message })
             }
+            // NOTE: remove_condition logic is on the caller (usually edit_permission_component_include)
         }
     });
 

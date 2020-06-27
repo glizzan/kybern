@@ -12,8 +12,10 @@
 
     {% include 'groups/comments/comment_include.html' %} 
 
-    {% include 'groups/permissions/manage_permission_include.html' %}
-    {% include 'groups/permissions/manage_permission_condition_include.html' %}
+    <!-- Permissions templates -->
+    {% include 'groups/permissions/add_permission_component_include.html' %}
+    {% include 'groups/permissions/edit_permission_component_include.html' %}
+    {% include 'groups/permissions/permission_condition_component_include.html' %}
     {% include 'groups/permissions/manage_leadership_condition_include.html' %}
     {% include 'groups/permissions/role_permissions_include.html' %}
     {% include 'groups/permissions/item_permissions_include.html' %}

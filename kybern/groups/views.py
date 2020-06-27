@@ -54,7 +54,7 @@ def process_action(action):
 
     if action.resolution.status == "implemented":
         action_verb = ""
-        follow_up = "They did so because they have the permission %s." % action.resolution.resolved_through
+        follow_up = "They did so because they have the permission %s." % action.resolution.approved_through
     else:
         action_verb = "tried to "
         follow_up = ""  # TODO: what goes here?
@@ -81,7 +81,7 @@ def process_action(action):
         "display_date": action_time,
         "actor": action.actor.username,
         "status": action.resolution.status,
-        "resolution passed by": action.resolution.resolved_through,
+        "resolution passed by": action.resolution.approved_through,
         "display": action_string,
         "has_condition": {
             "exists": True if conditions else False,
@@ -619,7 +619,7 @@ def get_permission_target_helper(request, target, item_or_role, item_id, item_mo
     if item_or_role == "role":    # Otherwise the role the community is set on is the target
         communityClient = GroupClient(actor=request.user)
         return communityClient.get_community(community_pk=target)
-
+        
 
 @login_required
 @reformat_input_data
@@ -635,8 +635,7 @@ def add_permission(request, target, permission_type, item_or_role, permission_ac
 
     action_dict = get_action_dict(action)
     permission_info = get_permission_info(result) if action.resolution.status == "implemented" else None
-    action_dict.update({ "permission": permission_info })
-
+    action_dict.update({ "permission": permission_info, "item_id": item_id, "item_model": item_model })
     return JsonResponse(action_dict)
 
 

@@ -213,6 +213,8 @@ on actions are in the actions module. -->
           
             addPermission ({ commit, state, dispatch }, payload) { 
 
+                console.log(payload)
+
                 url = "{{ base_url }}/groups/add_permission/{{ object.pk}}/"
                 
                 params = { item_or_role: payload.item_or_role, item_id: payload.item_id, 
@@ -261,6 +263,9 @@ on actions are in the actions module. -->
                     if (payload.item_or_role == "item") {
                         commit('REMOVE_PERMISSION_FROM_ITEM', { pk: response.data.removed_permission_pk, 
                         item_id : payload.item_id, item_model: payload.item_model })
+                    } else {
+                        // TODO: if removed from role interface, may still be set on item - check for
+                        // permission pk in group
                     }
                     
                     commit('DELETE_PERMISSION', { pk: response.data.removed_permission_pk })

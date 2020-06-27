@@ -1,15 +1,76 @@
 <script type="text/x-template" id="group_membership_template">
 
     <span>
-        
+        <b-card header="Members" class="mb-3">
+
+            <!-- How Membership Settings are Currently Set -->
+
+                <!-- text util for add_member and remove_member permissions -->
+
+                <b-button class="btn-sm mb-3" v-b-modal.group_membership_settings_modal 
+                    id="group_membership_settings_button">View & change membership settings</b-button>
+            
+            <!-- Membership Actions --> 
+            <hr >
+
+                <!-- if you have permission, "invite", "approve requests", etc -->
+                <b-button class="btn-sm mb-3" v-b-modal.group_add_member_modal 
+                    id="add_member_button">Add members</b-button>
+
+                <!-- if you have permission, "remove from group" -->
+                <b-button class="btn-sm mb-3" v-b-modal.group_add_member_modal 
+                    id="remove_member_button">Remove members</b-button>
+
+                <!-- if you have permission & correct status, join/leave group yourself -->
+                <b-button class="btn-sm mb-3" v-b-modal.join_or_leave_group_modal 
+                    id="join_or_leave_button">Join group</b-button>
+
+            
+            <!-- Membership Display --> 
+            <hr >
+                
+                <b-button class="btn-sm mb-3" v-b-modal.group_membership_display 
+                    id="group_membership_display_button">View members</b-button>
+
+            
+        </b-card>
+
+        <b-modal id="group_membership_settings_modal" title="Group Membership Settings" 
+            class="modal fade" size="lg" hide-footer>
+
+            <p class="pb-1 font-weight-bold">Permissions for Adding Members</p>
+
+            <edit-permission v-for="permission in addmember_permissions" v-bind:key="permission.pk"
+                :permission=permission :item_id=item_id :item_model=item_model> </edit-permission>
+            <add-permission :default_selection=add_member_state_change :item_id=item_id 
+                :item_model=item_model> </add-permission>                
+            <p v-if="!addmember_permissions.length">No permissions for adding members have been 
+            set yet. This means only people with foundational or governing permission can 
+            add members.</p>
+
+            <p class="pt-4 pb-1 font-weight-bold">Permissions for Removing Members</p>
+    
+            <edit-permission v-for="permission in removemember_permissions" v-bind:key="permission.pk" 
+                :permission=permission :item_id=item_id :item_model=item_model> </edit-permission>
+            <add-permission :default_selection=remove_member_state_change :item_id=item_id 
+                :item_model=item_model></add-permission>
+            <p v-if="!removemember_permissions.length">No permissions for removing members have 
+                been set yet. This means only people with foundational or governing permission can 
+                remove members.</p>
+
+            <p class="pt-4 pb-1 font-weight-bold">Templates</p>
+
+            <!-- Add a template button which, if clicked, shows templates in membership scope
+            with button apply_template next to each -->
+
+
+        </b-modal>
+
     </span>
     
 </script>
 
 <script type="application/javascript">
-
-
-    Vue.component('vue-multiselect', window.VueMultiselect.default)
 
     groupMembershipComponent = Vue.component('group-membership-component', {
         delimiters: ['[[', ']]'],
@@ -17,7 +78,30 @@
         store,
         data: function() {
             return {   
+                item_id: {{ object.pk }},  // Group id,
+                item_model: 'group',  // group model
+                add_member_state_change: 'concord.communities.state_changes.AddMembersStateChange',
+                remove_member_state_change: 'concord.communities.state_changes.RemoveMembersStateChange'
             }
+        },
+        created () {
+            console.log("Getting permissions! for ", this.item_id, this.item_model)
+            this.getPermissionsForItem({ item_id: this.item_id, item_model: this.item_model })
+                .catch(error => {  this.error_message = error; console.log(error) })
+        },
+        computed: {
+            ...Vuex.mapState({ permissions: state => state.permissions.permissions }),
+            addmember_permissions() {
+                return Object.values(this.permissions).filter(permission => 
+                    permission.change_type == this.add_member_state_change)
+            },
+            removemember_permissions() {
+                return Object.values(this.permissions).filter(permission => 
+                    permission.change_type == this.remove_member_state_change)
+            }
+        },
+        methods: {
+            ...Vuex.mapActions(['getPermissionsForItem']),
         }
     });
 
