@@ -175,33 +175,8 @@
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             }
-            // getMembershipConfigurationData ({ commit, state }, payload) { 
-            //     url = "{{ base_url }}/groups/get_membership_configuration/{{ object.pk}}/"
-            //     implementationCallback = (response) => { 
-            //         commit('SET_MEMBERSHIP_OPTION_SELECTED', { selection: response.data.membership_option_selected })
-            //         commit('SET_MEMBERSHIP_CONFIG_DATA', { 
-            //             condition_data: response.data.condition,
-            //             permission_data: response.data.permission })
-            //     }
-            // return standard_get_api_call(url, {}, implementationCallback)
-            // },
-            // setMembershipConfiguration({ commit, state, dispatch }, payload) { 
-            //     url = "{{ base_url }}/groups/set_membership_configuration/{{ object.pk}}/"
-            //     params = { new_setting: payload.membership_option_selected,
-            //         extra_data: payload.extra_data }
-            //     implementationCallback = (response) => { 
-            //         commit('SET_MEMBERSHIP_OPTION_SELECTED', { selection: response.data.membership_option_selected })
-            //         commit('SET_MEMBERSHIP_CONFIG_DATA', { 
-            //             condition_data: response.data.condition,
-            //             permission_data: response.data.permission })
-            //     }
-            //     // TODO: not really a standard get, but we're not returning actions to handle 
-            //     return standard_get_api_call(url, params, implementationCallback, dispatch)
-            // },
          },
-
         getters: { 
-
             memberNames: (state, getters) => {
                 return state.members.map(member => { return getters.getUserName(member) })
             },

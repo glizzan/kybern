@@ -59,8 +59,8 @@
             <!-- Specific permissions -->
             <edit-permission v-for="permission in item_permission_objects" v-bind:key="permission.pk"
                 :permission=permission :item_id=item_id :item_model=item_model> </edit-permission>
-            <add-permission :default_selection=add_member_state_change :item_id=item_id 
-                :item_model=item_model> </add-permission>  
+            <add-permission :item_id=item_id :item_model=item_model> </add-permission> 
+                 
             <p v-if="!item_permission_objects.length">No permissions have been set yet.</p>
 
             <div class="mb-3" v-if="error_message">[[ error_message ]]</div>

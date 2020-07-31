@@ -6,13 +6,15 @@ from django.urls import reverse
 from django.apps import apps
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
+from django.contrib.contenttypes.models import ContentType
 
-
-from concord.actions.client import ActionClient
+from concord.actions.client import ActionClient, TemplateClient
 from concord.permission_resources.client import PermissionResourceClient
 from concord.conditionals.client import ConditionalClient
 from concord.resources.client import CommentClient
 from concord.resources.models import Comment
+from concord.actions.state_changes import Changes
+from concord.permission_resources.models import PermissionsItem
 
 from accounts.models import User
 from .models import Group, Forum, Post
@@ -83,6 +85,7 @@ def process_action(action):
         "status": action.resolution.status,
         "resolution passed by": action.resolution.approved_through,
         "display": action_string,
+        "is_template": action.change.get_change_type() == Changes.Actions.ApplyTemplate,
         "has_condition": {
             "exists": True if conditions else False,
             "conditions": [ { "pk": condition.pk, "type": condition.__class__.__name__ } for condition in conditions ]
@@ -90,15 +93,18 @@ def process_action(action):
     }
 
 
-def get_action_dict(action):
+# FIXME: why are get_action_dict and process_actions two different things?
+def get_action_dict(action, fetch_template_actions=False):
     display_log, developer_log = make_action_errors_readable(action)
-    return { 
+    return {
         "action_created": True if action.resolution.status in ["implemented", "approved", "waiting", "rejected"] else False,
         "action_status": action.resolution.status,
         "action_pk": action.pk,
         "action_log": display_log,
-        "action_developer_log": developer_log
+        "action_developer_log": developer_log,
+        "is_template": action.change.get_change_type() == Changes.Actions.ApplyTemplate
     }
+
 
 
 def get_multiple_action_dicts(actions):
@@ -240,7 +246,7 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
         context["permission_options"] = {}
         context["permission_configuration_options"] = {}
 
-        for model_class in [Group, Forum, Post, Comment]:
+        for model_class in [Group, Forum, Post, Comment, PermissionsItem]:
 
             # get settable permissions given model class
             settable_permissions = self.permissionClient.get_settable_permissions_for_model(model_class)
@@ -882,67 +888,6 @@ def update_governors(request, target):
 ### Misc permission views ###
 #############################
 
-# @login_required
-# def add_permission_to_item(request):
-
-#     request_data = json.loads(request.body.decode('utf-8'))
-
-#     item_id = request_data.get("item_id")
-#     model_class = get_model(request_data.get("item_model"))
-#     target = model_class.objects.get(pk=item_id)
-
-#     permission_type = request_data.get("permission_type", None)
-#     permission_actors = request_data.get("permission_actors", None)
-#     permission_roles = request_data.get("permission_roles", None)
-#     permission_configuration = request_data.get("permission_configuration", None)
-
-#     permission_actors = [selection['pk'] for selection in permission_actors]
-#     permission_roles = [selection['name'] for selection in permission_roles]
-#     reformatted_permission_data = reformat_permission_data(permission_configuration)
-
-#     permissionClient = PermissionResourceClient(actor=request.user, target=target)
-
-#     action, result = permissionClient.add_permission(permission_type=permission_type, 
-#         permission_actors=permission_actors, permission_roles=permission_roles, 
-#         permission_configuration=reformatted_permission_data)
-
-#     action_dict = get_action_dict(action)
-#     permission_info = get_permission_info(result) if action.resolution.status == "implemented" else None
-#     action_dict.update({ "permission": permission_info, "item_id": item_id, "item_model": request_data.get("item_model") })
-
-#     return JsonResponse(action_dict)
-
-
-# @login_required
-# def delete_permission_from_item(request):
-
-#     request_data = json.loads(request.body.decode('utf-8'))
-
-#     permission_id = request_data.get("permission_id", None)
-
-#     item_id = request_data.get("item_id")
-#     model_class = get_model(request_data.get("item_model"))
-#     target = model_class.objects.get(pk=item_id)
-#     permissionClient = PermissionResourceClient(actor=request.user, target=target)
-#     permission_target = permissionClient.get_permission(pk=permission_id)
-#     conditionalClient = PermissionConditionalClient(actor=request.user, target=permission_target)
-
-#     # try to remove condition
-#     condition = conditionalClient.get_condition_template()
-#     if condition:
-#         action, result = conditionalClient.remove_condition(condition=condition)
-#         if action.resolution.status != "implemented":
-#             message = """In order to delete a permission, any conditions set on the permission must first be 
-#                 deleted. The following condition on this permission could not be deleted: %s 
-#                 It could not be deleted because: %s""" % (condition.get_name(), action.resolution.log)
-#             return JsonResponse({ "action_status": "failure", "action_log" : message })
-
-#     # now remove permission
-#     action, result = permissionClient.remove_permission(item_pk=permission_id)
-#     action_dict = get_action_dict(action)
-#     action_dict.update({ "removed_permission_pk": permission_id, "item_id": item_id, "item_model": request_data.get("item_model") })
-#     return JsonResponse(action_dict)
-
 
 @login_required
 def get_permissions(request):
@@ -1103,110 +1048,114 @@ def delete_comment(request):
     return JsonResponse(action_dict)
 
 
+######################
+### Template Views ###
+######################
+
+
+def serialize_template_for_vue(template, pk_as_key=True):
+    template_dict = {
+        "pk": template.pk,
+        "name": template.name,
+        "description": template.user_description,
+        "supplied_fields": template.get_supplied_form_fields()
+    }
+    if pk_as_key:
+        return { template.pk: template_dict }
+    return template_dict 
+
+
+@login_required
+@reformat_input_data(expect_target=False)   # target passed in is empty
+def get_templates_for_scope(request, target, scope):
+    templateClient = TemplateClient(actor=request.user)
+    templates = templateClient.get_templates_for_scope(scope=scope)
+    template_dict = [serialize_template_for_vue(template, pk_as_key=False) for template in templates]
+    response_dict = { 'templates': template_dict, 'scope': scope }
+    return JsonResponse(response_dict)
+
+
+@login_required
+@reformat_input_data
+def apply_template(request, target, template_model_pk, supplied_fields=None):
+
+    target_object = GroupClient(actor=request.user).get_community(community_pk=target)
+    templateClient = TemplateClient(actor=request.user, target=target_object)
+    action, result = templateClient.apply_template(template_model_pk=template_model_pk, 
+        supplied_fields=supplied_fields)
+
+    action_dict = get_action_dict(action)
+    return JsonResponse(action_dict)
+
+
+@login_required
+@reformat_input_data(expect_target=False)
+def get_applied_template_data(request, target, trigger_action_pk):
+
+    actionClient = ActionClient(actor=request.user)
+    container = actionClient.get_container_given_trigger_action(action_pk=trigger_action_pk)
+    container_data = actionClient.get_container_data(container_pk=container.pk)
+
+    container_info = { "container_status": container.get_overall_status() }
+
+    action_data = []
+    for item in container_data:
+
+        condition_data = []
+        for condition in item["conditions"]:
+            ct = ContentType.objects.get_for_id(condition["ct"])
+            condition_data.append({ "pk": condition["pk"], "ct": condition["ct"], "type": ct.model_class().__name__})
+
+        action_data.append({
+            "action_pk": item["action"].pk if item["action"] else None,
+            "action_actor": item["action"].actor.pk if item["action"] else None,
+            "action_change_description": item["action"].change.description if item["action"] else None,
+            "result_pk": item["result"].pk if item["result"] else None,
+            "result_model": item["result"].__class__.__name__ if item["result"] else None,
+            "conditions": condition_data
+        })
+
+    container_info["action_data"] = action_data
+
+    return JsonResponse({ "trigger_action_pk": trigger_action_pk, "container_info": container_info })
+    
+
+
+
 ########################
 ### Membership Views ###
 ########################
 
 
-# def get_membership_condition_for_vue(condition, setting):
-#     return {
-#         "condition_setting": setting,
-#         "condition_data": serialize_existing_condition_for_vue(condition, pk_as_key=False),
-#         "condition_configuration": serialize_existing_condition_configuration_for_vue(condition, pk_as_key=False)
-#     }
+@login_required
+def check_membership_permissions(request, target):
+    """
+    Checks for "join group", "leave group", "add members" and "remove members" permissions.  In the templates
+    there's a button that says "waiting memberships" that goes to things that have open conditions, if the
+    user clicks through THEN we look for permission related to that, using a different function.
+    """
+
+    group_client = GroupClient(actor=request.user)
+    group_client.set_target(target=group_client.get_community(community_pk=target))
+    perm_client = PermissionResourceClient(actor=request.user)
+
+    group_members = group_client.target.roles.get_users_given_role("members")
+
+    # join group - checks if user in group and, if not, check if has permission to join group
+    join_group = False if request.user.pk in group_members else \
+        perm_client.has_permission(group_client, "add_members", {"member_pk_list" : [request.user.pk]})
+            
+    # "leave group" - checks if user in group and, if true, check if use rhas permission to leave group
+    leave_group = False if request.user.pk not in group_members else \
+        perm_client.has_permission(group_client, "remove_members", {"member_pk_list" : [request.user.pk]})
+
+    # gets a separate user to test add_members and remove_members.  note that perm_client's has_permission does
+    # not check validation here, so it doesn't matter who the user is.
+    test_user = User.objects.first() if User.objects.first().pk != request.user.pk else User.objects.last()
+    add_members = perm_client.has_permission(group_client, "add_members", {"member_pk_list" : [test_user.pk]})
+    remove_members = perm_client.has_permission(group_client, "remove_members", {"member_pk_list" : [test_user.pk]})
+
+    return JsonResponse({"user_permissions" : {"join_group": join_group, "leave_group": leave_group, "add_members": add_members,
+        "remove_members": remove_members}})
 
 
-# @login_required
-# def get_membership_configuration(request, target):
-
-#     communityClient = GroupClient(actor=request.user)
-#     target = communityClient.get_community(community_pk=target)
-#     communityClient.set_target(target=target)
-
-#     setting, permission, condition = communityClient.get_membership_setting(extra_data=True)
-#     if permission:
-#         permission = serialize_existing_permission_for_vue(permission, pk_as_key=False)
-#     if condition:
-#         condition = get_membership_condition_for_vue(condition, setting)
-
-#     return JsonResponse({ "membership_option_selected": setting, "permission": permission, "condition": condition })
-
-
-# @login_required
-# def set_membership_configuration(request, target):
-
-#     communityClient = GroupClient(actor=request.user)
-#     target = communityClient.get_community(community_pk=target)
-#     communityClient.set_target(target=target)
-
-#     request_data = json.loads(request.body.decode('utf-8'))
-#     new_setting = request_data.get("new_setting")
-#     extra_data = request_data.get("extra_data", None)
-
-#     container = communityClient.change_membership_setting(new_setting=new_setting, extra_data=extra_data)
-#     action_dict = get_multiple_action_dicts(container.get_actions())
-
-#     setting, permission, condition = communityClient.get_membership_setting(extra_data=True)
-#     if permission:
-#         permission = serialize_existing_permission_for_vue(permission, pk_as_key=False)
-#     if condition:
-#         condition = get_membership_condition_for_vue(condition, setting)
-
-#     action_dict.update({ "membership_option_selected": setting, "permission": permission, "condition": condition })
-
-#     return JsonResponse(action_dict)
-
-
-# @login_required
-# def get_user_permissions(request, target):
-
-#     communityClient = GroupClient(actor=request.user)
-#     target = communityClient.get_community(community_pk=target)
-#     communityClient.set_target(target=target)
-#     user_permissions = {}
-
-#     setting, permission, condition = communityClient.get_membership_setting(extra_data=True)
-
-#     permissionClient = PermissionResourceClient(actor=request.user)
-#     from concord.actions.state_changes import Changes
-
-#     # get user_can_invite permission
-#     if setting == "invite only":
-#         if permissionClient.check_permission(target=target, permission_type=Changes.Communities.AddMembers):
-#             user_permissions['user_can_invite'] = True
-#     else:
-#         user_permissions['user_can_invite']
-
-#     # get user_can_respond_to_asks permission
-#     if setting == "anyone can ask":
-
-#         user_permissions['user_can_respond_to_asks'] = False  # set default
-
-#         # FIXME: this is kind of hacky, we need a way to match the permission types the templates are asking
-#         # about to the permission types we're querying the backend about
-#         types_to_check = []
-#         if condition.condition_data.condition_type == "approvalcondition":
-#             types_to_check += [Changes.Conditionals.Approve, Changes.Conditionals.Reject]
-#         elif condition.condition_data.condition_type == "votecondition":
-#             types_to_check.append(Changes.Conditionals.Vote)
-
-#         for permission_type in types_to_check:
-#             if permissionClient.check_condition_permission(permission_type=permission_type, condition_template=condition):
-#                 user_permissions['user_can_respond_to_asks'] = True   # likely will want to save more detailed data than this
-
-#     # get user_can_remove permission
-#     if permissionClient.check_permission(target=target, permission_type=Changes.Communities.RemoveMembers):
-#         user_permissions['user_can_remove'] = True
-#     else:
-#         user_permissions['user_can_remove'] = False
-    
-#     return JsonResponse({ "user_permissions": user_permissions })
-
-
-
-
-
-
-
-
-        

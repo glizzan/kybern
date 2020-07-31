@@ -17,7 +17,7 @@
 
                 <b>Select permission to add</b> 
                 <template><div>
-                    <b-form-select v-model="permission_selected" :options="item_permission_options" :select-size="4"
+                    <b-form-select v-model="permission_selected" :options="permission_options_to_use" :select-size="4"
                         name="permission_select">
                     </b-form-select>
                 </div></template>
@@ -94,6 +94,18 @@
             },
             item_permission_options() {
                 return this.permission_options[this.item_model]
+            },
+            permission_options_to_use() {
+                if (this.role_to_edit) { 
+                    let options = new Map()
+                    for (var permissioned_object_model in this.permission_options) {
+                        this.permission_options[permissioned_object_model].forEach(option => {
+                            if (!options.has(option.value)) { options.set(option.value, option) }
+                        })
+                    }
+                    return Array.from(options.values())
+                }
+                else { return this.item_permission_options }
             }
         },
         methods: {

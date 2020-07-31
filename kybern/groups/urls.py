@@ -20,9 +20,7 @@ urlpatterns = [
     path('add_members/<int:target>/', views.add_members, name='add_members'),
     path('remove_members/<int:target>/', views.remove_members, name='remove_members'),
     path('get_data_for_role/<int:target>/', views.get_data_for_role, name='get_data_for_role'),
-    # path('get_membership_configuration/<int:target>/', views.get_membership_configuration, name='get_membership_configuration'),
-    # path('set_membership_configuration/<int:target>/', views.set_membership_configuration, name='set_membership_configuration'),
-    
+
     # permission views
     path('add_permission/<int:target>/', views.add_permission, name='add_permission'),
     path('update_permission/<int:target>/', views.update_permission, name='update_permission'),
@@ -30,6 +28,8 @@ urlpatterns = [
     path('get_permissions/', views.get_permissions, name='get_permissions'),
     path('change_item_permission_override/', views.change_item_permission_override, name='change_item_permission_override'),    
     path('toggle_anyone/', views.toggle_anyone, name='toggle_anyone'),
+    path('check_membership_permissions/<int:target>/', views.check_membership_permissions, name='check_membership_permissions'),
+    
     # path('get_user_permissions/<int:target>/', views.get_user_permissions, name='get_user_permissions'),
 
     # condition views
@@ -62,5 +62,10 @@ urlpatterns = [
     path('add_comment/', views.add_comment, name='add_comment'),
     path('edit_comment/', views.edit_comment, name='edit_comment'),
     path('delete_comment/', views.delete_comment, name='delete_comment'),    
+
+    # template views
+    path('get_templates_for_scope/', views.get_templates_for_scope, name='get_templates_for_scope'),    
+    path('<int:target>/apply_template/', views.apply_template, name='apply_template'),
+    path('get_applied_template_data/', views.get_applied_template_data, name='get_applied_template_data'),    
 
   ]

@@ -8,16 +8,17 @@
         
         <span :id=pair_element_id><div class="btn-group" role="group">
             <b-button variant="light">
-                <small class="permission-display">[[ permission.display ]]</small>
+                <small :id="'display_' + pair_element_id" class="permission-display">[[ permission.display ]]</small>
                 <span v-on:click="edit_permission_mode=true" class="badge badge-light ml-1"  >🖉</span>
                 <span v-on:click="delete_permission()" class="badge badge-light ml-1"  >🗑</span>
             </b-button>
-            <b-button v-if="permission.condition" variant="secondary">
+            <b-button v-if="permission.condition" variant="secondary" :id="'condition_' + pair_element_id">
                 <small>on the condition that [[ permission.condition.how_to_pass ]]</small>
                 <span v-on:click="edit_condition_mode='update'" class="badge badge-secondary ml-1">🖉</span>
                 <span v-on:click="delete_condition()" class="badge badge-secondary ml-1"  >🗑</span>
             </b-button>
-            <b-button v-else v-on:click="edit_condition_mode='create'" variant="secondary">
+            <b-button v-else v-on:click="edit_condition_mode='create'" variant="secondary"
+                :id="'condition_' + pair_element_id">
                 <small>add condition</small></b-button>
         </div></span>
 
@@ -85,11 +86,11 @@
         },
         computed: {
             ...Vuex.mapState({ permissions: state => state.permissions.permissions }),
-            ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getPermissionConfigurationFields', 
-                'select_field_is_multiple', 'role_to_options', 'user_pk_to_options']),
+            ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getPermissionConfigurationFields',
+                'getPermissionConfigurationFieldsWithData', 'select_field_is_multiple', 'role_to_options',
+                'user_pk_to_options']),
             anyone_can_take_permission() { return this.permission.anyone },
             item_or_role() { 
-                console.log(this.role_to_edit, this.item_id, this.item_model)
                 if (this.role_to_edit) { return "role"} 
                 else if (this.item_id && this.item_model) { return "item" }
             },

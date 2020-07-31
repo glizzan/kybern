@@ -5,6 +5,8 @@
 {% include 'groups/actions/actions_vuex_include.html' %}
 {% include 'groups/forums/forums_vuex_include.html' %}
 {% include 'groups/comments/comments_vuex_include.html' %}
+{% include 'groups/templates/templates_vuex_include.html' %}
+
 
 <script type="application/javascript"> 
 
@@ -20,7 +22,8 @@
             forums: ForumsVuexModule,
             permissions: PermissionsVuexModule,
             governance: GovernanceVuexModule,
-            comments: CommentVuexModule
+            comments: CommentVuexModule,
+            templates: TemplateVuexModule 
         },
         state: { 
             group_name: '{{ object.name|escapejs }}',
@@ -78,12 +81,13 @@
             getAPIcall({ commit, state, dispatch }, payload) { 
             // we might not need this method, since view should be an action, but let's keep it for now
 
-                url = payload.url
-                params = payload.params
-                implementationCallback = payload.implementationCallback
 
-                return axios.post(url, params).then(response => {  implementationCallback(response) })     
-                .catch(error => {  console.log(error); throw error })
+                var url = payload.url
+                var params = payload.params
+                var implementationCallback = payload.implementationCallback
+
+                return axios.post(url, params).then(response => { implementationCallback(response) })     
+                .catch(error => { console.log(error); throw error })
             }
 
         }

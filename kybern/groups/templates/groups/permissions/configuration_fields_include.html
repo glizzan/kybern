@@ -25,7 +25,8 @@
     <!-- Should be a choice field populated by current roles -->
     <div v-if="field.type=='PermissionRoleField'" class="input-group mb-3 permissionrolefield">
 
-        [[ field.display ]]
+        <span v-if="field.display">[[ field.display ]]</span>
+        <span v-if="field.label">[[ field.label ]]</span>
 
         <vue-multiselect v-model=field.value :options=rolesAsOptions :allow-empty="true"
             :multiple="select_field_is_multiple(field)" :close-on-select="true" placeholder="Select roles" 
@@ -42,7 +43,8 @@
     <!-- Should be a multiselect field populated by current members -->
     <div v-if="field.type=='PermissionActorField'" class="input-group mb-3 permissionactorfield">
 
-        [[ field.display ]]
+        <span v-if="field.display">[[ field.display ]]</span>
+        <span v-if="field.label">[[ field.label ]]</span>
 
         <vue-multiselect v-model=field.value :options=groupMembersAsOptions :allow-empty="true"
             :multiple="select_field_is_multiple(field)" :close-on-select="true" placeholder="Select actors" 

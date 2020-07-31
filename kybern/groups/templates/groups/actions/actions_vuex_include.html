@@ -5,6 +5,7 @@ const ActionsVuexModule = {
 
     state: {
         actions: {},                    // { 'group_1' : [ { action_dict }, { action_dict } ] }
+        containers: {}                  // { 'trigger_action_pk': [ { container_status: "waiting", action_data = [{"action_pk": X, "change_type": Y, "conditions", etc }] }
     },
     mutations: {
         REPLACE_ACTIONS_FOR_ITEM (state, data) {
@@ -27,6 +28,9 @@ const ActionsVuexModule = {
             }
 
             state.actions[item_key].push(data.action_data)  // If we get here, we're adding the action
+        },
+        ADD_OR_UPDATE_CONTAINER (state, data) {
+            Vue.set(state.containers, data.trigger_action_pk, data.container_info)
         }
     },
     actions: { 
@@ -67,6 +71,17 @@ const ActionsVuexModule = {
                 commit('ADD_OR_UPDATE_ACTION', { action_data : action_data, item_key : item_key })
             })     
             .catch(error => {  console.log(error); throw error })
+
+        },
+        getAppliedTemplateData ({ state, commit, rootState, dispatch }, payload) { 
+
+        url = "{{ base_url }}/groups/get_applied_template_data/";
+        params = { trigger_action_pk: payload.trigger_action_pk }
+        implementationCallback = (response) => {
+            commit('ADD_OR_UPDATE_CONTAINER', { trigger_action_pk : response.data.trigger_action_pk,
+                container_info: response.data.container_info })
+        }
+        return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
 
         }
     }

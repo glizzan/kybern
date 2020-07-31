@@ -23,7 +23,7 @@ on actions are in the actions module. -->
             permission_overrides: {},       // { item_pk + "_" + item_model: { foundational: enabled, governing: disabled } } 
 
             // Logged in user permissions
-            current_user_permissions: {},    // { 'permission': boolean, 'permission': boolean }
+            current_user_permissions: {},    // { 'permission_shortname': boolean, 'permission_shortname': boolean }
 
             // Permissions associated with roles and items
             role_permissions: {},           // { role_name: [pk, pk, pk], role_name: [pk, pk, pk] }
@@ -213,8 +213,6 @@ on actions are in the actions module. -->
           
             addPermission ({ commit, state, dispatch }, payload) { 
 
-                console.log(payload)
-
                 url = "{{ base_url }}/groups/add_permission/{{ object.pk}}/"
                 
                 params = { item_or_role: payload.item_or_role, item_id: payload.item_id, 
@@ -310,9 +308,9 @@ on actions are in the actions module. -->
             // Misc other actions
 
             getPermissionsForItem({ commit, state, dispatch}, payload) { 
-                url = "{{ base_url }}/groups/get_permissions/"
-                params = { item_id: payload.item_id, item_model: payload.item_model }
-                implementationCallback = (response) => { 
+                var url = "{{ base_url }}/groups/get_permissions/"
+                var params = { item_id: payload.item_id, item_model: payload.item_model }
+                var implementationCallback = (response) => { 
                     commit('REPLACE_ITEM_PERMISSIONS', { item_id: response.data.item_id, 
                                                          item_model: response.data.item_model, 
                                                          pks: response.data.permission_pks })
@@ -355,12 +353,12 @@ on actions are in the actions module. -->
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
 
-            getUserPermissions ({ commit, state, dispatch }, payload) { 
-                url = "{{ base_url }}/groups/get_user_permissions/{{ object.pk}}/"
-                implementationCallback = (response) => { 
+            checkMembershipPermissions ({ commit, state, dispatch }, payload) { 
+                var url = "{{ base_url }}/groups/check_membership_permissions/{{ object.pk}}/"
+                var implementationCallback = (response) => { 
                     commit('ADD_OR_UPDATE_CURRENT_USER_PERMISSIONS', { user_permissions: response.data.user_permissions })
                 }
-                return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+                return dispatch('getAPIcall', { url: url, implementationCallback: implementationCallback})
             },
 
             refreshRoleData ({ commit, state, dispatch }, payload) { 

@@ -40,7 +40,7 @@ class BaseTestCase(StaticLiveServerTestCase):
     @classmethod
     def create_users(cls):
         # TODO: eventually replace this with actual factory methods
-        for user_name in ["meganrapinoe", "christenpress", "tobinheath", "crystaldunn", "julieertz", "adfranch", "caseyshort", "emilysonnett"]:
+        for user_name in ["meganrapinoe", "christenpress", "tobinheath", "crystaldunn", "julieertz", "caseyshort", "emilysonnett", "midgepurce"]:
 	        User.objects.create_user(user_name, 'shaunagm@gmail.com', 'badlands2020')
 
     def login_user(self, username, password):
@@ -130,21 +130,25 @@ class GroupBasicsTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present('edit group'))  # shows we're on group detail page now
         self.assertTrue(self.browser.is_text_present("NWSL's Forums"))  # shows we're on newly created detail page now
 
-    @skip("Refactoring membership interface")
     def test_add_members_to_group(self):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('members_member_count')[0].scroll_to()
         self.assertEquals(self.browser.find_by_id('members_member_count')[0].text, "1 people")
-        self.browser.find_by_id('members_changemembers').first.click()
+        self.browser.find_by_id('group_membership_display_button').first.click()
         time.sleep(.25)
-        self.assertEquals(["meganrapinoe"], self.get_selected_in_multiselect())
+        names = [item.text for item in self.browser.find_by_css("span#current_member_list>span.badge")]
+        self.assertEquals(names, ["meganrapinoe"])
+        self.browser.find_by_id('add_member_button').first.click()
+        time.sleep(.25)
         self.select_from_multiselect(selection="christenpress")
         time.sleep(.5)
-        self.assertEquals(["meganrapinoe", "christenpress"], self.get_selected_in_multiselect())
-        self.browser.find_by_id('save_member_changes').first.click()
-        self.browser.find_by_css(".close").first.click()  # close modal
+        self.assertEquals(["christenpress"], self.get_selected_in_multiselect())
+        self.browser.find_by_id('save_add_member_button').first.click()
         time.sleep(.5)
+        names = [item.text for item in self.browser.find_by_css("span#current_member_list>span.badge")]
+        self.assertEquals(names, ["meganrapinoe", "christenpress"])
+        self.browser.find_by_css(".close").first.click()  # close modal
         self.assertEquals(self.browser.find_by_id('members_member_count').text, "2 people")
 
     def test_create_role(self):
@@ -157,10 +161,8 @@ class GroupBasicsTestCase(BaseTestCase):
         self.browser.find_by_css(".close").first.click()  # close modal
         time.sleep(.5)
         roles = [item.text for item in self.browser.find_by_css(".role_name_display")]
-        self.assertEquals(roles, ["forwards"])
-        # self.assertEquals(roles, ["members", "forwards"])
+        self.assertEquals(roles, ["members", "forwards"])
 
-    @skip("Refactoring membership interface")
     def test_add_members_to_role(self):
         self.test_add_members_to_group()
         self.test_create_role()
@@ -205,7 +207,6 @@ class PermissionsTestCase(BaseTestCase):
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(permissions, ["those with role forwards have permission to remove members from community"])
 
-    @skip("Refactoring membership interface")
     def test_adding_permission_changes_site_behavior(self):
 
         # Add permission to role (same as above, minus asserts)
@@ -216,9 +217,15 @@ class PermissionsTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         self.browser.find_by_id('members_member_count').scroll_to()
         self.assertEquals(self.browser.find_by_id('members_member_count').text, "8 people")
-        self.browser.find_by_id('members_changemembers').first.click()
-        self.delete_selected_in_multiselect("tobinheath")
-        self.browser.find_by_id('save_member_changes').first.click()
+        self.browser.find_by_id('group_membership_display_button').first.click()
+        time.sleep(.25)
+        self.browser.find_by_id('remove_member_button').first.click()
+        time.sleep(.25)
+        self.select_from_multiselect(selection="tobinheath")
+        time.sleep(.25)
+        self.assertEquals(["tobinheath"], self.get_selected_in_multiselect())
+        self.browser.find_by_id('save_remove_member_button').first.click()
+        time.sleep(.25)
         self.browser.find_by_css(".close").first.click()  # close modal
         time.sleep(.5)
         self.assertEquals(self.browser.find_by_id('members_member_count').text, "7 people")
@@ -226,14 +233,9 @@ class PermissionsTestCase(BaseTestCase):
         # Emily Sonnett, not a forward, cannot remove members
         self.login_user("emilysonnett", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_id('members_changemembers').scroll_to()
-        self.browser.find_by_id('members_changemembers').first.click()
-        self.delete_selected_in_multiselect("crystaldunn")
-        self.browser.find_by_id('save_member_changes').first.click()
-        time.sleep(.5)
-        self.assertTrue(self.browser.is_text_present('You do not have permission to take this action.'))
-        self.browser.find_by_css(".close").first.click()  # close modal
-        self.assertEquals(self.browser.find_by_id('members_member_count').text, "7 people")
+        self.browser.find_by_id('group_membership_display_button').first.click()
+        time.sleep(.25)
+        self.assertEquals(len(self.browser.find_by_id('remove_member_button')), 0)
 
 
 class ActionsTestCase(BaseTestCase):
@@ -606,3 +608,291 @@ class ForumsTestCase(BaseTestCase):
     #     basically do the previous test, then go look at the history for the forum
     #     pass
 
+
+class TemplatesTestCase(BaseTestCase):
+
+    def setUp(self):
+        # create group, add members, add roles, add members to role
+        self.create_users()
+        self.actor = User.objects.first()
+        self.client = GroupClient(actor=self.actor)
+        self.community = self.client.create_community(name="USWNT")
+        self.client.set_target(target=self.community)
+        self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.add_role(role_name="forwards")
+        pinoe = User.objects.get(username="meganrapinoe")
+        press = User.objects.get(username="christenpress")
+        heath = User.objects.get(username="tobinheath")
+        self.client.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
+
+        # generate templates
+        from concord.actions.template_library import create_all_templates
+        create_all_templates()
+
+    def test_apply_template_with_no_conditions(self):
+
+        # apply the template
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('group_membership_settings_button').first.click()
+        time.sleep(.2)
+        self.browser.find_by_id('browse_membership_templates_button').first.click()
+        self.browser.find_by_id('apply_template_invite_only').first.click()
+        roles_that_can_invite_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
+        self.select_from_multiselect("forwards", search_within=roles_that_can_invite_dropdown)
+        self.browser.find_by_id('submit_apply_template').first.click()
+
+        # check that the template has been applied
+        self.browser.reload()
+        self.browser.find_by_id('group_membership_settings_button').first.click()
+        time.sleep(.2)
+        permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
+        self.assertEquals(permissions, ["those with role forwards have permission to add members to community"])
+
+    def test_rejected_template(self):
+
+        # specify a role that can add permissions that does not include Crystal 
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('forwards_editrole')[0].scroll_to()
+        self.browser.find_by_id('forwards_editrole').first.click()
+        permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
+        self.assertEquals(permissions, [])
+        self.browser.find_by_id('add_permission_button').first.click()
+        self.browser.select("permission_select", 
+            "concord.permission_resources.state_changes.AddPermissionStateChange")
+        self.browser.find_by_id('save_permission_button').first.click()
+        time.sleep(.5)
+
+        # Crystal tries to apply the template, and it doesn't work
+        self.login_user("crystaldunn", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('group_membership_settings_button').first.click()
+        time.sleep(.2)
+        self.browser.find_by_id('browse_membership_templates_button').first.click()
+        self.browser.find_by_id('apply_template_invite_only').first.click()
+        roles_that_can_invite_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
+        self.select_from_multiselect("forwards", search_within=roles_that_can_invite_dropdown)
+        self.browser.find_by_id('submit_apply_template').first.click()
+
+        # the template has not been applied applied
+        self.browser.reload()
+        self.browser.find_by_id('group_membership_settings_button').first.click()
+        time.sleep(.2)
+        permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
+        self.assertEquals(permissions, [])
+
+    def test_apply_template_with_conditions(self):
+
+        # set a permission and condition on permission 
+
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('forwards_editrole')[0].scroll_to()
+        self.browser.find_by_id('forwards_editrole').first.click()
+        permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
+        self.assertEquals(permissions, [])
+        self.browser.find_by_id('add_permission_button').first.click()
+        self.browser.select("permission_select", 
+            "concord.permission_resources.state_changes.AddPermissionStateChange")
+        self.browser.find_by_id('save_permission_button').first.click()
+        time.sleep(.25)
+
+        perm_element = self.browser.find_by_text("those with role forwards have permission to add permission")
+        cond_id = "_".join(["condition"] + perm_element[0]["id"].split("_")[1:])
+        self.browser.find_by_id(cond_id).first.click()
+        self.browser.select("condition_select", "ApprovalCondition")
+
+        element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
+        self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
+        self.browser.find_by_id('save_condition_button').first.click()
+        time.sleep(.25)
+        self.browser.find_by_css(".close").first.click()  # close modal
+
+        # new user tries to apply a template
+        self.login_user("christenpress", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('group_membership_settings_button').first.click()
+        time.sleep(.2)
+        self.browser.find_by_id('browse_membership_templates_button').first.click()
+        self.browser.find_by_id('apply_template_invite_only').first.click()
+        roles_that_can_invite_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
+        self.select_from_multiselect("forwards", search_within=roles_that_can_invite_dropdown)
+        self.browser.find_by_id('submit_apply_template').first.click()
+
+        # check that the template has not been applied
+        self.browser.reload()
+        self.browser.find_by_id('group_membership_settings_button').first.click()
+        time.sleep(.2)
+        permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
+        self.assertEquals(permissions, [])
+
+        # log back in as pinoe, approve
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_css("#action_history > span > button")[0].scroll_to()
+        self.browser.find_by_css("#action_history > span > button").first.click()
+        self.browser.find_by_text("see more")[0].click()
+        self.browser.find_by_css("span.check-condition-badge")[0].click()
+        self.assertTrue(self.browser.is_text_present('Please approve or reject this action.'))  
+        self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span").first.click()
+        time.sleep(.25)
+        self.browser.find_by_id('save_approve_choice').first.click()
+
+        # check that the template has been applied
+        self.browser.reload()
+        self.browser.find_by_id('group_membership_settings_button').first.click()
+        time.sleep(.2)
+        permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
+        self.assertEquals(permissions, ["those with role forwards have permission to add members to community"])
+
+
+class MembershipTestCase(BaseTestCase):
+
+    def setUp(self):
+        # Basic setup
+        self.create_users()
+        self.actor = User.objects.first()
+        self.client = GroupClient(actor=self.actor)
+        self.community = self.client.create_community(name="USWNT")
+        self.client.set_target(target=self.community)
+        self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()[:4]])
+        self.client.add_role(role_name="forwards")
+        pinoe = User.objects.get(username="meganrapinoe")
+        press = User.objects.get(username="christenpress")
+        heath = User.objects.get(username="tobinheath")
+        self.client.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
+
+        # generate templates
+        from concord.actions.template_library import create_all_templates
+        create_all_templates()
+
+    def test_anyone_can_join(self):
+
+        # we start with 4 members
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('members_member_count')[0].scroll_to()
+        self.assertEquals(self.browser.find_by_id('members_member_count')[0].text, "4 people")
+
+        # apply anyone can join template
+        self.browser.find_by_id('group_membership_settings_button').first.click()
+        time.sleep(.2)
+        self.browser.find_by_id('browse_membership_templates_button').first.click()
+        self.browser.find_by_id('apply_template_anyone_can_join').first.click()
+        self.browser.find_by_id('submit_apply_template').first.click()
+
+        # check template was applied
+        self.browser.reload()
+        self.browser.find_by_id('group_membership_settings_button').first.click()
+        time.sleep(.2)
+        permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
+        self.assertEquals(permissions, ["anyone has permission to add members to community"])
+
+        # random person can join
+        self.login_user("midgepurce", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id("join_group_button").first.click()
+        time.sleep(.25)
+
+        # we should now have 5 members, not 4
+        self.browser.find_by_id('members_member_count')[0].scroll_to()
+        self.assertEquals(self.browser.find_by_id('members_member_count')[0].text, "5 people")
+
+    def test_invite_only(self):
+
+        # we start with 4 members
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('members_member_count')[0].scroll_to()
+        self.assertEquals(self.browser.find_by_id('members_member_count')[0].text, "4 people")
+
+        # apply the template
+        self.browser.find_by_id('group_membership_settings_button').first.click()
+        time.sleep(.2)
+        self.browser.find_by_id('browse_membership_templates_button').first.click()
+        self.browser.find_by_id('apply_template_invite_only').first.click()
+        roles_that_can_invite_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
+        self.select_from_multiselect("forwards", search_within=roles_that_can_invite_dropdown)
+        self.browser.find_by_id('submit_apply_template').first.click()
+
+        # check that the template has been applied
+        self.browser.reload()
+        self.browser.find_by_id('group_membership_settings_button').first.click()
+        time.sleep(.2)
+        permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
+        self.assertEquals(permissions, ["those with role forwards have permission to add members to community"])
+
+        # Midge can't join
+        self.login_user("midgepurce", "badlands2020")
+        self.go_to_group("USWNT")
+        time.sleep(.25)
+        self.assertEquals(len(self.browser.find_by_id("join_group_button")), 0)
+        
+        # but Christen, a forward, can invite her
+        self.login_user("christenpress", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('group_membership_display_button').first.click()
+        time.sleep(.25)
+        self.browser.find_by_id('add_member_button').first.click()
+        time.sleep(.25)
+        self.select_from_multiselect(selection="midgepurce")
+        time.sleep(.5)
+        self.assertEquals(["midgepurce"], self.get_selected_in_multiselect())
+        self.browser.find_by_id('save_add_member_button').first.click()
+        time.sleep(.5)
+        self.browser.find_by_css(".close").first.click()  # close modal
+        self.browser.find_by_id('members_member_count')[0].scroll_to()
+        self.assertEquals(self.browser.find_by_id('members_member_count').text, "5 people")
+
+    def test_anyone_can_request_to_join(self):
+
+        # we start with 4 members
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('members_member_count')[0].scroll_to()
+        self.assertEquals(self.browser.find_by_id('members_member_count')[0].text, "4 people")
+
+        # apply anyone can join template
+        self.browser.find_by_id('group_membership_settings_button').first.click()
+        time.sleep(.2)
+        self.browser.find_by_id('browse_membership_templates_button').first.click()
+        self.browser.find_by_id('apply_template_anyone_can_request_to_join').first.click()
+        roles_that_can_approve_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
+        self.select_from_multiselect("forwards", search_within=roles_that_can_approve_dropdown)
+        self.browser.find_by_id('submit_apply_template').first.click()
+
+        # check template was applied
+        self.browser.reload()
+        self.browser.find_by_id('group_membership_settings_button').first.click()
+        time.sleep(.2)
+        permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
+        self.assertEquals(permissions, ["anyone has permission to add members to community"])
+        condition = self.browser.find_by_text("on the condition that one person needs to approve this action")
+        self.assertEquals(len(condition), 1)
+
+        # random person can request but they are not added yet
+        self.login_user("midgepurce", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id("join_group_button").first.click()
+        time.sleep(.25)
+        self.browser.find_by_id('members_member_count')[0].scroll_to()
+        self.assertEquals(self.browser.find_by_id('members_member_count')[0].text, "4 people")
+
+        # Christen Press, with role forwards, approves
+        self.login_user("christenpress", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_css("#action_history > span > button")[0].scroll_to()
+        self.browser.find_by_css("#action_history > span > button").first.click()
+        self.browser.find_by_xpath('//*[@id="action_history_table_element"]/tbody/tr[1]/td[7]/button').first.click()
+        self.assertTrue(self.browser.is_text_present('Please approve or reject this action.'))  
+        self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span").first.click()
+        time.sleep(.25)
+        self.browser.find_by_id('save_approve_choice').first.click()
+        time.sleep(.25)
+        self.assertTrue(self.browser.is_text_present("You have approved midgepurce's action. Nothing further is needed from you.")) 
+
+        # we should now have 5 members, not 4
+        self.browser.reload()
+        self.browser.find_by_id('members_member_count')[0].scroll_to()
+        self.assertEquals(self.browser.find_by_id('members_member_count')[0].text, "5 people")

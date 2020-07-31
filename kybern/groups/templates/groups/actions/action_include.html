@@ -15,8 +15,8 @@
     <!-- Modal with more detailed info on all actions -->
     <b-modal :id=modal_id :title="title_string" class="modal fade" size="xl" @ok="handleOk">
       
-      <b-container fluid id="action_history_table" v-if="!condition_type && !action_to_view_comments_on">   
-          <!-- if condition is selected, or comments to view, replace table with ux for those things-->
+      <b-container fluid id="action_history_table" v-if="!condition_type && !action_to_view_comments_on && !template_to_view">   
+          <!-- if condition selected, or view comments, or view template history, replace table with ux for those things-->
 
             <b-col lg="6" class="my-1">
                 <b-form-group label="Filter" label-cols-sm="3" label-align-sm="right" label-size="sm"
@@ -34,6 +34,14 @@
             <b-table striped hover fixed :items="item_actions" :fields="action_fields" 
                 :sort-by.sync="sortBy" :sort-desc.sync="sortDesc" :filter="filter"
                 :filterIncludedFields="filterOn" id="action_history_table_element">
+
+              <!-- Custom formatting for the status column -->
+              <template v-slot:cell(status)="data">
+                <span v-if="data.item.is_template" template='data.item.template_pk'>
+                    <b-button @click="launch_template_action_history_modal(data.item)" size='sm'>see more</b-button>
+                </span>
+                <span v-else>[[data.item.status]]</span>
+              </template>
 
               <!-- Custom formatting for the has_condition column -->
               <template v-slot:cell(has_condition)="data">
@@ -60,6 +68,9 @@
 
         <comments v-if="action_to_view_comments_on" :item_id=action_to_view_comments_on :item_model="'action'">
         </comments>
+
+        <action-template-history v-if="template_to_view" :trigger_action_pk=trigger_action_pk>
+        </action-template-history>
         
     </b-modal>   
   </span>
@@ -98,7 +109,9 @@ actionHistoryComponent = Vue.component('action-history', {
             condition_type: null,
             condition_data: null,
             action_details: null,
-            action_to_view_comments_on: null
+            action_to_view_comments_on: null,
+            template_to_view: null,
+            trigger_action_pk: null
           }
     },
     computed: {
@@ -131,6 +144,8 @@ actionHistoryComponent = Vue.component('action-history', {
         this.condition_pk = null
         this.action_details = null
         this.action_to_view_comments_on = null
+        this.template_to_view = false
+        this.trigger_action_pk = null
       },
       launch_condition_modal(item) {  
         // for now, we assume there's only one condition on the item, but that's not strictly garaunteed to be true
@@ -138,7 +153,11 @@ actionHistoryComponent = Vue.component('action-history', {
         this.condition_type = condition.type
         this.condition_pk = condition.pk
         this.action_details = item
-        }
+        },
+      launch_template_action_history_modal(item) {
+        this.template_to_view = true
+        this.trigger_action_pk = item.action_pk
+      }
     }
 })
 

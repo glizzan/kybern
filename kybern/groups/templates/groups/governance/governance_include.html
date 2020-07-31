@@ -4,16 +4,29 @@
 
         <group-membership-component></group-membership-component>
 
-        <b-card header="Other Roles">
+        <b-card header="Roles">
 
             <p class="card-text mt-2">
-                Each group also has a variety of roles which different people can be assigned to. Each 
+                Each group has a variety of roles which different people can be assigned to. Each 
                 role has different rights and responsibilities within the community.
             </p>
 
             <b-button class="btn-sm mb-3" v-b-modal.add_role_modal id="add_role_button">Add a role</b-button>
 
             <b-list-group>
+
+                    <b-list-group-item class="d-flex justify-content-between align-items-center" 
+                        :id="'members_role'">
+                        <span class="role_info">
+                            <span class="role_name_display">members</span>
+                            <small class="ml-2" :id="'members_member_count'"> [[ group_members.length ]] people </small>
+                       </span>
+                       <div class="role_interactions">
+                           <b-badge variant="primary" pill v-b-modal.edit_role_modal
+                               v-on:click="role_to_edit = 'members'" :id="'members_editrole'">
+                               edit role</b-badge>
+                       </div>
+                    </b-list-group-item>
 
                     <b-list-group-item v-for="role in roles" v-bind:key="role.id" 
                         class="d-flex justify-content-between align-items-center" :id="role.name + '_role'"> 
@@ -23,12 +36,12 @@
                                     [[role.current_members.length ]] people </small>
                             </span>
                             <div class="role_interactions">
-                                <b-badge variant="primary" pill v-b-modal.edit_role_modal
-                                    v-on:click="role_to_edit = role.name" :id="role.name + '_editrole'">
-                                    edit role</b-badge>
                                 <b-badge variant="secondary" pill v-b-modal.role_membership_modal
                                     v-on:click="role_to_change_membership = role.name" :id="role.name + '_changemembers'">
                                     change members</b-badge>
+                                <b-badge variant="primary" pill v-b-modal.edit_role_modal
+                                    v-on:click="role_to_edit = role.name" :id="role.name + '_editrole'">
+                                    edit role</b-badge>
                             </div>
                     </b-list-group-item>
                     
@@ -55,7 +68,10 @@
             role_to_edit: '',                           // propfor edit-role-modal
         },
         computed: {
-            ...Vuex.mapState({ roles: state => state.governance.roles }),
+            ...Vuex.mapState({ 
+                roles: state => state.governance.roles,
+                group_members: state => state.governance.members
+            }),
         },
         methods: {
         }

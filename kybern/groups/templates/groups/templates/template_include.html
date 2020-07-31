@@ -1,0 +1,96 @@
+<script type="text/x-template" id="template_template">
+
+    <span>
+
+        <span v-if="!browse_templates">
+            <b-button :id=browse_button_id size="sm" v-on:click="browse_templates=true" 
+                variant="outline-dark" class="my-2">Browse templates</b-button>
+        </span>
+
+        <span v-else>
+        
+            <span v-if="fill_configuration_fields">
+
+                <p>Configure fields for template: [[ this.selected_template.name ]].</p>
+
+                <p>([[ this.selected_template.description ]])</p>
+
+                {% include 'groups/permissions/configuration_fields_include.html' %}
+
+                <b-button size="sm" id="submit_apply_template" 
+                    v-on:click="apply_template(selected_template)" variant="outline-dark"
+                    class="my-2">Apply template with these values</b-button>
+            </span>
+
+            <span v-else>
+                    <b-card v-for="template in scope_templates" :title=template.name v-bind:key=template.pk 
+                        class="w-50" style="display:inline-block" :id="slugify_name(template.name)">
+                        <b-card-text>[[ template.description ]]</b-card-text>
+                        <b-button size="sm" :id="'apply_template_' + slugify_name(template.name)" 
+                            v-on:click="prep_apply_template(template)" variant="outline-dark" class="my-2">
+                            Apply template</b-button>
+                    </b-card>
+            </span>
+
+        </span>
+
+    </span>
+
+</script>
+
+<script type="application/javascript">
+
+    templateComponent = Vue.component('template-manager', {
+        delimiters: ['[[', ']]'],
+        template: '#template_template',
+        store, 
+        props: ['scope'],
+        data: function() {
+            return {
+                selected_template: null,
+                browse_templates: false,
+                fill_configuration_fields: false,
+                configuration_fields: [],
+                error_message : ''
+            }
+        },
+        created (){ this.getTemplatesForScope({ scope: this.scope }) },
+        computed: {
+            ...Vuex.mapGetters(['scopeTemplates', 'select_field_is_multiple', 'rolesAsOptions', 'groupMembersAsOptions']),
+            scope_templates: function() {  return this.scopeTemplates(this.scope)  },
+            browse_button_id: function() {
+                return "browse_" + this.scope + "_templates_button"
+            }
+        },
+        methods: {
+            ...Vuex.mapActions(['getTemplatesForScope', 'applyTemplate']),
+            clearState() { 
+                this.selected_template = null
+                this.configuration_fields = []
+                this.fill_configuration_fields = false
+                this.browse_templates = false
+                this.error_message = ''
+            },
+            slugify_name(name) {
+                return name.toLowerCase().replace(/ /g, "_")
+            },
+            prep_apply_template(template) {
+                if (template.supplied_fields) {
+                    this.selected_template = template
+                    this.configuration_fields = template.supplied_fields
+                    this.fill_configuration_fields = true
+                } else {
+                    this.selected_template = template
+                    this.apply_template()   // If no fields, just apply right away
+                }
+            },
+            apply_template() {
+                this.applyTemplate({ template_model_pk: this.selected_template.pk, 
+                            supplied_fields: this.configuration_fields })
+                .then(response => { console.log("Success applying template!") })
+                .catch(error => {  console.log("Error applying template!"); this.error_message = error })
+            }
+        }
+    })
+
+</script>

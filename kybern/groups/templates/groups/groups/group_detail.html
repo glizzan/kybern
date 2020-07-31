@@ -7,10 +7,13 @@
     <!-- Invisible (x-template) includes -->
 
     {% include 'groups/actions/action_include.html' %} 
+    {% include 'groups/actions/action_history_for_template_include.html' %} 
     {% include 'groups/actions/approve_condition_include.html' %}  
     {% include 'groups/actions/vote_condition_include.html' %}  
 
     {% include 'groups/comments/comment_include.html' %} 
+
+    {% include 'groups/templates/template_include.html' %}
 
     <!-- Permissions templates -->
     {% include 'groups/permissions/add_permission_component_include.html' %}

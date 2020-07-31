@@ -1,0 +1,44 @@
+<script type="application/javascript"> 
+
+    const TemplateVuexModule = { 
+
+        state: { 
+            templates: {}               // dict of list, with dict keys as scopes
+        },
+
+        getters: { 
+            scopeTemplates: (state, getters) => (scope) => {
+                return state.templates[scope]
+            }
+        },
+
+        mutations: { 
+            REPLACE_SCOPE_TEMPLATES (state, data) { 
+                Vue.set(state.templates, data.scope, data.templates)
+            }
+        },
+
+        actions: {
+            getTemplatesForScope({ commit, state, dispatch}, payload) {
+                url = "{{ base_url }}/groups/get_templates_for_scope/"
+                params = { scope: payload.scope }
+                implementationCallback = (response) => { 
+                    commit('REPLACE_SCOPE_TEMPLATES', { scope: response.data.scope, 
+                        templates: response.data.templates }) 
+                }
+                return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
+            applyTemplate({ commit, state, dispatch}, payload) {
+                url = "{{ base_url }}/groups/{{object.pk}}/apply_template/"
+                params = { template_model_pk : payload.template_model_pk, 
+                        supplied_fields: payload.supplied_fields}
+                implementationCallback = (response) => { 
+                    console.log("Apply template called, response is: ", response.data)
+                    // Not sure what else to do here
+                }
+                return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            }
+        }
+    }
+
+</script>

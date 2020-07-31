@@ -1,0 +1,88 @@
+<script type="text/x-template" id="template_action_history_template">
+
+    <span v-if="action_data">
+
+        This template has [[ action_data.length ]] actions:
+        
+
+        <ul>
+            <li v-for="action in action_data"> [[ action.action_change_description ]] 
+               <b-badge v-if="action.conditions.length > 0" variant="info" class="check-condition-badge"
+                   @click="check_condition(action)"> check condition</b-badge>
+            </li>
+        </ul>
+
+        The overall status of the template is [[ container_status ]].
+
+        <span v-if="condition_type" class="border border-2">
+
+            <h5>Condition [[ condition_type]] on Action [[ action_details.action_change_description ]] </h5>
+
+            <!-- FIXME: Just copied & pasted from action_include, may want to refactor -->
+            <approve-condition-ui v-if="condition_type=='ApprovalCondition'" :condition_pk=condition_pk
+            :condition_type=condition_type :action_details=action_details>
+            </approve-condition-ui>
+
+            <vote-condition-ui v-if="condition_type=='VoteCondition'" :condition_pk=condition_pk
+            :condition_type=condition_type :action_details=action_details>
+            </vote-condition-ui> 
+        </span>
+
+
+
+
+    </span>
+
+</script>
+
+<script type="application/javascript">
+
+    actionTemplateHistoryComponent = Vue.component('action-template-history', {
+        delimiters: ['[[', ']]'],
+        template: '#template_action_history_template',
+        props: ['trigger_action_pk'],
+        store,
+        data: function() {
+            return { 
+                condition_type: null,
+                condition_pk: null,
+                action_details: [],
+                error_message: ''
+            }            
+        },
+        created () {
+            this.getAppliedTemplateData({ trigger_action_pk: this.trigger_action_pk })
+        },
+        computed: {
+            ...Vuex.mapState({ containers: state => state.concord_actions.containers }),
+            action_data: function() { 
+                if (this.containers[this.trigger_action_pk]) {
+                    return this.containers[this.trigger_action_pk]["action_data"]
+                } 
+            },
+            container_status: function() { 
+                if (this.containers[this.trigger_action_pk]) {
+                    return this.containers[this.trigger_action_pk]["container_status"] }
+            }
+        },
+        methods: {
+            ...Vuex.mapActions(['getAppliedTemplateData']),
+            reformat_state_change(state_change) {
+                return state_change.split(".").pop().replace("StateChange", "").replace( /([A-Z])/g, " $1" )
+            },
+            check_condition(action) {
+                if (action.conditions.length > 1) {
+                    console.log("Warning, action has multiple conditions")
+                } else if (action.conditions.length == 0)  {
+                    console.log("Warning, action has no conditions")
+                } else {
+                    this.condition_pk = action.conditions[0]["pk"]
+                    this.condition_type = action.conditions[0]["type"]
+                    this.action_details = { "action_pk": action.action_pk, "actor": action.action_actor,
+                        "action_change_description": action.action_change_description }
+                }
+            }
+        }
+    })
+
+</script>

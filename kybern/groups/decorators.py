@@ -3,7 +3,7 @@ Decorators to help with data formatting, will almost definitely be moved into Co
 """
 
 import json
-from functools import wraps
+from functools import wraps, partial
 
 
 # Helper methods for reformatting
@@ -115,6 +115,21 @@ def reformat_actor_select(permission_actors):
     return permission_actors
 
 
+def reformat_supplied_fields(supplied_fields):
+    reformatted_dict = {}
+    for field in supplied_fields:
+        if field["type"] in ["PermissionRoleField", "PermissionActorField"]:
+            reformatted_dict[field["field_name"]] = reformat_role_or_actor_field(field)["value"]
+
+
+    # FIXME: this reformatting isn't good enough, actors is getting a None which causes an error, 
+    # and members is turning into field + name
+
+    # This should be reformatted here better but also maybe in Concord??
+
+    return reformatted_dict
+
+
 def reformat_combined_permission_and_condition_data(combined_data):
     """
     Test for expected input format:
@@ -163,14 +178,20 @@ def reformat_combined_permission_and_condition_data(combined_data):
 
 # Decorator
 
-def reformat_input_data(function):
+
+def reformat_input_data(function=None, expect_target=True):
     """Vuex sends data to Django views as JSON.  Here we unpack that JSON data into variables that can
     be passed directly to the Concord clients.  This also lets us do some re-formatting when, for 
     example, our form data has the wrong structure."""
 
+    if not callable(function): # handles the case where we invoke decorator without calling it (aka no arguments)
+        return partial(reformat_input_data, expect_target=expect_target)
 
     @wraps(function)
-    def wrap(request, target, *args, **kwargs):
+    def wrap(request, target=None, *args, **kwargs):
+
+        if expect_target and target is None:
+            raise ValueError(f"Function must be given a target, or pass expect_target=False to reformat_input_data decorator")
 
         request_data = json.loads(request.body.decode('utf-8'))  # loaded, we can now use this as our kwargs
 
@@ -188,6 +209,9 @@ def reformat_input_data(function):
                 reformat_combined_permission_and_condition_data(request_data["combined_condition_data"])
             del(request_data["combined_condition_data"])
 
+        if "supplied_fields" in request_data:
+            request_data["supplied_fields"] = reformat_supplied_fields(request_data["supplied_fields"])
+
         # While we're here, we inspect function & kwargs and check required arguments.
         from inspect import signature
         for parameter_name, parameter_object in signature(function).parameters.items():
@@ -203,3 +227,4 @@ def reformat_input_data(function):
         return function(request, target, **request_data)
 
     return wrap
+
