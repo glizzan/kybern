@@ -50,7 +50,7 @@
         actions: {
 
             getCommentData({ commit, state, dispatch }, payload) { 
-                url = "{{ base_url }}/groups/get_comment_data/"
+                url = "{% url 'get_comment_data' %}"    
                 params = { item_id: payload.item_id, item_model: payload.item_model }
                 implementationCallback = (response) => { 
                     for (comment_pk in response.data.comments) {
@@ -62,7 +62,7 @@
                 return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
             addComment({ commit, state, dispatch }, payload) { 
-                url = "{{ base_url }}/groups/add_comment/"
+                url = "{% url 'add_comment' %}"    
                 params = { item_id: payload.item_id, item_model: payload.item_model, text: payload.text }
                 implementationCallback = (response) => { 
                     pk = Object.keys(response.data.comment)[0]
@@ -73,7 +73,7 @@
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
             editComment({ commit, state, dispatch }, payload) { 
-                url = "{{ base_url }}/groups/edit_comment/"
+                url = "{% url 'edit_comment' %}"    
                 params = { item_id: payload.item_id, item_model: payload.item_model, text: payload.text,
                     comment_pk: payload.comment_pk }
                 implementationCallback = (response) => { 
@@ -84,7 +84,7 @@
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
             deleteComment({ commit, state, dispatch }, payload) { 
-                url = "{{ base_url }}/groups/delete_comment/"
+                url = "{% url 'delete_comment' %}"    
                 params = { item_id: payload.item_id, item_model: payload.item_model, comment_pk: payload.comment_pk }
                 implementationCallback = (response) => { 
                     commit('REMOVE_COMMENT_FROM_ITEM', { item_id: payload.item_id, item_model: payload.item_model,

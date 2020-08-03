@@ -56,7 +56,7 @@ const ForumsVuexModule = {
     },
     actions: {
         addForum({ commit, state, dispatch}, payload) {
-            url = "{{ base_url }}/groups/{{ object.pk}}/add_forum/"
+            url = "{% url 'add_forum' target=object.pk %}"    
             params = { name: payload.name, description: payload.description }
             implementationCallback = (response) => {
                 commit('ADD_OR_UPDATE_FORUM', { forum_data : response.data.forum_data })
@@ -64,7 +64,7 @@ const ForumsVuexModule = {
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         editForum({ commit, state, dispatch}, payload) { 
-            url = "{{ base_url }}/groups/{{ object.pk}}/edit_forum/"
+            url = "{% url 'edit_forum' target=object.pk %}"    
             params = { pk: payload.pk, name: payload.name, description: payload.description }
             implementationCallback = (response) => {
                 commit('ADD_OR_UPDATE_FORUM', { forum_data : response.data.forum_data })
@@ -72,7 +72,7 @@ const ForumsVuexModule = {
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         deleteForum({ commit, state, dispatch}, payload) { 
-            url = "{{ base_url }}/groups/{{ object.pk}}/delete_forum/"
+            url = "{% url 'delete_forum' target=object.pk %}"    
             params = { pk: payload.pk }
             implementationCallback = (response) => {
                 commit('DELETE_FORUM', { pk : response.data.deleted_forum_pk })
@@ -81,7 +81,7 @@ const ForumsVuexModule = {
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         getPostData({ commit, state, dispatch}, payload) { 
-            url = "{{ base_url }}/groups/{{ object.pk }}/get_posts/"
+            url = "{% url 'get_posts_for_forum' target=object.pk %}"    
             params = { forum_pk: payload.forum_pk }
             implementationCallback = (response) => { 
                 for (index in response.data.posts) {
@@ -91,7 +91,7 @@ const ForumsVuexModule = {
             return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         addPost ({ commit, state, dispatch }, payload) { 
-            url = "{{ base_url }}/groups/{{ object.pk }}/add_post/"
+            url = "{% url 'add_post' target=object.pk %}"    
             params = { forum_pk: payload.forum_pk, title: payload.title, content: payload.content  }
             implementationCallback = (response) => { 
                 commit('ADD_POST', { post_data: response.data.post_data})
@@ -99,7 +99,7 @@ const ForumsVuexModule = {
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         editPost ({ commit, state, dispatch }, payload) { 
-            url = "{{ base_url }}/groups/{{ object.pk }}/edit_post/"
+            url = "{% url 'edit_post' target=object.pk %}"    
             params = { pk: payload.pk, title: payload.title, content: payload.content  }
             implementationCallback = (response) => { 
                 commit('EDIT_POST', { post_data: response.data.post_data})
@@ -107,7 +107,7 @@ const ForumsVuexModule = {
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         deletePost ({ commit, state, dispatch }, payload) { 
-            url = "{{ base_url }}/groups/{{ object.pk }}/delete_post/"
+            url = "{% url 'delete_post' target=object.pk %}"    
             params = { pk: payload.pk, forum_pk: payload.forum_pk }
             implementationCallback = (response) => { 
                 commit('DELETE_POST', { pk: response.data.deleted_post_pk })

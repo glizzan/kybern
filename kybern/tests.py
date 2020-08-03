@@ -30,7 +30,6 @@ class BaseTestCase(StaticLiveServerTestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.browser = Browser('chrome', options=chrome_options)
-        cls.base_url = cls.live_server_url + "/groups/"
 
     @classmethod
     def tearDownClass(cls):
@@ -76,7 +75,7 @@ class BaseTestCase(StaticLiveServerTestCase):
     def go_to_group(self, group_name):
         """Helper method to navigate to group detail page, used because liveservertestcase is finicky about
         pks."""
-        self.browser.visit(self.base_url)
+        self.browser.visit(self.live_server_url + "/groups/")
         self.browser.find_by_text(group_name).first.click()
 
 
@@ -87,7 +86,7 @@ class AccountsTestCase(BaseTestCase):
 
     def test_register_account(self):
         """Tests that we can register a new user account."""
-        self.browser.visit(self.base_url)
+        self.browser.visit(self.live_server_url)
         self.browser.links.find_by_text('Sign In')[0].scroll_to()
         self.browser.links.find_by_text('Sign In').first.click()
         self.browser.links.find_by_text('Register an account').first.click()
@@ -102,7 +101,7 @@ class AccountsTestCase(BaseTestCase):
 
     def test_login(self):
         """Tests that we can log in an existing user."""
-        self.browser.visit(self.base_url)
+        self.browser.visit(self.live_server_url)
         self.browser.links.find_by_text('Sign In')[0].scroll_to()
         self.browser.links.find_by_text('Sign In').first.click()
         self.browser.fill('username', 'meganrapinoe')
@@ -122,7 +121,7 @@ class GroupBasicsTestCase(BaseTestCase):
 
     def test_create_group(self):
         self.login_user("meganrapinoe", "badlands2020")
-        self.browser.visit(self.base_url)
+        self.browser.visit(self.live_server_url + "/groups/")
         self.browser.links.find_by_text('Create a group').first.click()
         self.browser.fill('name', 'NWSL')
         self.browser.fill('group_description', 'For NWSL players')

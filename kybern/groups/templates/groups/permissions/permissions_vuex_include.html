@@ -213,8 +213,7 @@ on actions are in the actions module. -->
           
             addPermission ({ commit, state, dispatch }, payload) { 
 
-                url = "{{ base_url }}/groups/add_permission/{{ object.pk}}/"
-                
+                url = "{% url 'add_permission' target=object.pk %}"                
                 params = { item_or_role: payload.item_or_role, item_id: payload.item_id, 
                     item_model: payload.item_model, permission_type : payload.permission_selected, 
                     permission_roles : payload.roles, permission_actors : payload.actors, 
@@ -236,8 +235,9 @@ on actions are in the actions module. -->
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
 
-            updatePermission ({ commit, state, dispatch }, payload) {             
-                url = "{{ base_url }}/groups/update_permission/{{ object.pk}}/"
+            updatePermission ({ commit, state, dispatch }, payload) {    
+
+                url = "{% url 'update_permission' target=object.pk %}"    
                 params = { permission_id : payload.permission_id, item_or_role: payload.item_or_role, 
                     item_id: payload.item_id, item_model: payload.item_model,  
                     permission_roles : payload.roles, permission_actors : payload.actors, permission_configuration : payload.configuration }
@@ -251,7 +251,7 @@ on actions are in the actions module. -->
             },
             
             removePermission ({ commit, getters, dispatch }, payload) {  
-                url = "{{ base_url }}/groups/delete_permission/{{ object.pk}}/";
+                url = "{% url 'delete_permission' target=object.pk %}"
                 params = { permission_id : payload.permission_id, item_or_role: payload.item_or_role, 
                     item_id: payload.item_id, item_model: payload.item_model }
                 implementationCallback = (response) => {
@@ -274,7 +274,7 @@ on actions are in the actions module. -->
             // Condition Actions
 
             addCondition ({ commit, state, dispatch }, payload) {  
-                url = "{{ base_url }}/groups/add_condition/{{ object.pk}}/";
+                url = "{% url 'add_condition' target=object.pk %}"    
                 params = { condition_type: payload.condition_type, permission_or_leadership: payload.permission_or_leadership,
                     target_permission_id: payload.permission_id, leadership_type: payload.leadership_type,
                     combined_condition_data : payload.combined_condition_data }
@@ -292,7 +292,7 @@ on actions are in the actions module. -->
             },
 
             removeCondition ({ commit, state, dispatch }, payload) {  
-                url = "{{ base_url }}/groups/remove_condition/{{ object.pk}}/";
+                url = "{% url 'remove_condition' target=object.pk %}"    
                 params = { permission_or_leadership: payload.permission_or_leadership, 
                     target_permission_id : payload.permission_id, leadership_type: payload.leadership_type }
                 implementationCallback = (response) => { 
@@ -308,7 +308,7 @@ on actions are in the actions module. -->
             // Misc other actions
 
             getPermissionsForItem({ commit, state, dispatch}, payload) { 
-                var url = "{{ base_url }}/groups/get_permissions/"
+                url = "{% url 'get_permissions' %}"    
                 var params = { item_id: payload.item_id, item_model: payload.item_model }
                 var implementationCallback = (response) => { 
                     commit('REPLACE_ITEM_PERMISSIONS', { item_id: response.data.item_id, 
@@ -328,7 +328,7 @@ on actions are in the actions module. -->
             },
 
             changePermissionOverride ({ commit, state, dispatch }, payload) { 
-                url = "{{ base_url }}/groups/change_item_permission_override/"
+                url = "{% url 'change_item_permission_override' %}"    
                 params = { item_id: payload.item_id, item_model: payload.item_model,
                     enable_or_disable: payload.enable_or_disable, governing_or_foundational: payload.governing_or_foundational }
                 implementationCallback = (response) => { 
@@ -343,7 +343,7 @@ on actions are in the actions module. -->
             },
 
             toggleAnyone ({ commit, getters, dispatch }, payload) { 
-                url = "{{ base_url }}/groups/toggle_anyone/";
+                url = "{% url 'toggle_anyone' %}"    
                 params = { permission_id : payload.permission_id, enable_or_disable: payload.enable_or_disable } 
                 implementationCallback = (response) => {
                     pk = response.data.permission.pk
@@ -354,7 +354,7 @@ on actions are in the actions module. -->
             },
 
             checkMembershipPermissions ({ commit, state, dispatch }, payload) { 
-                var url = "{{ base_url }}/groups/check_membership_permissions/{{ object.pk}}/"
+                var url = "{% url 'check_membership_permissions' target=object.pk %}"    
                 var implementationCallback = (response) => { 
                     commit('ADD_OR_UPDATE_CURRENT_USER_PERMISSIONS', { user_permissions: response.data.user_permissions })
                 }
@@ -362,7 +362,7 @@ on actions are in the actions module. -->
             },
 
             refreshRoleData ({ commit, state, dispatch }, payload) { 
-                url = "{{ base_url }}/groups/get_data_for_role/{{ object.pk}}/"
+                url = "{% url 'get_data_for_role' target=object.pk %}"    
                 params = { role_name : payload.role }
                 implementationCallback = (response) => { 
                     commit('REPLACE_ROLE_PERMISSIONS', { role: payload.role, pks: response.data.role_permissions })

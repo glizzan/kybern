@@ -115,13 +115,13 @@
 
         actions: {
             addMembers ({ commit, state, dispatch }, payload) { 
-                url = "{{ base_url }}/groups/add_members/{{ object.pk}}/"
+                url = "{% url 'add_members' target=object.pk %}"    
                 params = { user_pks : payload.user_pks }
                 implementationCallback = () => { commit('ADD_MEMBERS', { user_pks: payload.user_pks }) }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
             removeMembers ({ commit, state, dispatch }, payload) { 
-                url = "{{ base_url }}/groups/remove_members/{{ object.pk}}/"
+                url = "{% url 'remove_members' target=object.pk %}"    
                 params = { user_pks : payload.user_pks }
                 implementationCallback = () => { 
                     commit('REMOVE_USERS_FROM_ALL_ROLES', { user_pks: payload.user_pks })
@@ -130,27 +130,27 @@
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
             addUsersToRole ({ commit, state, dispatch }, payload) { 
-                url = "{{ base_url }}/groups/add_people_to_role/{{ object.pk}}/"
+                url = "{% url 'add_people_to_role' target=object.pk %}"    
                 params = { role_name : payload.role_name, user_pks: payload.user_pks }
                 implementationCallback = () => { commit('ADD_USERS_TO_ROLE', 
                     { role_name : payload.role_name, user_pks: payload.user_pks }) }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
             removeUsersFromRole ({ commit, state, dispatch }, payload) {
-                url = "{{ base_url }}/groups/remove_people_from_role/{{ object.pk}}/"
+                url = "{% url 'remove_people_from_role' target=object.pk %}"    
                 params = { role_name : payload.role_name, user_pks: payload.user_pks }
                 implementationCallback = () => { commit('REMOVE_USERS_FROM_ROLE', 
                     { role_name : payload.role_name, user_pks: payload.user_pks }) }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
             addRole ({ commit, state, dispatch }, payload) {
-                url = "{{ base_url }}/groups/add_role/{{ object.pk}}/"
+                url = "{% url 'add_role_to_group' target=object.pk %}"    
                 params = { role_name: payload.role_name }
                 implementationCallback = () => { commit('ADD_ROLE', { role_name: payload.role_name }) }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
             updateOwners({ commit, state, dispatch}, payload) {
-                url = "{{ base_url }}/groups/update_owners/{{ object.pk}}/"
+                url = "{% url 'update_owners' target=object.pk %}"    
                 params = { owner_roles: payload.roles, owner_actors: payload.actors }
                 implementationCallback = () => { 
                     roles_to_add = payload.roles.filter(x => !state.owners.roles.includes(x))
@@ -163,7 +163,7 @@
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
             updateGovernors({ commit, state, dispatch}, payload) {
-                url = "{{ base_url }}/groups/update_governors/{{ object.pk}}/"
+                url = "{% url 'update_governors' target=object.pk %}"    
                 params = { governor_roles: payload.roles, governor_actors: payload.actors }
                 implementationCallback = () => { 
                     roles_to_add = payload.roles.filter(x => !state.governors.roles.includes(x))
