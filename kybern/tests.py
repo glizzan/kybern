@@ -1,14 +1,13 @@
-import time, json, os
+import time, os
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from splinter import Browser
 from django.conf import settings
 from selenium import webdriver
-from unittest import skip
 
 from django.contrib.auth.models import User
 from concord.permission_resources.client import PermissionResourceClient
 from concord.actions.state_changes import Changes
-from groups.models import Group, Forum
+from groups.models import Forum
 from groups.client import GroupClient
 
 
@@ -39,8 +38,9 @@ class BaseTestCase(StaticLiveServerTestCase):
     @classmethod
     def create_users(cls):
         # TODO: eventually replace this with actual factory methods
-        for user_name in ["meganrapinoe", "christenpress", "tobinheath", "crystaldunn", "julieertz", "caseyshort", "emilysonnett", "midgepurce"]:
-	        User.objects.create_user(user_name, 'shaunagm@gmail.com', 'badlands2020')
+        for user_name in ["meganrapinoe", "christenpress", "tobinheath", "crystaldunn", "julieertz",
+                          "caseyshort", "emilysonnett", "midgepurce"]:
+            User.objects.create_user(user_name, 'shaunagm@gmail.com', 'badlands2020')
 
     def login_user(self, username, password):
         self.browser.visit(self.live_server_url + "/login/")
@@ -125,7 +125,7 @@ class GroupBasicsTestCase(BaseTestCase):
         self.browser.links.find_by_text('Create a group').first.click()
         self.browser.fill('name', 'NWSL')
         self.browser.fill('group_description', 'For NWSL players')
-        self.browser.find_by_id('create_group_button').first.click()        
+        self.browser.find_by_id('create_group_button').first.click()
         self.assertTrue(self.browser.is_text_present('edit group'))  # shows we're on group detail page now
         self.assertTrue(self.browser.is_text_present("NWSL's Forums"))  # shows we're on newly created detail page now
 
@@ -175,7 +175,7 @@ class GroupBasicsTestCase(BaseTestCase):
         time.sleep(.5)
         self.assertEquals(self.browser.find_by_id('forwards_member_count').text, "1 people")
 
-        
+
 class PermissionsTestCase(BaseTestCase):
 
     def setUp(self):
@@ -199,8 +199,8 @@ class PermissionsTestCase(BaseTestCase):
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(permissions, [])
         self.browser.find_by_id('add_permission_button').first.click()
-        self.browser.select("permission_select", 
-            "concord.communities.state_changes.RemoveMembersStateChange")
+        self.browser.select("permission_select",
+                            "concord.communities.state_changes.RemoveMembersStateChange")
         self.browser.find_by_id('save_permission_button').first.click()
         time.sleep(.5)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
@@ -210,7 +210,7 @@ class PermissionsTestCase(BaseTestCase):
 
         # Add permission to role (same as above, minus asserts)
         self.test_add_permission_to_role()
-        
+
         # Christen Press, a forward, can remove members
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
@@ -240,7 +240,7 @@ class PermissionsTestCase(BaseTestCase):
 class ActionsTestCase(BaseTestCase):
 
     def setUp(self):
-        self.create_users()
+        self.create_users()  
         self.actor = User.objects.first()
         self.client = GroupClient(actor=self.actor)
         self.community = self.client.create_community(name="USWNT")
@@ -284,7 +284,7 @@ class ActionConditionsTestCase(BaseTestCase):
         # Permission setup
         self.permissionClient = PermissionResourceClient(actor=self.actor, target=self.community)
         action, self.permission = self.permissionClient.add_permission(
-            permission_type = Changes.Communities.AddRole, permission_roles=["forwards"])
+            permission_type=Changes.Communities.AddRole, permission_roles=["forwards"])
 
     def test_adding_condition_to_permission_generates_condition(self):
 
@@ -316,10 +316,10 @@ class ActionConditionsTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present('This action cannot be completed until a condition is passed.'))
         self.browser.find_by_css(".close").first.click()  # close modal
 
-        # Go to action history and the condition link is there in the has_condition column   
+        # Go to action history and the condition link is there in the has_condition column
         self.browser.find_by_css("#action_history > span > button")[0].scroll_to()
         self.browser.find_by_css("#action_history > span > button").first.click()
-        self.assertTrue(self.browser.is_text_present('christenpress asked to add role midfielders to USWNT')) 
+        self.assertTrue(self.browser.is_text_present('christenpress asked to add role midfielders to USWNT'))
         self.browser.find_by_xpath('//*[@id="action_history_table_element"]/tbody/tr[1]/td[7]/button').first.click()
         self.assertTrue(self.browser.is_text_present('Please cast your vote'))
 
@@ -344,13 +344,14 @@ class ApprovalConditionsTestCase(BaseTestCase):
         # add permission & condition to permission
         self.permissionClient = PermissionResourceClient(actor=self.actor, target=self.community)
         action, self.permission = self.permissionClient.add_permission(
-            permission_type = Changes.Communities.AddRole, permission_roles=["forwards"])  
-        perm_data = [ 
-            { "permission_type": Changes.Conditionals.Approve, "permission_roles": ["forwards"] },
-            { "permission_type": Changes.Conditionals.Reject, "permission_roles": ["forwards"] }
-         ]
-        self.permissionClient.add_condition_to_permission(permission_pk=self.permission.pk,
-            condition_type="approvalcondition", permission_data=perm_data)
+            permission_type=Changes.Communities.AddRole, permission_roles=["forwards"])
+        perm_data = [
+            {"permission_type": Changes.Conditionals.Approve, "permission_roles": ["forwards"]},
+            {"permission_type": Changes.Conditionals.Reject, "permission_roles": ["forwards"]}
+        ]
+        self.permissionClient.add_condition_to_permission(
+            permission_pk=self.permission.pk, condition_type="approvalcondition",
+            permission_data=perm_data)
 
         # have person take action that triggers permission/condition
         self.client.set_actor(heath)
@@ -370,16 +371,17 @@ class ApprovalConditionsTestCase(BaseTestCase):
         time.sleep(.25)
         self.browser.find_by_id('save_approve_choice').first.click()
         time.sleep(.25)
-        self.assertTrue(self.browser.is_text_present("You have approved tobinheath's action. Nothing further is needed from you.")) 
+        text = "You have approved tobinheath's action. Nothing further is needed from you."
+        self.assertTrue(self.browser.is_text_present(text)) 
 
         # Navigate back to action history and check action is implemented
-        xpath_string = '//*[@id="action_history_modal_' + str(self.community.pk) + '_group___BV_modal_footer_"]/button[2]'
-        self.browser.find_by_xpath(xpath_string).first.click()
-        element = self.browser.find_by_css("#action_history_table_element > tbody > tr:nth-child(1) > td:nth-child(4)")[0]
-        self.assertTrue(element.text, "implemented")
+        xpath_str = '//*[@id="action_history_modal_' + str(self.community.pk) + '_group___BV_modal_footer_"]/button[2]'
+        self.browser.find_by_xpath(xpath_str).first.click()
+        css_str = "#action_history_table_element > tbody > tr:nth-child(1) > td:nth-child(4)"
+        self.assertTrue(self.browser.find_by_css(css_str)[0].text, "implemented")
 
     def test_reject_rejects_action(self):
-        
+
         # User navigates to action history and approves action
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
@@ -391,13 +393,14 @@ class ApprovalConditionsTestCase(BaseTestCase):
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(2) > span").first.click()
         self.browser.find_by_id('save_approve_choice').first.click()
         time.sleep(.25)
-        self.assertTrue(self.browser.is_text_present("You have rejected tobinheath's action. Nothing further is needed from you.")) 
+        text = "You have rejected tobinheath's action. Nothing further is needed from you."
+        self.assertTrue(self.browser.is_text_present(text)) 
 
         # Navigate back to action history and check action is implemented
-        xpath_string = '//*[@id="action_history_modal_' + str(self.community.pk) + '_group___BV_modal_footer_"]/button[2]'
-        self.browser.find_by_xpath(xpath_string).first.click()
-        element = self.browser.find_by_css("#action_history_table_element > tbody > tr:nth-child(1) > td:nth-child(4)")[0]
-        self.assertTrue(element.text, "rejected")
+        xpath_str = '//*[@id="action_history_modal_' + str(self.community.pk) + '_group___BV_modal_footer_"]/button[2]'
+        self.browser.find_by_xpath(xpath_str).first.click()
+        css_str = "#action_history_table_element > tbody > tr:nth-child(1) > td:nth-child(4)"
+        self.assertTrue(self.browser.find_by_css(css_str)[0].text, "rejected")
 
     def test_person_without_permission_to_approve_cant_approve(self):
         self.login_user("emilysonnett", "badlands2020")
@@ -429,11 +432,13 @@ class VotingConditionTestCase(BaseTestCase):
         # add permission & condition to permission
         self.permissionClient = PermissionResourceClient(actor=self.actor, target=self.community)
         action, self.permission = self.permissionClient.add_permission(
-            permission_type = Changes.Communities.AddRole, permission_roles=["forwards"])   
-        perm_data = [{ "permission_type": Changes.Conditionals.AddVote, "permission_roles": ["forwards"] }]
-        self.permissionClient.add_condition_to_permission(permission_pk=self.permission.pk, 
-            condition_type="votecondition", permission_data=perm_data)
-            
+            permission_type=Changes.Communities.AddRole, permission_roles=["forwards"]
+        )   
+        perm_data = [{"permission_type": Changes.Conditionals.AddVote, "permission_roles": ["forwards"]}]
+        self.permissionClient.add_condition_to_permission(
+            permission_pk=self.permission.pk, condition_type="votecondition", permission_data=perm_data
+        )
+
         # have person take action that triggers permission/condition
         self.client.set_actor(heath)
         self.client.add_role(role_name="midfielders")
@@ -475,7 +480,7 @@ class VotingConditionTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present("Thank you for voting! No further action from you is needed.")) 
 
     def test_abstain_updates_vote_results(self):
-        
+
         # User navigates to action history and votes nay
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
@@ -658,8 +663,9 @@ class TemplatesTestCase(BaseTestCase):
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(permissions, [])
         self.browser.find_by_id('add_permission_button').first.click()
-        self.browser.select("permission_select", 
-            "concord.permission_resources.state_changes.AddPermissionStateChange")
+        self.browser.select(
+            "permission_select", "concord.permission_resources.state_changes.AddPermissionStateChange"
+        )
         self.browser.find_by_id('save_permission_button').first.click()
         time.sleep(.5)
 
@@ -692,8 +698,9 @@ class TemplatesTestCase(BaseTestCase):
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(permissions, [])
         self.browser.find_by_id('add_permission_button').first.click()
-        self.browser.select("permission_select", 
-            "concord.permission_resources.state_changes.AddPermissionStateChange")
+        self.browser.select(
+            "permission_select", "concord.permission_resources.state_changes.AddPermissionStateChange"
+        )
         self.browser.find_by_id('save_permission_button').first.click()
         time.sleep(.25)
 
@@ -827,7 +834,7 @@ class MembershipTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         time.sleep(.25)
         self.assertEquals(len(self.browser.find_by_id("join_group_button")), 0)
-        
+
         # but Christen, a forward, can invite her
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
@@ -889,7 +896,8 @@ class MembershipTestCase(BaseTestCase):
         time.sleep(.25)
         self.browser.find_by_id('save_approve_choice').first.click()
         time.sleep(.25)
-        self.assertTrue(self.browser.is_text_present("You have approved midgepurce's action. Nothing further is needed from you.")) 
+        text = "You have approved midgepurce's action. Nothing further is needed from you."
+        self.assertTrue(self.browser.is_text_present(text)) 
 
         # we should now have 5 members, not 4
         self.browser.reload()

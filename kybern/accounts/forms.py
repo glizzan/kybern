@@ -24,7 +24,7 @@ class RegistrationFormWithCode(RegistrationForm):
     access_code = forms.CharField(label='Your access code', max_length=100, validators=[validate_access_code])
 
     def clean_email(self):
-       email = self.cleaned_data.get('email')
-       if User.objects.filter(email=email).exists():
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
             raise ValidationError("Email exists")
-       return email
+        return email

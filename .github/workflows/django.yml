@@ -57,4 +57,4 @@ jobs:
     - name: Lint code
       run: |
         cd kybern
-        flake8 .
+        flake8 --extend-ignore=E401,W291,E266,I001,I002,I003,I004 .

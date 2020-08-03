@@ -58,5 +58,3 @@ class Post(PermissionedModel):
 
     def get_nested_objects(self):
         return [self.get_owner(), self.forum]
-
-

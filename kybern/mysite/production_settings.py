@@ -1,5 +1,7 @@
 # https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 import os
+import dj_database_url
+
 
 DEBUG = os.environ.get("DEBUG_MODE", False)
 SECRET_KEY = os.environ['SECRET_KEY']
@@ -10,7 +12,6 @@ SECRET_KEY = os.environ['SECRET_KEY']
 #########################
 
 
-import dj_database_url
 DATABASES = {}
 db_from_env = dj_database_url.config(conn_max_age=500)
 DATABASES['default'] = db_from_env
@@ -29,7 +30,6 @@ STATICFILES_DIRS = (
 
 # STATIC_ROOT are where we collect staticfiles *to*
 STATIC_ROOT = os.path.join(BASE_DIR, 'mysite', 'static')
-
 
 
 ######################

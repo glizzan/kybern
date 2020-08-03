@@ -1,13 +1,10 @@
 from django.views import generic
-from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django_registration.backends.activation.views import RegistrationView
-from django_registration.signals import user_registered
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponseRedirect
 
-
-from accounts.models import Profile, User
-from groups.models import Group
+from accounts.models import Profile
 from groups.client import GroupClient
 from accounts.forms import RegistrationFormWithCode
 
@@ -19,11 +16,6 @@ def myview(request):
 class RegistrationViewWithCode(RegistrationView):
     form_class = RegistrationFormWithCode
     success_url = "/register/complete/"
-
-    # def register(self, form):
-    #     user = form.save()
-    #     user_registered.send(sender=self, user=user, request=self.request)
-    #     return user
 
 
 class IndexView(generic.TemplateView):
