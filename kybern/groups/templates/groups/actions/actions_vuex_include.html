@@ -51,7 +51,7 @@ const ActionsVuexModule = {
         },
         loadActions({ state, commit, rootState, dispatch }, payload) { 
 
-            url = "{{ base_url }}/groups/get_action_data_for_target/";
+            url = "{% url 'get_action_data_for_target' %}"    
             params = { item_id: payload.item_id, item_model: payload.item_model }
             implementationCallback = (response) => {
                 item_key = payload.item_id + "_" + payload.item_model
@@ -62,7 +62,7 @@ const ActionsVuexModule = {
         },
         addOrUpdateAction ({ state, commit, rootState, dispatch }, payload) {
 
-            url = "{{ base_url }}/groups/get_action_data/";
+            url = "{% url 'get_action_data' %}"    
             params = { action_pk : payload.action_pk }
 
             axios.post(url, params).then(response => {  
@@ -75,7 +75,7 @@ const ActionsVuexModule = {
         },
         getAppliedTemplateData ({ state, commit, rootState, dispatch }, payload) { 
 
-        url = "{{ base_url }}/groups/get_applied_template_data/";
+        url = "{% url 'get_applied_template_data' %}"    
         params = { trigger_action_pk: payload.trigger_action_pk }
         implementationCallback = (response) => {
             commit('ADD_OR_UPDATE_CONTAINER', { trigger_action_pk : response.data.trigger_action_pk,

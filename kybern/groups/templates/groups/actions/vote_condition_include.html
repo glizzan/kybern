@@ -125,7 +125,7 @@ voteConditionComponent = Vue.component('vote-condition-ui', {
             axios.defaults.xsrfCookieName = 'csrftoken';
             axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
             axios.defaults.headers = { "headers": { 'Content-Type': "application/json" } }
-            url = "{{ base_url }}/groups/get_conditional_data/"
+            url = "{% url 'get_conditional_data' %}"    
             params = { condition_pk: this.condition_pk, condition_type: this.condition_type }
             return axios.post(url, params).then(response => { 
                 this.condition_details = response.data.condition_details
@@ -147,7 +147,7 @@ voteConditionComponent = Vue.component('vote-condition-ui', {
             axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
             axios.defaults.headers = { "headers": { 'Content-Type': "application/json" } }
             
-            url = "{{ base_url }}/groups/update_vote_condition/"
+            url = "{% url 'update_vote_condition' %}"    
             params = { condition_pk: this.condition_pk, action_to_take: this.button_selected }
             axios.post(url, params).then(response => {  
 

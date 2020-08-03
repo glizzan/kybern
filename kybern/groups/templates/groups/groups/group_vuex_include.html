@@ -39,7 +39,7 @@
             // Group info actions
 
             changeGroupName({ commit, state, dispatch }, payload) { 
-                url = "{{ base_url }}/groups/change_group_name/"
+                url = "{% url 'change_group_name' %}"    
                 params = { group_pk : payload.group_pk, new_name : payload.new_name }
                 implementationCallback = (response) => { 
                     commit('UPDATE_GROUP_NAME', { group_name : response.data.group_name })
@@ -48,7 +48,7 @@
             },
 
             changeGroupDescription({ commit, state, dispatch }, payload) { 
-                url = "{{ base_url }}/groups/change_group_description/"
+                url = "{% url 'change_group_description' %}"    
                 params = { group_pk : payload.group_pk, new_description : payload.new_description }
                 implementationCallback = (response) => { 
                     commit('UPDATE_GROUP_DESCRIPTION', { group_description : response.data.group_description })

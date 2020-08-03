@@ -306,7 +306,6 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
         context = self.add_permission_data_to_context(context)
         context = self.add_condition_data_to_context(context)
         context = self.add_forum_data_to_context(context)
-        context["base_url"] = "http://" + self.request.get_host()   # FIXME: should check for http vs https
         return context        
 
 
