@@ -8,4 +8,3 @@ class GroupsConfig(AppConfig):
     def get_state_changes_module(cls):
         import importlib
         return importlib.import_module("groups.state_changes")
-

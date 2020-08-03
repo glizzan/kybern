@@ -16,7 +16,6 @@ class User(DjangoUser):
 
     class Meta:
         proxy = True
-    
 
 
 class Profile(models.Model):

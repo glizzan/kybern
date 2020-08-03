@@ -117,11 +117,11 @@ STATIC_URL = '/static/'
 # Custom configurations
 
 ALTERNATIVE_COMMUNITY_MODELS = [
-    { 'app_name': 'groups', 'model_name': 'group' }
+    {'app_name': 'groups', 'model_name': 'group'}
 ]
 
 ADDITIONAL_PERMISSIONED_MODELS = [
-    { 'app_name': 'groups', 'model_name': 'group' }
+    {'app_name': 'groups', 'model_name': 'group'}
 ]
 
 
@@ -134,7 +134,6 @@ ACCOUNT_ACTIVATION_DAYS = 14
 # Check to see if we're in local development or production, and load appropriate settings
 
 if os.environ.get("KYBERN_ENVIRONMENT") and os.environ.get("KYBERN_ENVIRONMENT") == "PRODUCTION":
-    from .production_settings import *
+    from .production_settings import *  # noqa: F403, F401
 else:
-    from .local_settings import *
-
+    from .local_settings import *  # noqa: F403, F401

@@ -72,11 +72,11 @@ class AddForumChange(BaseStateChange):
 
     def validate(self, actor, target):
         return True
-        
+
     def implement(self, actor, target):
         return Forum.objects.create(name=self.name, description=self.description, owner=target.get_owner())
 
-     
+
 class DeleteForumChange(BaseStateChange):
     description = "Delete a forum"
     preposition = "in"
@@ -100,7 +100,7 @@ class DeleteForumChange(BaseStateChange):
 
     def validate(self, actor, target):
         return True
-        
+
     def implement(self, actor, target):
         forum = Forum.objects.get(pk=self.pk)
         forum.delete()
@@ -135,7 +135,7 @@ class EditForumChange(BaseStateChange):
             self.set_validation_error("Must provide either a new name or a new description")
             return False
         return True
-        
+
     def implement(self, actor, target):
         forum = Forum.objects.get(pk=self.pk)
         if self.name:
@@ -181,15 +181,11 @@ class AddPostChange(BaseStateChange):
             self.set_validation_error("Must provide a title for your post")
             return False
         return True
-        
+
     def implement(self, actor, target):
         forum = Forum.objects.get(pk=self.forum_pk)
         return Post.objects.create(
-            title = self.title,
-            content = self.content,
-            author = actor,
-            owner = target.get_owner(),
-            forum = forum
+            title=self.title, content=self.content, author=actor, owner=target.get_owner(), forum=forum
         )
 
 
@@ -224,7 +220,7 @@ class EditPostChange(BaseStateChange):
             self.set_validation_error("Must provide either a new title or new content when editing post")
             return False
         return True
-        
+
     def implement(self, actor, target):
         post = Post.objects.get(pk=self.pk)
         if self.title:
@@ -261,7 +257,7 @@ class DeletePostChange(BaseStateChange):
             self.set_validation_error("Must provide pk of post to be deleted")
             return False
         return True
-        
+
     def implement(self, actor, target):
         post = Post.objects.get(pk=self.pk)
         post.delete()

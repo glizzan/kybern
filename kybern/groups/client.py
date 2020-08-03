@@ -5,7 +5,7 @@ from concord.communities.client import CommunityClient
 
 from .models import Forum, Post, Group
 from .state_changes import (ChangeGroupDescriptionChange, AddForumChange, DeleteForumChange, 
-    EditForumChange, AddPostChange, EditPostChange, DeletePostChange)
+                            EditForumChange, AddPostChange, EditPostChange, DeletePostChange)
 
 
 class GroupClient(CommunityClient):
@@ -69,4 +69,3 @@ class ForumClient(BaseClient):
     def delete_post(self, pk):
         change = DeletePostChange(pk=pk)
         return self.create_and_take_action(change)
-

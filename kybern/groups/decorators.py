@@ -16,7 +16,6 @@ def reformat_role_select(permission_roles):
 
     If data is in that format, return in format:
         permission_roles = ["friends", "romans", "countrymen"]
-    
     """
     if permission_roles and type(permission_roles[0]) == dict and "name" in permission_roles[0]:
         return [selection['name'] for selection in permission_roles]
@@ -30,7 +29,6 @@ def reformat_actor_select(permission_actors):
 
     If data is in that format, return in format:
         permission_actors = [1, 2, 3]
-    
     """
     if permission_actors and type(permission_actors[0]) == dict and "pk" in permission_actors[0]:
         return [int(selection['pk']) for selection in permission_actors]
@@ -45,16 +43,16 @@ def reformat_role_or_actor_field(field):
     if field["type"] == "PermissionRoleField":
 
         # Single select treated differently
-        if "other_data" in field and "multiple" in field["other_data"] and field["other_data"]["multiple"] == False:
+        if "other_data" in field and "multiple" in field["other_data"] and not field["other_data"]["multiple"]:
             field["value"] = field["value"]["name"] if field["value"] else field["value"]
         else:
             field["value"] = reformat_role_select(field["value"])
-    
+
     if field["type"] == "PermissionActorField":
 
         try:
             field["value"] = reformat_actor_select(field["value"])
-        except:
+        except IndexError:
             # if the above doesn't work, try to get by pk
             field["value"] = [int(data["value"]) for data in field["value"]] if field["value"] else []
 
@@ -82,45 +80,17 @@ def reformat_form_field_data(form_field_data):
         field = reformat_role_or_actor_field(field)
         field = reformat_boolean_field(field)
         fields.update({
-            field["field_name"] : field["value"]
+            field["field_name"]: field["value"]
         })
     return fields
 
 
-def reformat_role_select(permission_roles):
-    """
-    Test for expected input format:
-        permission_roles = [{"name": "friends"}, {"name": "romans"}, {"name": "countrymen"}]
-
-    If data is in that format, return in format:
-        permission_roles = ["friends", "romans", "countrymen"]
-    
-    """
-    if permission_roles and type(permission_roles[0]) == dict and "name" in permission_roles[0]:
-        return [selection['name'] for selection in permission_roles]
-    return permission_roles
-
-
-def reformat_actor_select(permission_actors):
-    """
-    Test for expected input format:
-        permission_actors = [{"pk": 1}]
-
-    If data is in that format, return in format:
-        permission_actors = [1, 2, 3]
-    
-    """
-    if permission_actors and type(permission_actors[0]) == dict and "pk" in permission_actors[0]:
-        return [selection['pk'] for selection in permission_actors]
-    return permission_actors
-
-
 def reformat_supplied_fields(supplied_fields):
+
     reformatted_dict = {}
     for field in supplied_fields:
         if field["type"] in ["PermissionRoleField", "PermissionActorField"]:
             reformatted_dict[field["field_name"]] = reformat_role_or_actor_field(field)["value"]
-
 
     # FIXME: this reformatting isn't good enough, actors is getting a None which causes an error, 
     # and members is turning into field + name
@@ -161,12 +131,12 @@ def reformat_combined_permission_and_condition_data(combined_data):
     for field in permission_fields:
         field = reformat_role_or_actor_field(field)  # keeps structure the same, just reformats value field
         if field["full_name"] not in permission_field_data:
-            permission_field_data[field["full_name"]] = { "permission_type": field["full_name"] }
+            permission_field_data[field["full_name"]] = {"permission_type": field["full_name"]}
         if field["type"] == "PermissionRoleField":
             permission_field_data[field["full_name"]]["permission_roles"] = field["value"]
         if field["type"] == "PermissionActorField":
             permission_field_data[field["full_name"]]["permission_actors"] = field["value"]
-    
+
     permission_fields = []
     for field_name, field in permission_field_data.items():
         if field["permission_roles"] or field["permission_actors"]:   
@@ -184,20 +154,22 @@ def reformat_input_data(function=None, expect_target=True):
     be passed directly to the Concord clients.  This also lets us do some re-formatting when, for 
     example, our form data has the wrong structure."""
 
-    if not callable(function): # handles the case where we invoke decorator without calling it (aka no arguments)
+    if not callable(function):  # handles the case where we invoke decorator without calling it (aka no arguments)
         return partial(reformat_input_data, expect_target=expect_target)
 
     @wraps(function)
     def wrap(request, target=None, *args, **kwargs):
 
         if expect_target and target is None:
-            raise ValueError(f"Function must be given a target, or pass expect_target=False to reformat_input_data decorator")
+            raise ValueError("Function must be given a target, or pass expect_target=False to " +
+                             "reformat_input_data decorator")
 
         request_data = json.loads(request.body.decode('utf-8'))  # loaded, we can now use this as our kwargs
 
         if "permission_configuration" in request_data:
-            request_data["permission_configuration"] = reformat_form_field_data(request_data["permission_configuration"])
-        
+            reformatted_configuration = reformat_form_field_data(request_data["permission_configuration"])
+            request_data["permission_configuration"] = reformatted_configuration
+
         if "permission_roles" in request_data:
             request_data["permission_roles"] = reformat_role_select(request_data["permission_roles"])
 
@@ -221,10 +193,11 @@ def reformat_input_data(function=None, expect_target=True):
                 if parameter_name not in request_data:
                     raise ValueError(f"Must supply parameter {parameter_name}")
                 if request_data[parameter_name] in [None, "", [], {}]:
-                    raise ValueError(f"Must give required parameter {parameter_name} a real value, not {request_data[parameter_name]}")
-                    # NOTE: this may be too strict, esp the [] and {}, but I think most/all params that allow [] or {} are not required
-            
+                    raise ValueError(f"Must give required parameter {parameter_name} a real value, " + 
+                                     f"not {request_data[parameter_name]}")
+                    # NOTE: this may be too strict, esp the [] and {}, but I think most/all params that 
+                    # allow [] or {} are not required
+
         return function(request, target, **request_data)
 
     return wrap
-
