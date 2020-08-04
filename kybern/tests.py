@@ -746,9 +746,10 @@ class TemplatesTestCase(BaseTestCase):
         self.browser.find_by_id('save_approve_choice').first.click()
 
         # check that the template has been applied
+        time.sleep(.25)
         self.browser.reload()
         self.browser.find_by_id('group_membership_settings_button').first.click()
-        time.sleep(.2)
+        time.sleep(.25)
         permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
         self.assertEquals(permissions, ["those with role forwards have permission to add members to community"])
 

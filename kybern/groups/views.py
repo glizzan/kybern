@@ -44,16 +44,19 @@ readable_log_dict = {
 def make_action_errors_readable(action):
     """If needed, gets or creates both a developer-friendly (detailed) log and a user-friendly log."""
 
-    if action.resolution.status in ["accepted", "implemented"]:
-        return action.resolution.log, action.resolution.log     # unlikely to be displayed/accessed
-    if action.resolution.status == "waiting":
+    if action.status in ["accepted", "implemented"]:
+        return "Your action has been implemented.", action.resolution.log     # unlikely to be displayed/accessed
+    if action.status == "waiting":
         return "This action cannot be completed until a condition is passed.", action.resolution.log
+    if action.status == "rejected":
+        return "You do not have permission to take this action", action.resolution.log
     return readable_log_dict.get(action.resolution.log, "We're sorry, there was an error"), action.resolution.log
 
 
 def process_action(action):
+    """Method for getting action data.  The action provided is always valid."""
 
-    if action.resolution.status == "implemented":
+    if action.status == "implemented":
         action_verb = ""
         follow_up = "They did so because they have the permission %s." % action.resolution.approved_through
     else:
@@ -81,7 +84,7 @@ def process_action(action):
         "created": str(action.created_at),
         "display_date": action_time,
         "actor": action.actor.username,
-        "status": action.resolution.status,
+        "status": action.status,
         "resolution passed by": action.resolution.approved_through,
         "display": action_string,
         "is_template": action.change.get_change_type() == Changes.Actions.ApplyTemplate,
@@ -92,13 +95,23 @@ def process_action(action):
     }
 
 
-# FIXME: why are get_action_dict and process_actions two different things?
 def get_action_dict(action, fetch_template_actions=False):
+    """Helper method to unpack action information to make it readable for vue/javascript.  Note that
+    unlike process_action, which is always called regarding existing actions, get_action_dict 
+    may be passed an invalid action."""
+
+    if action.pk == "Invalid Action":
+        return {
+            "action_status": "invalid",
+            "action_log": "We're sorry, this request is invalid.",
+            "action_developer_log": action.error_message
+        }
+
     display_log, developer_log = make_action_errors_readable(action)
-    action_created = True if action.resolution.status in ["implemented", "approved", "waiting", "rejected"] else False
+    action_created = True if action.status in ["implemented", "approved", "waiting", "rejected"] else False
     return {
         "action_created": action_created,
-        "action_status": action.resolution.status,
+        "action_status": action.status,
         "action_pk": action.pk,
         "action_log": display_log,
         "action_developer_log": developer_log,
@@ -111,7 +124,7 @@ def get_multiple_action_dicts(actions):
     action_log = ""
     action_status = "implemented"
     for action in actions:
-        if action.resolution.status != "implemented":
+        if action.status != "implemented":
             action_status = "error"
             action_log += action.resolution.log if action.resolution.log else ""
     # individual action data
@@ -396,7 +409,7 @@ def add_forum(request, target):
     action, result = forumClient.create_forum(name=name, description=description)
 
     action_dict = get_action_dict(action)
-    if action.resolution.status == "implemented":
+    if action.status == "implemented":
         action_dict["forum_data"] = serialize_forum_for_vue(result)
     return JsonResponse(action_dict)
 
@@ -416,7 +429,7 @@ def edit_forum(request, target):
     action, result = forumClient.edit_forum(pk=pk, name=name, description=description)
 
     action_dict = get_action_dict(action)
-    if action.resolution.status == "implemented":
+    if action.status == "implemented":
         action_dict["forum_data"] = serialize_forum_for_vue(result)
     return JsonResponse(action_dict)
 
@@ -469,7 +482,7 @@ def add_post(request, target):
     action, result = forumClient.add_post(forum_pk, title, content)
 
     action_dict = get_action_dict(action)
-    if action.resolution.status == "implemented":
+    if action.status == "implemented":
         action_dict["post_data"] = serialize_post_for_vue(result)
     return JsonResponse(action_dict)
 
@@ -489,7 +502,7 @@ def edit_post(request, target):
     action, result = forumClient.edit_post(pk, title, content)
 
     action_dict = get_action_dict(action)
-    if action.resolution.status == "implemented":
+    if action.status == "implemented":
         action_dict["post_data"] = serialize_post_for_vue(result)
     return JsonResponse(action_dict)
 
@@ -658,7 +671,7 @@ def add_permission(request, target, permission_type, item_or_role, permission_ac
     )
 
     action_dict = get_action_dict(action)
-    permission_info = get_permission_info(result) if action.resolution.status == "implemented" else None
+    permission_info = get_permission_info(result) if action.status == "implemented" else None
     action_dict.update({"permission": permission_info, "item_id": item_id, "item_model": item_model})
     return JsonResponse(action_dict)
 
@@ -734,7 +747,7 @@ def add_condition(request, target, condition_type, permission_or_leadership,
             condition_type=condition_type, permission_pk=target_permission_id, 
             condition_data=condition_data, permission_data=permission_data
         )
-        if action.resolution.status == "implemented": 
+        if action.status == "implemented": 
             condition_data = result.get_condition_data(info="all")
 
     elif permission_or_leadership == "leadership":
@@ -744,7 +757,7 @@ def add_condition(request, target, condition_type, permission_or_leadership,
             condition_type=condition_type, leadership_type=leadership_type, 
             condition_data=condition_data, permission_data=permission_data
         )
-        if action.resolution.status == "implemented":
+        if action.status == "implemented":
             condition_data = target.get_condition_data(leadership_type=leadership_type, info="all")
 
     action_dict = get_action_dict(action)
@@ -1138,7 +1151,7 @@ def get_applied_template_data(request, target, trigger_action_pk):
     container = actionClient.get_container_given_trigger_action(action_pk=trigger_action_pk)
     container_data = actionClient.get_container_data(container_pk=container.pk)
 
-    container_info = {"container_status": container.get_overall_status()}
+    container_info = {"container_status": container.status}
 
     action_data = []
     for item in container_data:

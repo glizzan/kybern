@@ -129,8 +129,10 @@ approvalConditionComponent = Vue.component('approve-condition-ui', {
                         // (for instance, if someone is using a governing or owning authority to act)
                         this.error_message = "Before your decision to " + this.button_selected + " can be implemented, a condition must be satisfied."
                     } else {
-                        // update action this was a condition on
-                        this.addOrUpdateAction({ action_pk: this.action_details["action_pk"] })
+                        // if this is a condition on an action (as opposed to a container) refresh it
+                        if (this.action_details["action_pk"]) {
+                            this.addOrUpdateAction({ action_pk: this.action_details["action_pk"] })
+                        }
                         // also call vuex to record this as an action (need to do this for all actions)
                         this.addOrUpdateAction({ action_pk: new_action_pk })
                     }

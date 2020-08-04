@@ -1,3 +1,4 @@
+import os
 DEBUG = True
 SECRET_KEY = '_1ds_$#sknsg7rvr4jqv@re7os*$g-!%5+!jjkkqwqdw61d+=d'
 
@@ -32,3 +33,4 @@ DATABASES = {
 
 EMAIL_HOST = "localhost"
 EMAIL_PORT = 1025
+
