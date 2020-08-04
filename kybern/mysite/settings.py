@@ -43,6 +43,21 @@ INSTALLED_APPS = [
     'django.contrib.admin',
 ]
 
+# CONCORD_APPS and KYBERN_APPS are used in logging
+CONCORD_APPS = [
+    'concord',
+    'concord.actions',
+    'concord.communities',
+    'concord.resources',
+    'concord.permission_resources',
+    'concord.conditionals',
+]
+KYBERN_APPS = [
+    'accounts',
+    'groups',
+]
+
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -129,6 +144,48 @@ LOGIN_REDIRECT_URL = "/profile/"
 LOGIN_URL = '/login/'
 
 ACCOUNT_ACTIVATION_DAYS = 14
+
+
+# Logging
+import logging
+
+TEST_LOG_LEVEL = "WARN"
+import sys
+TESTING = sys.argv[1:2] == ['test']
+LOG_LEVEL = TEST_LOG_LEVEL if TESTING else "DEBUG"
+
+# Generate loggers
+loggers = {}
+for app in CONCORD_APPS + KYBERN_APPS:
+    loggers.update({app: {'handlers': ['console', 'file'], 'level': LOG_LEVEL}})
+loggers[''] = {'handlers': ['console', 'file'], 'level': "WARN"}
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'console': {
+            'format': '%(name)-12s %(levelname)-8s %(message)s'
+        },
+        'file': {
+            'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
+        }
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'console'
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'formatter': 'file',
+            'filename': '/tmp/debug.log'
+        }
+    },
+    'loggers': loggers
+}
 
 
 # Check to see if we're in local development or production, and load appropriate settings
