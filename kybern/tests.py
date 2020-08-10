@@ -6,7 +6,7 @@ from selenium import webdriver
 
 from django.contrib.auth.models import User
 from concord.permission_resources.client import PermissionResourceClient
-from concord.actions.state_changes import Changes
+from concord.actions.utils import Changes
 from groups.models import Forum
 from groups.client import GroupClient
 
@@ -284,7 +284,7 @@ class ActionConditionsTestCase(BaseTestCase):
         # Permission setup
         self.permissionClient = PermissionResourceClient(actor=self.actor, target=self.community)
         action, self.permission = self.permissionClient.add_permission(
-            permission_type=Changes.Communities.AddRole, permission_roles=["forwards"])
+            permission_type=Changes().Communities.AddRole, permission_roles=["forwards"])
 
     def test_adding_condition_to_permission_generates_condition(self):
 
@@ -344,10 +344,10 @@ class ApprovalConditionsTestCase(BaseTestCase):
         # add permission & condition to permission
         self.permissionClient = PermissionResourceClient(actor=self.actor, target=self.community)
         action, self.permission = self.permissionClient.add_permission(
-            permission_type=Changes.Communities.AddRole, permission_roles=["forwards"])
+            permission_type=Changes().Communities.AddRole, permission_roles=["forwards"])
         perm_data = [
-            {"permission_type": Changes.Conditionals.Approve, "permission_roles": ["forwards"]},
-            {"permission_type": Changes.Conditionals.Reject, "permission_roles": ["forwards"]}
+            {"permission_type": Changes().Conditionals.Approve, "permission_roles": ["forwards"]},
+            {"permission_type": Changes().Conditionals.Reject, "permission_roles": ["forwards"]}
         ]
         self.permissionClient.add_condition_to_permission(
             permission_pk=self.permission.pk, condition_type="approvalcondition",
@@ -432,9 +432,9 @@ class VotingConditionTestCase(BaseTestCase):
         # add permission & condition to permission
         self.permissionClient = PermissionResourceClient(actor=self.actor, target=self.community)
         action, self.permission = self.permissionClient.add_permission(
-            permission_type=Changes.Communities.AddRole, permission_roles=["forwards"]
+            permission_type=Changes().Communities.AddRole, permission_roles=["forwards"]
         )   
-        perm_data = [{"permission_type": Changes.Conditionals.AddVote, "permission_roles": ["forwards"]}]
+        perm_data = [{"permission_type": Changes().Conditionals.AddVote, "permission_roles": ["forwards"]}]
         self.permissionClient.add_condition_to_permission(
             permission_pk=self.permission.pk, condition_type="votecondition", permission_data=perm_data
         )
@@ -597,7 +597,7 @@ class ForumsTestCase(BaseTestCase):
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(permissions, [])
         self.browser.find_by_id('add_permission_button').first.click()
-        self.browser.select("permission_select", "groups.state_changes.EditForumChange")
+        self.browser.select("permission_select", "groups.state_changes.EditForumStateChange")
         element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
         self.browser.find_by_id('save_permission_button').first.click()

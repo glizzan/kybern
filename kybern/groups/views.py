@@ -13,7 +13,7 @@ from concord.permission_resources.client import PermissionResourceClient
 from concord.conditionals.client import ConditionalClient
 from concord.resources.client import CommentClient
 from concord.resources.models import Comment
-from concord.actions.state_changes import Changes
+from concord.actions.utils import Changes
 from concord.permission_resources.models import PermissionsItem
 
 from accounts.models import User
@@ -87,7 +87,7 @@ def process_action(action):
         "status": action.status,
         "resolution passed by": action.resolution.approved_through,
         "display": action_string,
-        "is_template": action.change.get_change_type() == Changes.Actions.ApplyTemplate,
+        "is_template": action.change.get_change_type() == Changes().Actions.ApplyTemplate,
         "has_condition": {
             "exists": True if conditions else False,
             "conditions": [{"pk": condition.pk, "type": condition.__class__.__name__} for condition in conditions]
@@ -115,7 +115,7 @@ def get_action_dict(action, fetch_template_actions=False):
         "action_pk": action.pk,
         "action_log": display_log,
         "action_developer_log": developer_log,
-        "is_template": action.change.get_change_type() == Changes.Actions.ApplyTemplate
+        "is_template": action.change.get_change_type() == Changes().Actions.ApplyTemplate
     }
 
 

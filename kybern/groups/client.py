@@ -4,8 +4,7 @@ from concord.actions.client import BaseClient
 from concord.communities.client import CommunityClient
 
 from .models import Forum, Post, Group
-from .state_changes import (ChangeGroupDescriptionChange, AddForumChange, DeleteForumChange, 
-                            EditForumChange, AddPostChange, EditPostChange, DeletePostChange)
+import groups.state_changes as sc
 
 
 class GroupClient(CommunityClient):
@@ -14,7 +13,7 @@ class GroupClient(CommunityClient):
     # state changes
 
     def change_group_description(self, new_description):
-        change = ChangeGroupDescriptionChange(new_description=new_description)
+        change = sc.ChangeGroupDescriptionStateChange(new_description=new_description)
         return self.create_and_take_action(change)
 
 
@@ -47,25 +46,25 @@ class ForumClient(BaseClient):
     # state change writes
 
     def create_forum(self, name, description):
-        change = AddForumChange(name=name, description=description)
+        change = sc.AddForumStateChange(name=name, description=description)
         return self.create_and_take_action(change)
 
     def edit_forum(self, pk, name, description):
-        change = EditForumChange(pk=pk, name=name, description=description)
+        change = sc.EditForumStateChange(pk=pk, name=name, description=description)
         return self.create_and_take_action(change)
 
     def delete_forum(self, pk):
-        change = DeleteForumChange(pk=pk)
+        change = sc.DeleteForumStateChange(pk=pk)
         return self.create_and_take_action(change)
 
     def add_post(self, forum_pk, title, content):
-        change = AddPostChange(forum_pk=forum_pk, title=title, content=content)
+        change = sc.AddPostStateChange(forum_pk=forum_pk, title=title, content=content)
         return self.create_and_take_action(change)
 
     def edit_post(self, pk, title, content):
-        change = EditPostChange(pk=pk, title=title, content=content)
+        change = sc.EditPostStateChange(pk=pk, title=title, content=content)
         return self.create_and_take_action(change)
 
     def delete_post(self, pk):
-        change = DeletePostChange(pk=pk)
+        change = sc.DeletePostStateChange(pk=pk)
         return self.create_and_take_action(change)

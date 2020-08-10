@@ -131,15 +131,6 @@ STATIC_URL = '/static/'
 
 # Custom configurations
 
-ALTERNATIVE_COMMUNITY_MODELS = [
-    {'app_name': 'groups', 'model_name': 'group'}
-]
-
-ADDITIONAL_PERMISSIONED_MODELS = [
-    {'app_name': 'groups', 'model_name': 'group'}
-]
-
-
 LOGIN_REDIRECT_URL = "/profile/"
 LOGIN_URL = '/login/'
 
