@@ -8,7 +8,7 @@ from .models import Group, Forum, Post
 ###########################
 
 
-class ChangeGroupDescriptionChange(BaseStateChange):
+class ChangeGroupDescriptionStateChange(BaseStateChange):
     description = "Change group description"
     preposition = "for"
 
@@ -48,7 +48,7 @@ class ChangeGroupDescriptionChange(BaseStateChange):
 ###########################
 
 
-class AddForumChange(BaseStateChange):
+class AddForumStateChange(BaseStateChange):
     description = "Create a forum"
     preposition = "on"
 
@@ -77,7 +77,7 @@ class AddForumChange(BaseStateChange):
         return Forum.objects.create(name=self.name, description=self.description, owner=target.get_owner())
 
 
-class DeleteForumChange(BaseStateChange):
+class DeleteForumStateChange(BaseStateChange):
     description = "Delete a forum"
     preposition = "in"
 
@@ -107,7 +107,7 @@ class DeleteForumChange(BaseStateChange):
         return self.pk
 
 
-class EditForumChange(BaseStateChange):
+class EditForumStateChange(BaseStateChange):
     description = "Edit a forum"
     preposition = "in"
 
@@ -151,7 +151,7 @@ class EditForumChange(BaseStateChange):
 ##########################
 
 
-class AddPostChange(BaseStateChange):
+class AddPostStateChange(BaseStateChange):
     description = "Add a post"
 
     def __init__(self, *, forum_pk, title, content):
@@ -189,7 +189,7 @@ class AddPostChange(BaseStateChange):
         )
 
 
-class EditPostChange(BaseStateChange):
+class EditPostStateChange(BaseStateChange):
     description = "Edit a post"
     preposition = "in"
 
@@ -231,7 +231,7 @@ class EditPostChange(BaseStateChange):
         return post
 
 
-class DeletePostChange(BaseStateChange):
+class DeletePostStateChange(BaseStateChange):
     description = "Delete a post"
     preposition = "from"
 
