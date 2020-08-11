@@ -465,7 +465,7 @@ def add_post(request, target):
     forum = client.Forum.get_forum_given_pk(forum_pk)
     client.Forum.set_target(target=forum)
 
-    action, result = forumClient.add_post(forum_pk, title, content)
+    action, result = client.Forum.add_post(forum_pk, title, content)
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
@@ -668,7 +668,7 @@ def update_permission(request, target, permission_id, item_or_role, permission_a
                       item_model=None):
 
     target = get_permission_target_helper(request, target, item_or_role, item_id, item_model)
-    Client = Client(actor=request.user, target=target)
+    client = Client(actor=request.user, target=target)
     target_permission = client.PermissionResource.get_permission(pk=permission_id)
 
     actions = client.PermissionResource.update_configuration(
