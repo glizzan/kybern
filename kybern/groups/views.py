@@ -8,17 +8,13 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 
-from concord.actions.client import ActionClient, TemplateClient
-from concord.permission_resources.client import PermissionResourceClient
-from concord.conditionals.client import ConditionalClient
-from concord.resources.client import CommentClient
+from concord.actions.utils import Client
 from concord.resources.models import Comment
 from concord.actions.utils import Changes
 from concord.permission_resources.models import PermissionsItem
 
 from accounts.models import User
 from .models import Group, Forum, Post
-from .client import ForumClient, GroupClient
 from .decorators import reformat_input_data
 
 
@@ -72,8 +68,7 @@ def process_action(action):
     action_string = f"At {action_time}, {action.actor.username} {action_verb}{action_description}. {follow_up}"
 
     # Check for condition  ( FIXME: we need a much more performant way of doing this )
-    conditionalClient = ConditionalClient(actor="system")
-    conditions = conditionalClient.get_condition_items_for_action(action_pk=action.pk)
+    conditions = Client().Conditional.get_condition_items_for_action(action_pk=action.pk)
 
     return {
         "action_pk": action.pk,
@@ -225,25 +220,18 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
     model = Group
     template_name = 'groups/groups/group_detail.html'
 
-    def prep_clients(self):
-        self.communityClient = GroupClient(actor=self.request.user, target=self.object)
-        self.permissionClient = PermissionResourceClient(actor=self.request.user, target=self.object)
-        self.actionClient = ActionClient(actor=self.request.user, target=self.object)
-        self.conditionalClient = ConditionalClient(actor=self.request.user)
-        self.forumClient = ForumClient(actor=self.request.user, target=self.object)
-
     def add_user_data_to_context(self, context):
 
         # Governance info
-        context['owners'] = self.communityClient.target.roles.get_owners()
-        context['governors'] = self.communityClient.target.roles.get_governors()
-        context['governance_info'] = json.dumps(self.communityClient.get_governance_info_as_text())
-        context['owner_condition'] = json.dumps(self.communityClient.get_condition_data(leadership_type="owner"))
-        context['governor_condition'] = json.dumps(self.communityClient.get_condition_data(leadership_type="governor"))
+        context['owners'] = self.client.Community.target.roles.get_owners()
+        context['governors'] = self.client.Community.target.roles.get_governors()
+        context['governance_info'] = json.dumps(self.client.Community.get_governance_info_as_text())
+        context['owner_condition'] = json.dumps(self.client.Community.get_condition_data(leadership_type="owner"))
+        context['governor_condition'] = json.dumps(self.client.Community.get_condition_data(leadership_type="governor"))
 
         # Role/Member info
         context['username_map'] = {person.pk: person.username for person in User.objects.all()}
-        context['current_members'] = [member.pk for member in self.communityClient.get_members()]
+        context['current_members'] = [member.pk for member in self.client.Community.get_members()]
         user_set = set(context['username_map'].keys())
         member_set = set(context['current_members'])
         context['potential_members'] = list(user_set.difference(member_set))
@@ -251,7 +239,7 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
         # Role Info
         context['roles'] = [
             {'name': role_name, 'current_members': role_data} 
-            for role_name, role_data in self.communityClient.get_custom_roles().items()
+            for role_name, role_data in self.client.Community.get_custom_roles().items()
         ]
         # Added for vuex store
         context["users"] = [{'name': person.username, 'pk': person.pk} for person in User.objects.all()]
@@ -274,7 +262,7 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
         for model_class in [Group, Forum, Post, Comment, PermissionsItem]:
 
             # get settable permissions given model class
-            settable_permissions = self.permissionClient.get_settable_permissions_for_model(model_class)
+            settable_permissions = self.client.PermissionResource.get_settable_permissions_for_model(model_class)
 
             # get a list of permission options and save to permission_options under the model name
             model_string = model_class.__name__.lower()
@@ -309,7 +297,7 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
         """
 
         # Get condition options
-        settable_conditions = self.conditionalClient.get_possible_conditions()
+        settable_conditions = self.client.Conditional.get_possible_conditions()
         condition_options = [{'value': cond.__name__, 'text': cond.descriptive_name} for cond in settable_conditions]
         context["condition_options"] = json.dumps(condition_options)
 
@@ -322,13 +310,13 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
         return context
 
     def add_forum_data_to_context(self, context):
-        context['forums'] = serialize_forums_for_vue(self.forumClient.get_forums_owned_by_target())
+        context['forums'] = serialize_forums_for_vue(self.client.Forum.get_forums_owned_by_target())
         return context
 
     def get_context_data(self, **kwargs):
         # TODO: refactor this into stuff returned from API calls (or at least view mixins)
         context = super().get_context_data(**kwargs)
-        self.prep_clients()
+        self.client = Client(actor=self.request.user, target=self.object)
         context = self.add_user_data_to_context(context)
         context = self.add_permission_data_to_context(context)
         context = self.add_condition_data_to_context(context)
@@ -348,11 +336,11 @@ def change_group_name(request):
     group_pk = request_data.get("group_pk")
     new_name = request_data.get("new_name")
 
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=group_pk)
-    communityClient.set_target(target=target)
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=group_pk)
+    client.Community.set_target(target=target)
 
-    action, result = communityClient.change_name(new_name=new_name)
+    action, result = client.Community.change_name(new_name=new_name)
     action_dict = get_action_dict(action)
     action_dict["group_name"] = new_name
     return JsonResponse(action_dict)
@@ -365,11 +353,11 @@ def change_group_description(request):
     group_pk = request_data.get("group_pk")
     new_description = request_data.get("new_description")
 
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=group_pk)
-    communityClient.set_target(target=target)
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=group_pk)
+    client.Community.set_target(target=target)
 
-    action, result = communityClient.change_group_description(new_description=new_description)
+    action, result = client.Community.change_group_description(new_description=new_description)
     action_dict = get_action_dict(action)
     action_dict["group_description"] = new_description
     return JsonResponse(action_dict)
@@ -382,13 +370,12 @@ def change_group_description(request):
 
 @login_required
 def get_forums(request, target):
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
-    communityClient.set_target(target=target)
 
-    forumClient = ForumClient(actor=request.user, target=target)
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=target)
 
-    forums = forumClient.get_forums_owned_by_target()
+    forums = client.Forum.get_forums_owned_by_target()
     forum_list = serialize_forums_for_vue(forums)
 
     return JsonResponse({"forums": forum_list})
@@ -397,16 +384,15 @@ def get_forums(request, target):
 @login_required
 def add_forum(request, target):
 
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
-    communityClient.set_target(target=target)
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=target)
 
     request_data = json.loads(request.body.decode('utf-8'))
     name = request_data.get("name")
     description = request_data.get("description", None)
 
-    forumClient = ForumClient(actor=request.user, target=target)
-    action, result = forumClient.create_forum(name=name, description=description)
+    action, result = client.Forum.create_forum(name=name, description=description)
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
@@ -422,11 +408,11 @@ def edit_forum(request, target):
     name = request_data.get("name", None)
     description = request_data.get("description", None)
 
-    forumClient = ForumClient(actor=request.user)
-    forum = forumClient.get_forum_given_pk(pk)
-    forumClient.set_target(target=forum)
+    client = Client(actor=request.user)
+    forum = client.Forum.get_forum_given_pk(pk)
+    client.Forum.set_target(target=forum)
 
-    action, result = forumClient.edit_forum(pk=pk, name=name, description=description)
+    action, result = client.Forum.edit_forum(pk=pk, name=name, description=description)
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
@@ -440,11 +426,11 @@ def delete_forum(request, target):
     request_data = json.loads(request.body.decode('utf-8'))
     pk = request_data.get("pk")
 
-    forumClient = ForumClient(actor=request.user)
-    forum = forumClient.get_forum_given_pk(pk)
-    forumClient.set_target(target=forum)
+    client = Client(actor=request.user)
+    forum = client.Forum.get_forum_given_pk(pk)
+    client.Forum.set_target(target=forum)
 
-    action, result = forumClient.delete_forum(pk=pk)
+    action, result = client.Forum.delete_forum(pk=pk)
 
     action_dict = get_action_dict(action)
     action_dict["deleted_forum_pk"] = pk
@@ -457,10 +443,10 @@ def get_posts_for_forum(request, target):
     request_data = json.loads(request.body.decode('utf-8'))
     forum_pk = request_data.get("forum_pk")
 
-    forumClient = ForumClient(actor=request.user)
-    forum = forumClient.get_forum_given_pk(forum_pk)
-    forumClient.set_target(target=forum)
-    posts = forumClient.get_posts_for_forum()
+    client = Client(actor=request.user)
+    forum = client.Forum.get_forum_given_pk(forum_pk)
+    client.Forum.set_target(target=forum)
+    posts = client.Forum.get_posts_for_forum()
 
     serialized_posts = [serialize_post_for_vue(post) for post in posts]
 
@@ -475,11 +461,11 @@ def add_post(request, target):
     title = request_data.get("title")
     content = request_data.get("content", None)
 
-    forumClient = ForumClient(actor=request.user)
-    forum = forumClient.get_forum_given_pk(forum_pk)
-    forumClient.set_target(target=forum)
+    client = Client(actor=request.user)
+    forum = client.Forum.get_forum_given_pk(forum_pk)
+    client.Forum.set_target(target=forum)
 
-    action, result = forumClient.add_post(forum_pk, title, content)
+    action, result = client.Forum.add_post(forum_pk, title, content)
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
@@ -495,11 +481,11 @@ def edit_post(request, target):
     title = request_data.get("title", None)
     content = request_data.get("content", None)
 
-    forumClient = ForumClient(actor=request.user)
-    post = forumClient.get_post_given_pk(pk)
-    forumClient.set_target(target=post)
+    client = Client(actor=request.user)
+    post = client.Forum.get_post_given_pk(pk)
+    client.Forum.set_target(target=post)
 
-    action, result = forumClient.edit_post(pk, title, content)
+    action, result = client.Forum.edit_post(pk, title, content)
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
@@ -514,11 +500,11 @@ def delete_post(request, target):
     pk = request_data.get("pk")
     forum_pk = request_data.get("forum_pk")
 
-    forumClient = ForumClient(actor=request.user)
-    forum = forumClient.get_forum_given_pk(forum_pk)
-    forumClient.set_target(target=forum)
+    client = Client(actor=request.user)
+    forum = client.Forum.get_forum_given_pk(forum_pk)
+    client.Forum.set_target(target=forum)
 
-    action, result = forumClient.delete_post(pk=pk)
+    action, result = client.Forum.delete_post(pk=pk)
 
     action_dict = get_action_dict(action)
     action_dict["deleted_post_pk"] = pk
@@ -535,11 +521,11 @@ def add_role(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
 
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
-    communityClient.set_target(target=target)
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=target)
 
-    action, result = communityClient.add_role(role_name=request_data['role_name'])
+    action, result = client.Community.add_role(role_name=request_data['role_name'])
 
     return JsonResponse(get_action_dict(action))
 
@@ -549,11 +535,11 @@ def add_members(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
 
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
-    communityClient.set_target(target=target)
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=target)
 
-    action, result = communityClient.add_members(member_pk_list=request_data["user_pks"])
+    action, result = client.Community.add_members(member_pk_list=request_data["user_pks"])
 
     return JsonResponse(get_action_dict(action))
 
@@ -563,11 +549,11 @@ def remove_members(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
 
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
-    communityClient.set_target(target=target)
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=target)
 
-    action, result = communityClient.remove_members(request_data['user_pks'])
+    action, result = client.Community.remove_members(request_data['user_pks'])
 
     return JsonResponse(get_action_dict(action))
 
@@ -577,11 +563,11 @@ def add_people_to_role(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
 
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
-    communityClient.set_target(target=target)
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=target)
 
-    action, result = communityClient.add_people_to_role(
+    action, result = client.Community.add_people_to_role(
         role_name=request_data['role_name'], 
         people_to_add=request_data['user_pks']
     )
@@ -594,11 +580,11 @@ def remove_people_from_role(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
 
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
-    communityClient.set_target(target=target)
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=target)
 
-    action, result = communityClient.remove_people_from_role(
+    action, result = client.Community.remove_people_from_role(
         role_name=request_data['role_name'], 
         people_to_remove=request_data['user_pks']
     )
@@ -613,9 +599,9 @@ def remove_people_from_role(request, target):
 
 def get_permissions_given_role(actor, target, role_name):
 
-    # get permissions
-    existing_permissions = PermissionResourceClient(actor=actor, target=target).\
-        get_permissions_associated_with_role_for_target(role_name=role_name)
+    client = Client(actor=actor, target=target)
+
+    existing_permissions = client.PermissionResource.get_permissions_associated_with_role_for_target(role_name=role_name)
 
     permission_pks, permissions = [], {}
     for permission in existing_permissions:
@@ -628,13 +614,13 @@ def get_permissions_given_role(actor, target, role_name):
 @login_required
 def get_data_for_role(request, target):
 
-    actor = request.user
-    communityClient = GroupClient(actor=actor)
-    target = communityClient.get_community(community_pk=target)
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+
     request_data = json.loads(request.body.decode('utf-8'))
     role_name = request_data['role_name']
 
-    permission_pks, permissions = get_permissions_given_role(actor, target, role_name)
+    permission_pks, permissions = get_permissions_given_role(request.user, target, role_name)
 
     return JsonResponse({"permissions": permissions, "role_permissions": permission_pks})
 
@@ -648,12 +634,11 @@ def get_permission_info(permission):
 
 def get_permission_target_helper(request, target, item_or_role, item_id, item_model):
 
-    if item_or_role == "item":                  # If an item has been passed in, make it the target
+    if item_or_role == "item":    # If an item has been passed in, make it the target
         model_class = get_model(item_model)
         return model_class.objects.get(pk=item_id)
     if item_or_role == "role":    # Otherwise the role the community is set on is the target
-        communityClient = GroupClient(actor=request.user)
-        return communityClient.get_community(community_pk=target)
+        return Client(actor=request.user).Community.get_community(community_pk=target)
 
 
 @login_required
@@ -663,9 +648,9 @@ def add_permission(request, target, permission_type, item_or_role, permission_ac
                    item_model=None):
 
     target = get_permission_target_helper(request, target, item_or_role, item_id, item_model)
-    permissionClient = PermissionResourceClient(actor=request.user, target=target)
+    client = Client(actor=request.user, target=target)
 
-    action, result = permissionClient.add_permission(
+    action, result = client.PermissionResource.add_permission(
         permission_type=permission_type, permission_actors=permission_actors,
         permission_roles=permission_roles, permission_configuration=permission_configuration
     )
@@ -683,27 +668,27 @@ def update_permission(request, target, permission_id, item_or_role, permission_a
                       item_model=None):
 
     target = get_permission_target_helper(request, target, item_or_role, item_id, item_model)
-    permissionClient = PermissionResourceClient(actor=request.user, target=target)
-    target_permission = permissionClient.get_permission(pk=permission_id)
+    client = Client(actor=request.user, target=target)
+    target_permission = client.PermissionResource.get_permission(pk=permission_id)
 
-    actions = permissionClient.update_configuration(
+    actions = client.PermissionResource.update_configuration(
         configuration_dict=permission_configuration, permission=target_permission
     )
 
     if permission_actors:
-        actor_actions = permissionClient.update_actors_on_permission(
+        actor_actions = client.PermissionResource.update_actors_on_permission(
             actor_data=permission_actors, permission=target_permission
         )
         actions += actor_actions
     if permission_roles:
-        role_actions = permissionClient.update_roles_on_permission(
+        role_actions = client.PermissionResource.update_roles_on_permission(
             role_data=permission_roles, permission=target_permission
         )
         actions += role_actions
 
     action_dict = get_multiple_action_dicts(actions)
 
-    permission = permissionClient.get_permission(pk=permission_id)  # get refreshed version
+    permission = client.PermissionResource.get_permission(pk=permission_id)  # get refreshed version
     permission_info = get_permission_info(permission)
     action_dict.update({"permission": permission_info})
 
@@ -715,10 +700,10 @@ def update_permission(request, target, permission_id, item_or_role, permission_a
 def delete_permission(request, target, permission_id, item_or_role, item_id=None, item_model=None):
 
     target = get_permission_target_helper(request, target, item_or_role, item_id, item_model)
-    permissionClient = PermissionResourceClient(actor=request.user, target=target)
+    client = Client(actor=request.user, target=target)
 
     # now remove permission
-    action, result = permissionClient.remove_permission(item_pk=permission_id)
+    action, result = client.PermissionResource.remove_permission(item_pk=permission_id)
     action_dict = get_action_dict(action)
     action_dict.update({"removed_permission_pk": permission_id})
     return JsonResponse(action_dict)
@@ -737,13 +722,13 @@ def add_condition(request, target, condition_type, permission_or_leadership,
                   target_permission_id=None, leadership_type=None, condition_data=None, 
                   permission_data=None):
 
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target)
 
     if permission_or_leadership == "permission":
 
-        permClient = PermissionResourceClient(actor=request.user, target=target)
-        action, result = permClient.add_condition_to_permission(
+        action, result = client.PermissionResource.add_condition_to_permission(
             condition_type=condition_type, permission_pk=target_permission_id, 
             condition_data=condition_data, permission_data=permission_data
         )
@@ -752,8 +737,7 @@ def add_condition(request, target, condition_type, permission_or_leadership,
 
     elif permission_or_leadership == "leadership":
 
-        communityClient.set_target(target=target)
-        action, result = communityClient.add_leadership_condition(
+        action, result = client.Community.add_leadership_condition(
             condition_type=condition_type, leadership_type=leadership_type, 
             condition_data=condition_data, permission_data=permission_data
         )
@@ -772,18 +756,14 @@ def add_condition(request, target, condition_type, permission_or_leadership,
 @reformat_input_data
 def remove_condition(request, target, permission_or_leadership, target_permission_id=None, leadership_type=None):
 
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target)
 
     if permission_or_leadership == "permission":
-
-        permClient = PermissionResourceClient(actor=request.user, target=target)
-        action, result = permClient.remove_condition_from_permission(permission_pk=target_permission_id)
-
+        action, result = client.PermissionResource.remove_condition_from_permission(permission_pk=target_permission_id)
     elif permission_or_leadership == "leadership":
-
-        communityClient.set_target(target=target)
-        action, result = communityClient.remove_leadership_condition(leadership_type=leadership_type)    
+        action, result = client.Community.remove_leadership_condition(leadership_type=leadership_type)    
 
     action_dict = get_action_dict(action)
     action_dict.update({
@@ -805,8 +785,7 @@ def update_approval_condition(request):
     condition_pk = request_data.get("condition_pk", None)
     action_to_take = request_data.get("action_to_take", None)
 
-    conditionalClient = ConditionalClient(actor=request.user)
-    approvalClient = conditionalClient.get_approval_condition_as_client(pk=condition_pk)
+    approvalClient = Client(actor=request.user).Conditional.get_approval_condition_as_client(pk=condition_pk)
 
     if action_to_take == "approve":
         action, result = approvalClient.approve()
@@ -823,8 +802,7 @@ def update_vote_condition(request):
     condition_pk = request_data.get("condition_pk", None)
     action_to_take = request_data.get("action_to_take", None)
 
-    conditionalClient = ConditionalClient(actor=request.user)
-    voteClient = conditionalClient.get_vote_condition_as_client(pk=condition_pk)
+    voteClient = Client(actor=request.user).Conditional.get_vote_condition_as_client(pk=condition_pk)
 
     action, result = voteClient.vote(vote=action_to_take)
 
@@ -838,14 +816,13 @@ def get_conditional_data(request):
     condition_pk = request_data.get("condition_pk", None)
     condition_type = request_data.get("condition_type", None)
 
-    conditionalClient = ConditionalClient(actor=request.user)
-    condition = conditionalClient.get_condition_item(condition_pk=condition_pk, condition_type=condition_type)
+    client = Client(actor=request.user)
+    condition = client.Conditional.get_condition_item(condition_pk=condition_pk, condition_type=condition_type)
 
     # for permission on condition, does user have permission? 
-    permissionClient = PermissionResourceClient(actor=request.user)
     permission_details = {}
-    for permission in permissionClient.get_permissions_on_object(object=condition):
-        has_permission = permissionClient.actor_satisfies_permission(
+    for permission in client.PermissionResource.get_permissions_on_object(object=condition):
+        has_permission = client.PermissionResource.actor_satisfies_permission(
             actor=request.user, permission=permission
         )
         permission_details.update({permission.change_type: has_permission})
@@ -867,7 +844,7 @@ def get_action_data(request):
     request_data = json.loads(request.body.decode('utf-8'))
     action_pk = request_data.get("action_pk", None)
 
-    action = ActionClient(actor=request.user).get_action_given_pk(action_pk)
+    action = Client(actor=request.user).Action.get_action_given_pk(action_pk)
 
     return JsonResponse({"action_data": process_action(action)})
 
@@ -881,8 +858,8 @@ def get_action_data_for_target(request):
     model_class = get_model(request_data.get("item_model"))
     target = model_class.objects.get(pk=item_id)
 
-    actionClient = ActionClient(actor=request.user, target=target)
-    actions = actionClient.get_action_history_given_target()
+    client = Client(actor=request.user, target=target)
+    actions = client.Action.get_action_history_given_target()
 
     return JsonResponse({"action_data": [process_action(action) for action in actions]})
 
@@ -899,14 +876,14 @@ def update_owners(request, target):
     owner_roles = request_data.get("owner_roles", "")  # no need to make into list, leadershipcomponent handles that
     owner_actors = request_data.get("owner_actors", "")  # no need to make into list, leadershipcomponent handles that
 
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
-    communityClient.set_target(target=target)
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target)
 
-    actions = communityClient.update_owners(new_owner_data={"individuals": owner_actors, "roles": owner_roles})
+    actions = client.Community.update_owners(new_owner_data={"individuals": owner_actors, "roles": owner_roles})
 
     action_dict = get_multiple_action_dicts(actions)
-    action_dict.update({"governance_info": json.dumps(communityClient.get_governance_info_as_text())})
+    action_dict.update({"governance_info": json.dumps(client.Community.get_governance_info_as_text())})
 
     return JsonResponse(action_dict)
 
@@ -918,16 +895,16 @@ def update_governors(request, target):
     governor_roles = request_data.get("governor_roles", "") 
     governor_actors = request_data.get("governor_actors", "")  
 
-    communityClient = GroupClient(actor=request.user)
-    target = communityClient.get_community(community_pk=target)
-    communityClient.set_target(target=target)
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target)
 
-    actions = communityClient.update_governors(
+    actions = client.Community.update_governors(
         new_governor_data={"individuals": governor_actors, "roles": governor_roles}
     )
 
     action_dict = get_multiple_action_dicts(actions)
-    action_dict.update({"governance_info": json.dumps(communityClient.get_governance_info_as_text())})
+    action_dict.update({"governance_info": json.dumps(client.Community.get_governance_info_as_text())})
 
     return JsonResponse(action_dict)
 
@@ -946,9 +923,8 @@ def get_permissions(request):
     model_class = get_model(request_data.get("item_model"))
     target = model_class.objects.get(pk=item_id)
 
-    permClient = PermissionResourceClient(actor=request.user, target=target)
-
-    existing_permissions = permClient.get_all_permissions()
+    client = Client(actor=request.user, target=target)
+    existing_permissions = client.PermissionResource.get_all_permissions()
 
     permission_pks, permissions = [], {}
     for permission in existing_permissions:
@@ -973,21 +949,22 @@ def change_item_permission_override(request):
     item_id = request_data.get("item_id")
     model_class = get_model(request_data.get("item_model"))
     target = model_class.objects.get(pk=item_id)
-    permissionClient = PermissionResourceClient(actor=request.user, target=target)
+
+    client = Client(actor=request.user, target=target)
 
     enable_or_disable = request_data.get("enable_or_disable")
     governing_or_foundational = request_data.get("governing_or_foundational")
 
     if governing_or_foundational == "governing":
         if enable_or_disable == "enable":
-            action, result = permissionClient.enable_governing_permission()
+            action, result = client.PermissionResource.enable_governing_permission()
         elif enable_or_disable == "disable":
-            action, result = permissionClient.disable_governing_permission()
+            action, result = client.PermissionResource.disable_governing_permission()
     elif governing_or_foundational == "foundational":
         if enable_or_disable == "enable":
-            action, result = permissionClient.enable_foundational_permission()
+            action, result = client.PermissionResource.enable_foundational_permission()
         elif enable_or_disable == "disable":
-            action, result = permissionClient.disable_foundational_permission()
+            action, result = client.PermissionResource.disable_foundational_permission()
 
     action_dict = get_action_dict(action)
     action_dict.update({
@@ -1005,13 +982,13 @@ def toggle_anyone(request):
     permission_id = request_data.get("permission_id")
     enable_or_disable = request_data.get("enable_or_disable")
 
-    permissionClient = PermissionResourceClient(actor=request.user)
-    target_permission = permissionClient.get_permission(pk=permission_id)
+    client = Client(actor=request.user)
+    target_permission = client.PermissionResource.get_permission(pk=permission_id)
 
     if enable_or_disable == "enable":
-        action, result = permissionClient.give_anyone_permission(permission_pk=target_permission.pk)
+        action, result = client.PermissionResource.give_anyone_permission(permission_pk=target_permission.pk)
     elif enable_or_disable == "disable":
-        action, result = permissionClient.remove_anyone_from_permission(permission_pk=target_permission.pk)
+        action, result = client.PermissionResource.remove_anyone_from_permission(permission_pk=target_permission.pk)
 
     action_dict = get_action_dict(action)
     action_dict.update({"permission": get_permission_info(result)})
@@ -1033,8 +1010,8 @@ def get_comment_data(request):
     model_class = get_model(request_data.get("item_model"))
     target = model_class.objects.get(pk=item_id)
 
-    commentClient = CommentClient(actor=request.user, target=target)
-    existing_comments = commentClient.get_all_comments_on_target()
+    client = Client(actor=request.user, target=target)
+    existing_comments = client.Comment.get_all_comments_on_target()
 
     comment_pks, comments = [], {}
     for comment in existing_comments:
@@ -1057,8 +1034,8 @@ def add_comment(request):
     target = model_class.objects.get(pk=item_id)
     text = request_data.get("text")
 
-    commentClient = CommentClient(actor=request.user, target=target)
-    action, result = commentClient.add_comment(text=text)
+    client = Client(actor=request.user, target=target)
+    action, result = client.Comment.add_comment(text=text)
 
     action_dict = get_action_dict(action)
     action_dict.update({'comment': serialize_existing_comment_for_vue(result)})
@@ -1076,8 +1053,8 @@ def edit_comment(request):
     text = request_data.get("text")
     comment_pk = request_data.get("comment_pk")
 
-    commentClient = CommentClient(actor=request.user, target=target)
-    action, result = commentClient.edit_comment(pk=comment_pk, text=text)
+    client = Client(actor=request.user, target=target)
+    action, result = client.Comment.edit_comment(pk=comment_pk, text=text)
 
     action_dict = get_action_dict(action)
     action_dict.update({'comment': serialize_existing_comment_for_vue(result)})
@@ -1094,8 +1071,8 @@ def delete_comment(request):
     target = model_class.objects.get(pk=item_id)
     comment_pk = request_data.get("comment_pk")
 
-    commentClient = CommentClient(actor=request.user, target=target)
-    action, result = commentClient.delete_comment(pk=comment_pk)
+    client = Client(actor=request.user, target=target)
+    action, result = client.Comment.delete_comment(pk=comment_pk)
 
     action_dict = get_action_dict(action)
     action_dict.update({'deleted_comment_pk': comment_pk})
@@ -1122,8 +1099,8 @@ def serialize_template_for_vue(template, pk_as_key=True):
 @login_required
 @reformat_input_data(expect_target=False)   # target passed in is empty
 def get_templates_for_scope(request, target, scope):
-    templateClient = TemplateClient(actor=request.user)
-    templates = templateClient.get_templates_for_scope(scope=scope)
+    client = Client(actor=request.user)
+    templates = client.Template.get_templates_for_scope(scope=scope)
     template_dict = [serialize_template_for_vue(template, pk_as_key=False) for template in templates]
     response_dict = {'templates': template_dict, 'scope': scope}
     return JsonResponse(response_dict)
@@ -1133,9 +1110,11 @@ def get_templates_for_scope(request, target, scope):
 @reformat_input_data
 def apply_template(request, target, template_model_pk, supplied_fields=None):
 
-    target_object = GroupClient(actor=request.user).get_community(community_pk=target)
-    templateClient = TemplateClient(actor=request.user, target=target_object)
-    action, result = templateClient.apply_template(
+    client = Client(actor=request.user)
+    target_object = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target_object)
+
+    action, result = client.Template.apply_template(
         template_model_pk=template_model_pk, supplied_fields=supplied_fields
     )
 
@@ -1147,9 +1126,9 @@ def apply_template(request, target, template_model_pk, supplied_fields=None):
 @reformat_input_data(expect_target=False)
 def get_applied_template_data(request, target, trigger_action_pk):
 
-    actionClient = ActionClient(actor=request.user)
-    container = actionClient.get_container_given_trigger_action(action_pk=trigger_action_pk)
-    container_data = actionClient.get_container_data(container_pk=container.pk)
+    client = Client(actor=request.user)
+    container = client.Action.get_container_given_trigger_action(action_pk=trigger_action_pk)
+    container_data = client.Action.get_container_data(container_pk=container.pk)
 
     container_info = {"container_status": container.status}
 
@@ -1188,25 +1167,24 @@ def check_membership_permissions(request, target):
     user clicks through THEN we look for permission related to that, using a different function.
     """
 
-    group_client = GroupClient(actor=request.user)
-    group_client.set_target(target=group_client.get_community(community_pk=target))
-    perm_client = PermissionResourceClient(actor=request.user)
+    client = Client(actor=request.user)
+    client.Community.set_target(target=client.Community.get_community(community_pk=target))
 
-    group_members = group_client.target.roles.get_users_given_role("members")
+    group_members = client.Community.target.roles.get_users_given_role("members")
 
     # join group - checks if user in group and, if not, check if has permission to join group
     join_group = False if request.user.pk in group_members else \
-        perm_client.has_permission(group_client, "add_members", {"member_pk_list": [request.user.pk]})
+        client.PermissionResource.has_permission(client.Community, "add_members", {"member_pk_list": [request.user.pk]})
 
     # "leave group" - checks if user in group and, if true, check if use rhas permission to leave group
     leave_group = False if request.user.pk not in group_members else \
-        perm_client.has_permission(group_client, "remove_members", {"member_pk_list": [request.user.pk]})
+        client.PermissionResource.has_permission(client.Community, "remove_members", {"member_pk_list": [request.user.pk]})
 
     # gets a separate user to test add_members and remove_members.  note that perm_client's has_permission does
     # not check validation here, so it doesn't matter who the user is.
     test_user = User.objects.first() if User.objects.first().pk != request.user.pk else User.objects.last()
-    add_members = perm_client.has_permission(group_client, "add_members", {"member_pk_list": [test_user.pk]})
-    remove_members = perm_client.has_permission(group_client, "remove_members", {"member_pk_list": [test_user.pk]})
+    add_members = client.PermissionResource.has_permission(client.Community, "add_members", {"member_pk_list": [test_user.pk]})
+    remove_members = client.PermissionResource.has_permission(client.Community, "remove_members", {"member_pk_list": [test_user.pk]})
 
     return JsonResponse({
         "user_permissions": {

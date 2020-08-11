@@ -5,10 +5,8 @@ from django.conf import settings
 from selenium import webdriver
 
 from django.contrib.auth.models import User
-from concord.permission_resources.client import PermissionResourceClient
-from concord.actions.utils import Changes
+from concord.actions.utils import Changes, Client
 from groups.models import Forum
-from groups.client import GroupClient
 
 
 settings.DEBUG = True
@@ -116,8 +114,8 @@ class GroupBasicsTestCase(BaseTestCase):
     def setUp(self):
         self.create_users()
         self.actor = User.objects.first()
-        self.client = GroupClient(actor=self.actor)
-        self.community = self.client.create_community(name="USWNT")
+        self.client = Client(actor=self.actor)
+        self.community = self.client.Community.create_community(name="USWNT")
 
     def test_create_group(self):
         self.login_user("meganrapinoe", "badlands2020")
@@ -181,15 +179,15 @@ class PermissionsTestCase(BaseTestCase):
     def setUp(self):
         self.create_users()
         self.actor = User.objects.first()
-        self.client = GroupClient(actor=self.actor)
-        self.community = self.client.create_community(name="USWNT")
-        self.client.set_target(target=self.community)
-        self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()])
-        self.client.add_role(role_name="forwards")
+        self.client = Client(actor=self.actor)
+        self.community = self.client.Community.create_community(name="USWNT")
+        self.client.update_target_on_all(target=self.community)
+        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.Community.add_role(role_name="forwards")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         heath = User.objects.get(username="tobinheath")
-        self.client.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
+        self.client.Community.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
 
     def test_add_permission_to_role(self):
         self.login_user("meganrapinoe", "badlands2020")
@@ -242,10 +240,10 @@ class ActionsTestCase(BaseTestCase):
     def setUp(self):
         self.create_users()  
         self.actor = User.objects.first()
-        self.client = GroupClient(actor=self.actor)
-        self.community = self.client.create_community(name="USWNT")
-        self.client.set_target(target=self.community)
-        self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client = Client(actor=self.actor)
+        self.community = self.client.Community.create_community(name="USWNT")
+        self.client.update_target_on_all(target=self.community)
+        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()])
 
     def test_taking_action_generates_action(self):
 
@@ -271,19 +269,18 @@ class ActionConditionsTestCase(BaseTestCase):
         # Basic setup
         self.create_users()
         self.actor = User.objects.first()
-        self.client = GroupClient(actor=self.actor)
-        self.community = self.client.create_community(name="USWNT")
-        self.client.set_target(target=self.community)
-        self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()])
-        self.client.add_role(role_name="forwards")
+        self.client = Client(actor=self.actor)
+        self.community = self.client.Community.create_community(name="USWNT")
+        self.client.update_target_on_all(target=self.community)
+        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.Community.add_role(role_name="forwards")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         heath = User.objects.get(username="tobinheath")
-        self.client.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
+        self.client.Community.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
 
         # Permission setup
-        self.permissionClient = PermissionResourceClient(actor=self.actor, target=self.community)
-        action, self.permission = self.permissionClient.add_permission(
+        action, self.permission = self.client.PermissionResource.add_permission(
             permission_type=Changes().Communities.AddRole, permission_roles=["forwards"])
 
     def test_adding_condition_to_permission_generates_condition(self):
@@ -331,31 +328,30 @@ class ApprovalConditionsTestCase(BaseTestCase):
         # create group, add members, add roles, add members to role
         self.create_users()
         self.actor = User.objects.first()
-        self.client = GroupClient(actor=self.actor)
-        self.community = self.client.create_community(name="USWNT")
-        self.client.set_target(target=self.community)
-        self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()])
-        self.client.add_role(role_name="forwards")
+        self.client = Client(actor=self.actor)
+        self.community = self.client.Community.create_community(name="USWNT")
+        self.client.update_target_on_all(target=self.community)
+        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.Community.add_role(role_name="forwards")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         heath = User.objects.get(username="tobinheath")
-        self.client.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
+        self.client.Community.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
 
         # add permission & condition to permission
-        self.permissionClient = PermissionResourceClient(actor=self.actor, target=self.community)
-        action, self.permission = self.permissionClient.add_permission(
+        action, self.permission = self.client.PermissionResource.add_permission(
             permission_type=Changes().Communities.AddRole, permission_roles=["forwards"])
         perm_data = [
             {"permission_type": Changes().Conditionals.Approve, "permission_roles": ["forwards"]},
             {"permission_type": Changes().Conditionals.Reject, "permission_roles": ["forwards"]}
         ]
-        self.permissionClient.add_condition_to_permission(
+        self.client.PermissionResource.add_condition_to_permission(
             permission_pk=self.permission.pk, condition_type="approvalcondition",
             permission_data=perm_data)
 
         # have person take action that triggers permission/condition
-        self.client.set_actor(heath)
-        self.client.add_role(role_name="midfielders")
+        self.client.Community.set_actor(heath)
+        self.client.Community.add_role(role_name="midfielders")
 
     def test_approve_implements_action(self):
 
@@ -419,29 +415,28 @@ class VotingConditionTestCase(BaseTestCase):
         # create group, add members, add roles, add members to role
         self.create_users()
         self.actor = User.objects.first()
-        self.client = GroupClient(actor=self.actor)
-        self.community = self.client.create_community(name="USWNT")
-        self.client.set_target(target=self.community)
-        self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()])
-        self.client.add_role(role_name="forwards")
+        self.client = Client(actor=self.actor)
+        self.community = self.client.Community.create_community(name="USWNT")
+        self.client.update_target_on_all(target=self.community)
+        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.Community.add_role(role_name="forwards")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         heath = User.objects.get(username="tobinheath")
-        self.client.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
+        self.client.Community.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
 
         # add permission & condition to permission
-        self.permissionClient = PermissionResourceClient(actor=self.actor, target=self.community)
-        action, self.permission = self.permissionClient.add_permission(
+        action, self.permission = self.client.PermissionResource.add_permission(
             permission_type=Changes().Communities.AddRole, permission_roles=["forwards"]
         )   
         perm_data = [{"permission_type": Changes().Conditionals.AddVote, "permission_roles": ["forwards"]}]
-        self.permissionClient.add_condition_to_permission(
+        self.client.PermissionResource.add_condition_to_permission(
             permission_pk=self.permission.pk, condition_type="votecondition", permission_data=perm_data
         )
 
         # have person take action that triggers permission/condition
-        self.client.set_actor(heath)
-        self.client.add_role(role_name="midfielders")
+        self.client.Community.set_actor(heath)
+        self.client.Community.add_role(role_name="midfielders")
 
     def test_yea_updates_vote_results(self):
 
@@ -518,15 +513,15 @@ class ForumsTestCase(BaseTestCase):
 
         self.create_users()
         self.actor = User.objects.first()
-        self.client = GroupClient(actor=self.actor)
-        self.community = self.client.create_community(name="USWNT")
-        self.client.set_target(target=self.community)
-        self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()])
-        self.client.add_role(role_name="forwards")
+        self.client = Client(actor=self.actor)
+        self.community = self.client.Community.create_community(name="USWNT")
+        self.client.update_target_on_all(target=self.community)
+        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.Community.add_role(role_name="forwards")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         heath = User.objects.get(username="tobinheath")
-        self.client.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
+        self.client.Community.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
 
     def test_create_forum(self):
         self.login_user("meganrapinoe", "badlands2020")
@@ -619,15 +614,15 @@ class TemplatesTestCase(BaseTestCase):
         # create group, add members, add roles, add members to role
         self.create_users()
         self.actor = User.objects.first()
-        self.client = GroupClient(actor=self.actor)
-        self.community = self.client.create_community(name="USWNT")
-        self.client.set_target(target=self.community)
-        self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()])
-        self.client.add_role(role_name="forwards")
+        self.client = Client(actor=self.actor)
+        self.community = self.client.Community.create_community(name="USWNT")
+        self.client.update_target_on_all(target=self.community)
+        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.Community.add_role(role_name="forwards")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         heath = User.objects.get(username="tobinheath")
-        self.client.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
+        self.client.Community.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
 
         # generate templates
         from concord.actions.template_library import create_all_templates
@@ -760,15 +755,15 @@ class MembershipTestCase(BaseTestCase):
         # Basic setup
         self.create_users()
         self.actor = User.objects.first()
-        self.client = GroupClient(actor=self.actor)
-        self.community = self.client.create_community(name="USWNT")
-        self.client.set_target(target=self.community)
-        self.client.add_members(member_pk_list=[user.pk for user in User.objects.all()[:4]])
-        self.client.add_role(role_name="forwards")
+        self.client = Client(actor=self.actor)
+        self.community = self.client.Community.create_community(name="USWNT")
+        self.client.update_target_on_all(target=self.community)
+        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()[:4]])
+        self.client.Community.add_role(role_name="forwards")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         heath = User.objects.get(username="tobinheath")
-        self.client.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
+        self.client.Community.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
 
         # generate templates
         from concord.actions.template_library import create_all_templates
