@@ -35,7 +35,6 @@ class BaseTestCase(StaticLiveServerTestCase):
 
     @classmethod
     def create_users(cls):
-        # TODO: eventually replace this with actual factory methods
         for user_name in ["meganrapinoe", "christenpress", "tobinheath", "crystaldunn", "julieertz",
                           "caseyshort", "emilysonnett", "midgepurce"]:
             User.objects.create_user(user_name, 'shaunagm@gmail.com', 'badlands2020')
@@ -95,7 +94,6 @@ class AccountsTestCase(BaseTestCase):
         self.browser.fill('password2', 'elephant!?')
         self.browser.find_by_id('submit_registration').first.click()
         self.assertTrue(self.browser.is_text_present('Thank you for registering!'))
-        # FIXME: need to add step of activating account with activation link
 
     def test_login(self):
         """Tests that we can log in an existing user."""
@@ -296,7 +294,6 @@ class ActionConditionsTestCase(BaseTestCase):
         css_selector = "#permission_element_" + str(self.permission.pk) + " > div > button.btn.btn-secondary"
         self.browser.find_by_css(css_selector).first.click()
         self.browser.select("condition_select", "VoteCondition")
-        # TODO: look up - is there really no way to better identify vue-multiselect items?
         element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
         self.browser.find_by_id('save_condition_button').first.click()
@@ -502,10 +499,6 @@ class VotingConditionTestCase(BaseTestCase):
         self.browser.find_by_xpath('//*[@id="action_history_table_element"]/tbody/tr[1]/td[7]/button').first.click()
         self.assertTrue(self.browser.is_text_present('You are not eligible to vote.'))
 
-    # def test_vote_has_passed(self):
-    #     # FIXME: not sure how to do this, given the one hour vote minimum?
-    #     # maybe the vote needs a: [close when X people voted option]
-
 
 class ForumsTestCase(BaseTestCase):
 
@@ -555,26 +548,6 @@ class ForumsTestCase(BaseTestCase):
         time.sleep(.25)
         self.assertFalse(self.browser.is_text_present('A place to discuss strategy'))
         self.assertTrue(self.browser.is_text_present('A place to make strategy'))
-
-    # TODO: this creates an ugly error because the action that deletes the target forum then is not displayable
-    # def test_delete_forum(self):
-
-    #     # Create forum
-    #     self.login_user("meganrapinoe", "badlands2020")
-    #     self.go_to_group("USWNT")
-    #     self.browser.find_by_id('new_forum_button').first.click()
-    #     self.browser.fill('forum_name', 'Strategy Sessions')
-    #     self.browser.fill('forum_description', 'A place to discuss strategy')
-    #     self.browser.find_by_id('add_forum_button').first.click()
-    #     self.browser.find_by_css(".close").first.click()  # close modal
-
-    #     # Delete forum
-    #     time.sleep(.25)
-    #     forum = Forum.objects.get(name="Strategy Sessions")
-    #     self.browser.find_by_id(f"delete_forum_{forum.pk}").first.click()
-    #     time.sleep(.25)
-    #     self.assertFalse(self.browser.is_text_present('Strategy Sessions'))
-    #     self.assertFalse(self.browser.is_text_present('A place to discuss strategy'))
 
     def test_add_permission_to_forum(self):
 

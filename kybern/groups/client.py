@@ -19,11 +19,6 @@ class GroupClient(CommunityClient):
 
 class ForumClient(BaseClient):
 
-    # FIXME: right now targets are confusing - some actions can only be taken on forum owner, some can only be taken on
-    # forum, some can only be taken on post, etc.  Some don't even really need a target given the data passed in. :/
-    # Also, annoyingly, we need to make the delete_x targets the thing that owns them, because once we delete the thing
-    # any actions that need to be displayed will break for lack of target. 
-
     # reads
 
     def get_forum_given_pk(self, pk):

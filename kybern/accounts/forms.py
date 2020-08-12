@@ -9,7 +9,6 @@ from accounts.models import User
 
 def validate_access_code(value):
     """The access code field is validated against a list of codes that can be given to users who want to sign up."""
-    # FIXME: load these from somewhere else
     valid_codes = ['alpha-adjs', 'alpha-eias', 'alpha-fhhe', 'alpha-imet', 'alpha-ergt', 'alpha-styl', 'alpha-hiir'] 
     if value.lower() not in valid_codes:
         raise ValidationError(

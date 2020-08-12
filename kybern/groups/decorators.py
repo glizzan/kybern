@@ -92,11 +92,6 @@ def reformat_supplied_fields(supplied_fields):
         if field["type"] in ["PermissionRoleField", "PermissionActorField"]:
             reformatted_dict[field["field_name"]] = reformat_role_or_actor_field(field)["value"]
 
-    # FIXME: this reformatting isn't good enough, actors is getting a None which causes an error, 
-    # and members is turning into field + name
-
-    # This should be reformatted here better but also maybe in Concord??
-
     return reformatted_dict
 
 
@@ -140,7 +135,6 @@ def reformat_combined_permission_and_condition_data(combined_data):
     permission_fields = []
     for field_name, field in permission_field_data.items():
         if field["permission_roles"] or field["permission_actors"]:   
-            # don't save permissions with no roles or actors set (FIXME: check for 'anyone' too?)
             permission_fields.append(field)
 
     return condition_fields, permission_fields
@@ -195,8 +189,6 @@ def reformat_input_data(function=None, expect_target=True):
                 if request_data[parameter_name] in [None, "", [], {}]:
                     raise ValueError(f"Must give required parameter {parameter_name} a real value, " + 
                                      f"not {request_data[parameter_name]}")
-                    # NOTE: this may be too strict, esp the [] and {}, but I think most/all params that 
-                    # allow [] or {} are not required
 
         return function(request, target, **request_data)
 

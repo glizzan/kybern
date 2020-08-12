@@ -30,9 +30,6 @@ class ChangeGroupDescriptionStateChange(BaseStateChange):
         return "changed description of group to %s" % (self.new_description)  
 
     def validate(self, actor, target):
-        """
-        TODO: put real logic here
-        """
         if actor and target and self.new_description:
             return True
         return False

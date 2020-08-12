@@ -32,7 +32,6 @@ class ProfileView(LoginRequiredMixin, generic.DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # FIXME: this seems deeply inefficient given what's involved on the backend 
         client = Client(actor=self.request.user)
         leader_list, member_list = client.Community.get_communities_for_user(user_pk=self.request.user.pk, split=True)
         context["leadership_groups"] = leader_list
