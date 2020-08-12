@@ -57,7 +57,7 @@ def process_action(action):
         follow_up = "They did so because they have the permission %s." % action.resolution.approved_through
     else:
         action_verb = "tried to "
-        follow_up = ""  # TODO: what goes here?
+        follow_up = ""
 
     action_time = action.created_at.strftime("%b %d %Y %I:%M%p")
     if action.target:
@@ -67,7 +67,6 @@ def process_action(action):
 
     action_string = f"At {action_time}, {action.actor.username} {action_verb}{action_description}. {follow_up}"
 
-    # Check for condition  ( FIXME: we need a much more performant way of doing this )
     conditions = Client().Conditional.get_condition_items_for_action(action_pk=action.pk)
 
     return {
@@ -208,7 +207,6 @@ class GroupCreateView(LoginRequiredMixin, generic.edit.CreateView):
               'foundational_permission_enabled']
 
     def form_valid(self, form):
-        # FIXME: should this be so fiddly?
         self.object = form.save(commit=False)
         self.object.owner = self.request.user
         self.object.roles.initialize_with_creator(creator=self.request.user.pk)
@@ -293,7 +291,6 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
             // [ { value: x , text: x } ]
         condition_configuration_options: {{ condition_configuration_options }},
             // { fieldname: { display: x, type: x, required: x, value: x, field_name: x } }   
-        TODO: make format below align with this documentation (which corresponds to what vue expects)      
         """
 
         # Get condition options
@@ -314,7 +311,6 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
         return context
 
     def get_context_data(self, **kwargs):
-        # TODO: refactor this into stuff returned from API calls (or at least view mixins)
         context = super().get_context_data(**kwargs)
         self.client = Client(actor=self.request.user, target=self.object)
         context = self.add_user_data_to_context(context)
@@ -712,8 +708,6 @@ def delete_permission(request, target, permission_id, item_or_role, item_id=None
 ####################################
 ### Views for setting conditions ###
 ####################################
-
-# NOTE that there are no "update condition" functions, for now we simply use add as update and overwrite the whole thing
 
 
 @login_required
