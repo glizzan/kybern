@@ -140,9 +140,9 @@ def serialize_existing_permission_for_vue(permission, pk_as_key=True):
         // {int(pk) : {name: x, display: x, change_type: x } } """
 
     permission_dict = {
-        "name": permission.full_description(), "display": permission.display_string(),
+        "name": permission.change_display_string(), "display": permission.display_string(),
         "change_type": permission.change_type, "actors": permission.get_actors(),
-        "roles": permission.get_role_names(), "anyone": permission.anyone,
+        "roles": permission.get_roles(), "anyone": permission.anyone,
         "fields": permission.get_configuration()
     }
 
@@ -779,7 +779,8 @@ def update_approval_condition(request):
     condition_pk = request_data.get("condition_pk", None)
     action_to_take = request_data.get("action_to_take", None)
 
-    approvalClient = Client(actor=request.user).Conditional.get_approval_condition_as_client(pk=condition_pk)
+    approvalClient = Client(actor=request.user).Conditional.\
+        get_condition_as_client(condition_type="ApprovalCondition", pk=condition_pk)
 
     if action_to_take == "approve":
         action, result = approvalClient.approve()
@@ -796,7 +797,8 @@ def update_vote_condition(request):
     condition_pk = request_data.get("condition_pk", None)
     action_to_take = request_data.get("action_to_take", None)
 
-    voteClient = Client(actor=request.user).Conditional.get_vote_condition_as_client(pk=condition_pk)
+    voteClient = Client(actor=request.user).Conditional.\
+        get_condition_as_client(condition_type="VoteCondition", pk=condition_pk)
 
     action, result = voteClient.vote(vote=action_to_take)
 
