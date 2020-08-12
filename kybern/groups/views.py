@@ -817,7 +817,7 @@ def get_conditional_data(request):
 
     # for permission on condition, does user have permission? 
     permission_details = {}
-    for permission in client.PermissionResource.get_permissions_on_object(object=condition):
+    for permission in client.PermissionResource.get_permissions_on_object(target_object=condition):
         has_permission = client.PermissionResource.actor_satisfies_permission(
             actor=request.user, permission=permission
         )
