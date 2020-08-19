@@ -1,6 +1,7 @@
+<script type="text/x-template" id="group_config_component_template">
 <!-- Interface for editing group, its permissions and history -->
 
-<span id="group_config">
+    <span>
 
     <div class="card">
         <h5 class="card-header">[[ group_name ]]</h5>
@@ -36,21 +37,25 @@
     
     </b-modal>
 
-</span>
+    </span>
+
+</script>
 
 
 <script type="application/javascript">
 
-    var groupConfigApp = new Vue({
+    var groupConfigComponent = Vue.component('group-config-component', {
         delimiters: ['[[', ']]'],
-        el: '#group_config',
+        template: '#group_config_component_template',
         store,
-        data: {
-            item_id: {{ object.pk }},
-            item_model: 'group',
-            edited_group_name: '{{ object.name|escapejs }}',
-            edited_group_description: '{{ object.group_description|escapejs }}',
-            error_message: ''
+        data: function() {
+            return {
+                item_id: {{ object.pk }},
+                item_model: 'group',
+                edited_group_name: '{{ object.name|escapejs }}',
+                edited_group_description: '{{ object.group_description|escapejs }}',
+                error_message: ''
+            }
         },
         computed: {
             ...Vuex.mapState({ group_name: state => state.group_name, group_description: state => state.group_description })                

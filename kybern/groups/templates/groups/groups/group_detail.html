@@ -2,44 +2,38 @@
 
 {% block content %}
 
-<div class="col-5">
+    {% include 'groups/groups/html_templates_to_include.html' %}
+    
+    <div id="kybernApp">
 
-    <!-- Invisible (x-template) includes -->
+        <div class="row">
 
-    {% include 'groups/actions/action_include.html' %} 
-    {% include 'groups/actions/action_history_for_template_include.html' %} 
-    {% include 'groups/actions/approve_condition_include.html' %}  
-    {% include 'groups/actions/vote_condition_include.html' %}  
+        <div class="col-5">
 
-    {% include 'groups/comments/comment_include.html' %} 
+            <group-config-component></group-config-component>   <!-- replace w/ router link soon -->
+        
+            <div class="mt-3">
+                <governance-component></governance-component>  <!-- replace w/ router link soon -->
+            </div>
+        
+        </div>
+        
+        <div class="col-7">
+            <forums-list-component></forums-list-component>  <!-- replace w/ router link soon -->
+        </div>
 
-    {% include 'groups/templates/template_include.html' %}
+        </div>
 
-    <!-- Permissions templates -->
-    {% include 'groups/permissions/add_permission_component_include.html' %}
-    {% include 'groups/permissions/edit_permission_component_include.html' %}
-    {% include 'groups/permissions/permission_condition_component_include.html' %}
-    {% include 'groups/permissions/manage_leadership_condition_include.html' %}
-    {% include 'groups/permissions/role_permissions_include.html' %}
-    {% include 'groups/permissions/item_permissions_include.html' %}
-
-    {% include 'groups/governance/leadership_include.html' %}
-    {% include 'groups/governance/group_membership_include.html' %}     
-    {% include 'groups/governance/role_membership_include.html' %}
-    {% include 'groups/governance/add_role_include.html' %}
-
-    <!-- Visible includes -->
-
-    {% include 'groups/groups/group_config_include.html' %}   
-
-    <div class="mt-3">
-        {% include 'groups/governance/governance_include.html' %}
     </div>
 
-</div>
+    <script type="application/javascript">
 
-<div class="col-7">
-    {% include 'groups/forums/forums_include.html' %}
-</div>
+        var kybernApp = new Vue({
+            delimiters: ['[[', ']]'],
+            el: '#kybernApp',
+            store
+        })
+
+    </script>
 
 {% endblock %}

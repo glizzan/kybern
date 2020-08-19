@@ -1,4 +1,4 @@
-<script type="text/x-template" id="forum_detail_template">
+<script type="text/x-template" id="forum_component_template">
 
     <span>
 
@@ -60,8 +60,6 @@
 
         </b-modal>
 
-
-
     </span>
 
 </script>
@@ -72,7 +70,7 @@
 
 forumComponent = Vue.component('forum-component', {
     delimiters: ['[[', ']]'],
-    template: '#forum_detail_template',
+    template: '#forum_component_template',
     props: ['forum_id'],
     store,
     data: function() {

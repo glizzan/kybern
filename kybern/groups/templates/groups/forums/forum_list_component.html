@@ -1,4 +1,4 @@
-<div id="forums_template">
+<script type="text/x-template" id="forum_list_component_template">
 
     <span v-if="!display_forum" id="forum_list_view">
 
@@ -61,26 +61,25 @@
 
     </span>
        
-
-</div>
-
-{% include 'groups/forums/forum_detail_include.html' %}
+</script>
 
 
 <script type="application/javascript"> 
 
     // Main vue instance for forums app
-    var forumsApp = new Vue({
+    var forumsListComponent = Vue.component('forums-list-component', {
         delimiters: ['[[', ']]'],
-        el: '#forums_template',
+        template: '#forum_list_component_template',
         store,
-        data: {
-            name: null,
-            description: null,
-            pk: null,
-            error_message: null,
-            delete_error_message: null,
-            display_forum: null
+        data: function() {
+            return {
+                name: null,
+                description: null,
+                pk: null,
+                error_message: null,
+                delete_error_message: null,
+                display_forum: null
+            }
         },
         computed: {
             ...Vuex.mapState({ forums: state => state.forums.forums }),
