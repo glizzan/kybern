@@ -1,10 +1,12 @@
-<script type="text/x-template" id="template_action_history_template">
+<script type="text/x-template" id="action_template_detail_component_template">
 
-    <span v-if="action_data">
+    <b-modal size="m" :visible=true hide-footer v-if="action_data" @hide="$router.go(-1)">
+
+        <template v-slot:modal-header><h5>Details for "apply template" action with id 
+            [[ action_id ]]</h5></template>
 
         This template has [[ action_data.length ]] actions:
         
-
         <ul>
             <li v-for="action in action_data"> [[ action.action_change_description ]] 
                <b-badge v-if="action.conditions.length > 0" variant="info" class="check-condition-badge"
@@ -27,41 +29,37 @@
             </vote-condition-ui> 
         </span>
 
-
-
-
-    </span>
+    </b-modal>
 
 </script>
 
 <script type="application/javascript">
 
-    actionTemplateHistoryComponent = Vue.component('action-template-history', {
+    actionTemplateDetailComponent = Vue.component('action-template-detail-component', {
         delimiters: ['[[', ']]'],
-        template: '#template_action_history_template',
-        props: ['trigger_action_pk'],
+        template: '#action_template_detail_component_template',
+        props: ['action_id'],
         store,
         data: function() {
             return { 
                 condition_type: null,
                 condition_pk: null,
-                action_details: [],
-                error_message: ''
+                action_details: []
             }            
         },
         created () {
-            this.getAppliedTemplateData({ trigger_action_pk: this.trigger_action_pk })
+            this.getAppliedTemplateData({ trigger_action_pk: this.action_id })
         },
         computed: {
             ...Vuex.mapState({ containers: state => state.concord_actions.containers }),
             action_data: function() { 
-                if (this.containers[this.trigger_action_pk]) {
-                    return this.containers[this.trigger_action_pk]["action_data"]
+                if (this.containers[this.action_id]) {
+                    return this.containers[this.action_id]["action_data"]
                 } 
             },
             container_status: function() { 
-                if (this.containers[this.trigger_action_pk]) {
-                    return this.containers[this.trigger_action_pk]["container_status"] }
+                if (this.containers[this.action_id]) {
+                    return this.containers[this.action_id]["container_status"] }
             }
         },
         methods: {

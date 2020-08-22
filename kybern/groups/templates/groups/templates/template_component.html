@@ -20,6 +20,8 @@
                 <b-button size="sm" id="submit_apply_template" 
                     v-on:click="apply_template(selected_template)" variant="outline-dark"
                     class="my-2">Apply template with these values</b-button>
+
+                <error-component :message=error_message></error-component>
             </span>
 
             <span v-else>
@@ -87,9 +89,13 @@
             apply_template() {
                 this.applyTemplate({ template_model_pk: this.selected_template.pk, 
                             supplied_fields: this.configuration_fields })
-                .then(response => { console.log("Success applying template!") })
-                .catch(error => {  console.log("Error applying template!"); this.error_message = error })
-            }
+                .then(response => { 
+                    // check status, if waiting link to condition, otherwise say accepted or rejected
+                    console.log("Success applying template!") 
+            
+                })
+                    .catch(error => {  console.log("Error applying template!"); this.error_message = error })
+                }
         }
     })
 

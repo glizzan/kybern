@@ -1,0 +1,59 @@
+{% extends 'accounts/base.html' %}
+
+{% block content %}
+
+    {% include 'groups/groups/html_templates_to_include.html' %}
+    
+    <div id="kybernApp">
+
+        <div class="row">
+
+        <div class="col-5">
+
+            <router-view name="group_config"></router-view>
+
+            <div class="mt-3">
+                    <router-view name="governance"></router-view>
+            </div>
+        
+        </div>
+        
+        <div class="col-7">
+            <router-view name="forum_list"></router-view>
+        </div>
+
+        </div>
+
+    </div>
+
+    <script type="application/javascript">
+
+        const router = new VueRouter({
+        routes: [
+            {
+                path: '/',
+                components: {
+                    group_config: groupConfigComponent,
+                    governance: governanceComponent,
+                    forum_list: forumsListComponent
+                }
+            },
+            {
+                path: '/edit_group',
+                name: 'edit-group',
+                props: true,
+                component: editGroupComponent
+            }
+        ]
+        })
+
+        var kybernApp = new Vue({
+            delimiters: ['[[', ']]'],
+            el: '#kybernApp',
+            store,
+            router
+        })
+
+    </script>
+
+{% endblock %}

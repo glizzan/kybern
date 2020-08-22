@@ -22,10 +22,14 @@
                             @click="prep_comment_modal_for_edit(comment.pk)">edit</b-button>
                         <b-button variant="outline-secondary" class="btn-sm"
                             @click="delete_comment(comment.pk)">delete</b-button>
-                        <permissioned_item :item_id=comment.pk :item_model="'comment'" 
-                            :item_name="comment_name(comment.text)" :display_style="'inline-button'"></permissioned_item>
-                        <action-history :item_id=comment.pk :item_model="'comment'" :item_name="comment_name(comment.text)"
-                            :display_style="'inline-button'"></action-history> 
+                        <router-link :to="{ name: 'comment-action-history', params: {comment_id: comment.pk, 
+                            item_id: comment.pk, item_model: 'comment', item_name: comment_name(comment.text) }}">
+                            <b-button variant="outline-secondary" class="btn-sm"">comment history</b-button>
+                        </router-link>
+                        <router-link :to="{ name: 'comment-permissions', params: { comment_id: comment.pk, 
+                            item_id: comment.pk, item_model: 'comment', item_name: comment_name(comment.text)}}">
+                            <b-button variant="outline-secondary" class="btn-sm"">comment permissions</b-button>
+                        </router-link>
                         <br />
                         <small class="text-muted">Posted [[ display_date(comment.created_at) ]] 
                             by [[ getUserName(comment.commentor_pk) ]]</small>
@@ -45,7 +49,7 @@
             <b-button v-if="mode=='add'" variant="outline-secondary" class="btn-sm"  @click="add_comment">submit</b-button>
             <b-button v-if="mode=='edit'" variant="outline-secondary" class="btn-sm"  @click="edit_comment">submit</b-button>
 
-            <div>[[ error_message ]]</div>
+            <error-component :message=error_message></error-component>
 
         </b-modal>
 

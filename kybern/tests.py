@@ -72,7 +72,7 @@ class BaseTestCase(StaticLiveServerTestCase):
     def go_to_group(self, group_name):
         """Helper method to navigate to group detail page, used because liveservertestcase is finicky about
         pks."""
-        self.browser.visit(self.live_server_url + "/groups/")
+        self.browser.visit(self.live_server_url + "/groups/list/")
         self.browser.find_by_text(group_name).first.click()
 
 
@@ -117,7 +117,7 @@ class GroupBasicsTestCase(BaseTestCase):
 
     def test_create_group(self):
         self.login_user("meganrapinoe", "badlands2020")
-        self.browser.visit(self.live_server_url + "/groups/")
+        self.browser.visit(self.live_server_url + "/groups/list/")
         self.browser.links.find_by_text('Create a group').first.click()
         self.browser.fill('name', 'NWSL')
         self.browser.fill('group_description', 'For NWSL players')
@@ -128,6 +128,7 @@ class GroupBasicsTestCase(BaseTestCase):
     def test_add_members_to_group(self):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button')[0].click()
         self.browser.find_by_id('members_member_count')[0].scroll_to()
         self.assertEquals(self.browser.find_by_id('members_member_count')[0].text, "1 people")
         self.browser.find_by_id('group_membership_display_button').first.click()
@@ -149,6 +150,7 @@ class GroupBasicsTestCase(BaseTestCase):
     def test_create_role(self):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button')[0].click()
         self.browser.find_by_id('add_role_button')[0].scroll_to()
         self.browser.find_by_id('add_role_button').first.click()
         self.browser.fill('role_name', 'forwards')
@@ -190,6 +192,7 @@ class PermissionsTestCase(BaseTestCase):
     def test_add_permission_to_role(self):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button')[0].click()
         self.browser.find_by_id('forwards_editrole')[0].scroll_to()
         self.browser.find_by_id('forwards_editrole').first.click()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
@@ -210,6 +213,7 @@ class PermissionsTestCase(BaseTestCase):
         # Christen Press, a forward, can remove members
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button')[0].click()
         self.browser.find_by_id('members_member_count').scroll_to()
         self.assertEquals(self.browser.find_by_id('members_member_count').text, "8 people")
         self.browser.find_by_id('group_membership_display_button').first.click()
@@ -228,6 +232,7 @@ class PermissionsTestCase(BaseTestCase):
         # Emily Sonnett, not a forward, cannot remove members
         self.login_user("emilysonnett", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button')[0].click()
         self.browser.find_by_id('group_membership_display_button').first.click()
         time.sleep(.25)
         self.assertEquals(len(self.browser.find_by_id('remove_member_button')), 0)
@@ -248,6 +253,7 @@ class ActionsTestCase(BaseTestCase):
         # Add role
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button')[0].click()
         self.browser.find_by_css("#add_role_button")[0].scroll_to()
         self.browser.find_by_id('add_role_button').first.click()
         self.browser.fill('role_name', 'forwards')
@@ -255,8 +261,7 @@ class ActionsTestCase(BaseTestCase):
         self.browser.find_by_css(".close").first.click()  # close modal
 
         # Check for action in action history
-        self.browser.find_by_css("#action_history > span > button")[0].scroll_to()
-        self.browser.find_by_css("#action_history > span > button").first.click()
+        self.browser.find_by_id('group_history_button')[0].click()
         self.assertTrue(self.browser.is_text_present('meganrapinoe added role forwards to USWNT'))
 
 
@@ -286,6 +291,7 @@ class ActionConditionsTestCase(BaseTestCase):
         # Pinoe adds condition to permission
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button')[0].click()
         self.browser.find_by_id('forwards_editrole')[0].scroll_to()
         self.browser.find_by_id('forwards_editrole').first.click()
         time.sleep(.25)
@@ -303,20 +309,17 @@ class ActionConditionsTestCase(BaseTestCase):
         # Someone with the permission tries to take action (use asserts to check for condition error text)
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button')[0].click()
         self.browser.find_by_id('add_role_button').first.click()
         self.browser.fill('role_name', 'midfielders')
         self.browser.find_by_id('save_role_button').first.click()
         time.sleep(.25)
-        self.assertTrue(self.browser.is_text_present('This action cannot be completed until a condition is passed.'))
-        self.browser.find_by_css(".close").first.click()  # close modal
-
-        # Go to action history and the condition link is there in the has_condition column
-        self.browser.find_by_css("#action_history > span > button")[0].scroll_to()
-        self.browser.find_by_css("#action_history > span > button").first.click()
-        self.assertTrue(self.browser.is_text_present('christenpress asked to add role midfielders to USWNT'))
-        self.browser.find_by_xpath('//*[@id="action_history_table_element"]/tbody/tr[1]/td[7]/button').first.click()
+        self.assertTrue(self.browser.is_text_present('There is a condition on your action which must be resolved before your action can be implemented.'))
+        
+        # Click through to condition
+        self.browser.find_by_id('condition_link')[0].click()
         self.assertTrue(self.browser.is_text_present('Please cast your vote'))
-
+        
 
 class ApprovalConditionsTestCase(BaseTestCase):
 
@@ -355,10 +358,9 @@ class ApprovalConditionsTestCase(BaseTestCase):
         # User navigates to action history and approves action
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_css("#action_history > span > button")[0].scroll_to()
-        self.browser.find_by_css("#action_history > span > button").first.click()
+        self.browser.find_by_id('group_history_button')[0].click()
         self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders to USWNT')) 
-        self.browser.find_by_xpath('//*[@id="action_history_table_element"]/tbody/tr[1]/td[7]/button').first.click()
+        self.browser.find_by_css(".action-link-button")[0].click()
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.'))  
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span").first.click()
         time.sleep(.25)
@@ -367,9 +369,9 @@ class ApprovalConditionsTestCase(BaseTestCase):
         text = "You have approved tobinheath's action. Nothing further is needed from you."
         self.assertTrue(self.browser.is_text_present(text)) 
 
-        # Navigate back to action history and check action is implemented
-        xpath_str = '//*[@id="action_history_modal_' + str(self.community.pk) + '_group___BV_modal_footer_"]/button[2]'
-        self.browser.find_by_xpath(xpath_str).first.click()
+        # Check action is implemented
+        self.browser.back()
+        time.sleep(.25)
         css_str = "#action_history_table_element > tbody > tr:nth-child(1) > td:nth-child(4)"
         self.assertTrue(self.browser.find_by_css(css_str)[0].text, "implemented")
 
@@ -378,10 +380,9 @@ class ApprovalConditionsTestCase(BaseTestCase):
         # User navigates to action history and approves action
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_css("#action_history > span > button")[0].scroll_to()
-        self.browser.find_by_css("#action_history > span > button").first.click()
+        self.browser.find_by_id('group_history_button')[0].click()
         self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders to USWNT')) 
-        self.browser.find_by_xpath('//*[@id="action_history_table_element"]/tbody/tr[1]/td[7]/button').first.click()
+        self.browser.find_by_css(".action-link-button")[0].click()
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.'))  
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(2) > span").first.click()
         self.browser.find_by_id('save_approve_choice').first.click()
@@ -389,19 +390,18 @@ class ApprovalConditionsTestCase(BaseTestCase):
         text = "You have rejected tobinheath's action. Nothing further is needed from you."
         self.assertTrue(self.browser.is_text_present(text)) 
 
-        # Navigate back to action history and check action is implemented
-        xpath_str = '//*[@id="action_history_modal_' + str(self.community.pk) + '_group___BV_modal_footer_"]/button[2]'
-        self.browser.find_by_xpath(xpath_str).first.click()
+        # Check action is rejected
+        self.browser.back()
+        time.sleep(.25)
         css_str = "#action_history_table_element > tbody > tr:nth-child(1) > td:nth-child(4)"
         self.assertTrue(self.browser.find_by_css(css_str)[0].text, "rejected")
 
     def test_person_without_permission_to_approve_cant_approve(self):
         self.login_user("emilysonnett", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_css("#action_history > span > button")[0].scroll_to()
-        self.browser.find_by_css("#action_history > span > button").first.click()
+        self.browser.find_by_id('group_history_button')[0].click()
         self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders to USWNT')) 
-        self.browser.find_by_xpath('//*[@id="action_history_table_element"]/tbody/tr[1]/td[7]/button').first.click()
+        self.browser.find_by_css(".action-link-button")[0].click()
         self.assertTrue(self.browser.is_text_present('You do not have permission to approve or reject this action.'))
 
 
@@ -440,10 +440,9 @@ class VotingConditionTestCase(BaseTestCase):
         # User navigates to action history and votes yea
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_css("#action_history > span > button")[0].scroll_to()
-        self.browser.find_by_css("#action_history > span > button").first.click()
+        self.browser.find_by_id('group_history_button')[0].click()
         self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders to USWNT')) 
-        self.browser.find_by_xpath('//*[@id="action_history_table_element"]/tbody/tr[1]/td[7]/button').first.click()       
+        self.browser.find_by_css(".action-link-button")[0].click()
         self.assertTrue(self.browser.is_text_present('The results so far are 0 yeas and 0 nays with 0 abstentions.'))
         self.assertTrue(self.browser.is_text_present('Please cast your vote'))  
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span").first.click()
@@ -458,10 +457,9 @@ class VotingConditionTestCase(BaseTestCase):
         # User navigates to action history and votes nay
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_css("#action_history > span > button")[0].scroll_to()
-        self.browser.find_by_css("#action_history > span > button").first.click()
+        self.browser.find_by_id('group_history_button')[0].click()
         self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders to USWNT')) 
-        self.browser.find_by_xpath('//*[@id="action_history_table_element"]/tbody/tr[1]/td[7]/button').first.click()       
+        self.browser.find_by_css(".action-link-button")[0].click()
         self.assertTrue(self.browser.is_text_present('The results so far are 0 yeas and 0 nays with 0 abstentions.'))
         self.assertTrue(self.browser.is_text_present('Please cast your vote'))  
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(2) > span").first.click()
@@ -476,10 +474,9 @@ class VotingConditionTestCase(BaseTestCase):
         # User navigates to action history and votes nay
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_css("#action_history > span > button")[0].scroll_to()
-        self.browser.find_by_css("#action_history > span > button").first.click()
+        self.browser.find_by_id('group_history_button')[0].click()
         self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders to USWNT')) 
-        self.browser.find_by_xpath('//*[@id="action_history_table_element"]/tbody/tr[1]/td[7]/button').first.click()       
+        self.browser.find_by_css(".action-link-button")[0].click()
         self.assertTrue(self.browser.is_text_present('The results so far are 0 yeas and 0 nays with 0 abstentions.'))
         self.assertTrue(self.browser.is_text_present('Please cast your vote'))  
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(3) > span").first.click()
@@ -493,10 +490,9 @@ class VotingConditionTestCase(BaseTestCase):
 
         self.login_user("emilysonnett", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_css("#action_history > span > button")[0].scroll_to()
-        self.browser.find_by_css("#action_history > span > button").first.click()
+        self.browser.find_by_id('group_history_button')[0].click()
         self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders to USWNT')) 
-        self.browser.find_by_xpath('//*[@id="action_history_table_element"]/tbody/tr[1]/td[7]/button').first.click()
+        self.browser.find_by_css(".action-link-button")[0].click()
         self.assertTrue(self.browser.is_text_present('You are not eligible to vote.'))
 
 
@@ -540,14 +536,62 @@ class ForumsTestCase(BaseTestCase):
 
         # Edit forum
         time.sleep(.25)
-        forum = Forum.objects.get(name="Strategy Sessions")
-        self.browser.find_by_id(f"edit_forum_{forum.pk}").first.click()
+        self.browser.find_by_css(".forum-description").first.click()
+        self.browser.find_by_id("edit_forum_button").first.click()
         self.browser.fill('forum_description', 'A place to make strategy')
-        self.browser.find_by_id('edit_forum_button').first.click()
+        self.browser.find_by_id('edit_forum_save_button').first.click()
         self.browser.find_by_css(".close").first.click()  # close modal
         time.sleep(.25)
         self.assertFalse(self.browser.is_text_present('A place to discuss strategy'))
         self.assertTrue(self.browser.is_text_present('A place to make strategy'))
+
+    def test_delete_forum(self):
+
+        # Create forum
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('new_forum_button').first.click()
+        self.browser.fill('forum_name', 'Strategy Sessions')
+        self.browser.fill('forum_description', 'A place to discuss strategy')
+        self.browser.find_by_id('add_forum_button').first.click()
+        self.browser.find_by_css(".close").first.click()  # close modal
+
+        # delete forum
+        self.browser.find_by_css(".forum-description").first.click()
+        self.browser.find_by_id('delete_forum_button').first.click()
+        time.sleep(.25)
+        self.assertFalse(self.browser.is_text_present('A place to discuss strategy'))
+
+    def test_add_edit_and_delete_post(self):
+
+        # Create forum for post
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('new_forum_button').first.click()
+        self.browser.fill('forum_name', 'Strategy Sessions')
+        self.browser.fill('forum_description', 'A place to discuss strategy')
+        self.browser.find_by_id('add_forum_button').first.click()
+        self.browser.find_by_css(".close").first.click()  # close modal
+        self.browser.find_by_css(".forum-description").first.click()
+        
+        # Add post
+        self.browser.find_by_id('add_post_button').first.click()
+        self.browser.fill('post_title', 'I have an idea')
+        self.browser.fill('post_content', "It's a good one")
+        self.browser.find_by_id('add_post_save_button').first.click()
+        self.assertTrue(self.browser.is_text_present('I have an idea'))
+
+        # Edit post
+        self.browser.find_by_css(".post-content").first.click()
+        self.browser.find_by_id('edit_post_button').first.click()
+        self.browser.fill('post_title', 'I have a great idea')
+        self.browser.find_by_id('edit_post_save_button').first.click()
+        self.assertTrue(self.browser.is_text_present('I have a great idea'))
+
+        # Delete post
+        self.browser.find_by_id('delete_post_button').first.click()
+        time.sleep(.25)
+        self.assertFalse(self.browser.is_text_present('I have a great idea'))
 
     def test_add_permission_to_forum(self):
 
@@ -559,9 +603,10 @@ class ForumsTestCase(BaseTestCase):
         self.browser.fill('forum_description', 'A place to discuss strategy')
         self.browser.find_by_id('add_forum_button').first.click()
         self.browser.find_by_css(".close").first.click()  # close modal
+        self.browser.find_by_css(".forum-description").first.click()
 
         # Add permissions
-        self.browser.find_by_css("#permissioned_item > span > button").first.click()
+        self.browser.find_by_id("forum_permissions").first.click()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(permissions, [])
         self.browser.find_by_id('add_permission_button').first.click()
@@ -569,7 +614,7 @@ class ForumsTestCase(BaseTestCase):
         element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
         self.browser.find_by_id('save_permission_button').first.click()
-        time.sleep(2)
+        time.sleep(.25)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(permissions, ["those with role forwards have permission to edit a forum"])
 
@@ -606,6 +651,7 @@ class TemplatesTestCase(BaseTestCase):
         # apply the template
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('group_membership_settings_button').first.click()
         time.sleep(.2)
         self.browser.find_by_id('browse_membership_templates_button').first.click()
@@ -616,6 +662,7 @@ class TemplatesTestCase(BaseTestCase):
 
         # check that the template has been applied
         self.browser.reload()
+        self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('group_membership_settings_button').first.click()
         time.sleep(.2)
         permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
@@ -626,6 +673,7 @@ class TemplatesTestCase(BaseTestCase):
         # specify a role that can add permissions that does not include Crystal 
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('forwards_editrole')[0].scroll_to()
         self.browser.find_by_id('forwards_editrole').first.click()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
@@ -640,6 +688,7 @@ class TemplatesTestCase(BaseTestCase):
         # Crystal tries to apply the template, and it doesn't work
         self.login_user("crystaldunn", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('group_membership_settings_button').first.click()
         time.sleep(.2)
         self.browser.find_by_id('browse_membership_templates_button').first.click()
@@ -661,6 +710,7 @@ class TemplatesTestCase(BaseTestCase):
 
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('forwards_editrole')[0].scroll_to()
         self.browser.find_by_id('forwards_editrole').first.click()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
@@ -686,6 +736,7 @@ class TemplatesTestCase(BaseTestCase):
         # new user tries to apply a template
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('group_membership_settings_button').first.click()
         time.sleep(.2)
         self.browser.find_by_id('browse_membership_templates_button').first.click()
@@ -704,9 +755,8 @@ class TemplatesTestCase(BaseTestCase):
         # log back in as pinoe, approve
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_css("#action_history > span > button")[0].scroll_to()
-        self.browser.find_by_css("#action_history > span > button").first.click()
-        self.browser.find_by_text("see more")[0].click()
+        self.browser.find_by_id('group_history_button').first.click()
+        self.browser.find_by_text("link")[0].click()
         self.browser.find_by_css("span.check-condition-badge")[0].click()
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.'))  
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span").first.click()
@@ -716,6 +766,9 @@ class TemplatesTestCase(BaseTestCase):
         # check that the template has been applied
         time.sleep(.25)
         self.browser.reload()
+        self.browser.back()
+        self.browser.back()
+        self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('group_membership_settings_button').first.click()
         time.sleep(.25)
         permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
@@ -747,6 +800,7 @@ class MembershipTestCase(BaseTestCase):
         # we start with 4 members
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('members_member_count')[0].scroll_to()
         self.assertEquals(self.browser.find_by_id('members_member_count')[0].text, "4 people")
 
@@ -767,6 +821,7 @@ class MembershipTestCase(BaseTestCase):
         # random person can join
         self.login_user("midgepurce", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id("join_group_button").first.click()
         time.sleep(.25)
 
@@ -779,6 +834,7 @@ class MembershipTestCase(BaseTestCase):
         # we start with 4 members
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('members_member_count')[0].scroll_to()
         self.assertEquals(self.browser.find_by_id('members_member_count')[0].text, "4 people")
 
@@ -801,12 +857,14 @@ class MembershipTestCase(BaseTestCase):
         # Midge can't join
         self.login_user("midgepurce", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button').first.click()
         time.sleep(.25)
         self.assertEquals(len(self.browser.find_by_id("join_group_button")), 0)
 
         # but Christen, a forward, can invite her
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('group_membership_display_button').first.click()
         time.sleep(.25)
         self.browser.find_by_id('add_member_button').first.click()
@@ -825,6 +883,7 @@ class MembershipTestCase(BaseTestCase):
         # we start with 4 members
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('members_member_count')[0].scroll_to()
         self.assertEquals(self.browser.find_by_id('members_member_count')[0].text, "4 people")
 
@@ -849,6 +908,7 @@ class MembershipTestCase(BaseTestCase):
         # random person can request but they are not added yet
         self.login_user("midgepurce", "badlands2020")
         self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id("join_group_button").first.click()
         time.sleep(.25)
         self.browser.find_by_id('members_member_count')[0].scroll_to()
@@ -857,9 +917,8 @@ class MembershipTestCase(BaseTestCase):
         # Christen Press, with role forwards, approves
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_css("#action_history > span > button")[0].scroll_to()
-        self.browser.find_by_css("#action_history > span > button").first.click()
-        self.browser.find_by_xpath('//*[@id="action_history_table_element"]/tbody/tr[1]/td[7]/button').first.click()
+        self.browser.find_by_id('group_history_button').first.click()
+        self.browser.find_by_text("link").first.click()
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.'))  
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span").first.click()
         time.sleep(.25)
@@ -870,5 +929,10 @@ class MembershipTestCase(BaseTestCase):
 
         # we should now have 5 members, not 4
         self.browser.reload()
+        self.browser.back()
+        self.browser.back()
+        self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('members_member_count')[0].scroll_to()
         self.assertEquals(self.browser.find_by_id('members_member_count')[0].text, "5 people")
+
+    # TODO: suite of comments test cases

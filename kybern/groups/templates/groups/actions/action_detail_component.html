@@ -1,0 +1,82 @@
+<script type="text/x-template" id="action_detail_component_template">
+
+    <b-modal size="m" :visible=true hide-footer v-if=ready_to_render @hide="$router.go(-1)">
+
+        <template v-slot:modal-header><h5>Details for action [[ action.action_pk ]]: 
+            [[ action.description ]]</h5></template>
+
+        <p>Action [[ action.action_pk ]] ([[ action.description ]]) was taken by [[ action.actor ]]
+        on [[ action.display_date ]].</p>
+
+        <hr />
+
+        <p v-if="condition_type">This action has a condition on it.  To pass the condition,
+            [[ condition_pass ]].</p>
+        
+        <approve-condition-ui v-if="condition_type=='ApprovalCondition'" :condition_pk=condition_pk
+            :condition_type=condition_type :action_details=action></approve-condition-ui>
+        
+        <vote-condition-ui v-if="condition_type=='VoteCondition'" :condition_pk=condition_pk
+            :condition_type=condition_type :action_details=action></vote-condition-ui>
+
+        <hr />
+
+        <comments :item_id=action_id :item_model="'action'"> </comments>
+
+    </b-modal>
+
+</script>
+
+
+
+<script type="application/javascript"> 
+
+    actionDetailComponent = Vue.component('action-detail-component', {
+        delimiters: ['[[', ']]'],
+        template: '#action_detail_component_template',
+        props: ['action_id'],
+        store,
+        data: function() {
+            return {
+                ready_to_render: false,
+                action: null,
+                condition_type: null,
+                condition_pk: null,
+                condition_pass: null
+            }
+        },
+        created () {
+            this.action = this.getActionData(this.action_id)
+            if (typeof this.action === "undefined") {
+                this.addOrUpdateAction({ action_pk: this.action_id })
+                .catch(error => { console.log(error) })
+            } else {
+                this.ready_to_render = true
+            }
+        },
+        watch: {
+            actions: function(val) { 
+                this.action = this.getActionData(this.action_id)
+                if (typeof this.action !== "undefined") {
+                    this.ready_to_render = true
+                }
+            },
+            action: function(val) {
+                if (val && val.has_condition.conditions[0]) {
+                    this.condition_type = val.has_condition.conditions[0].type
+                    this.condition_pk = val.has_condition.conditions[0].pk
+                    this.condition_pass = val.has_condition.conditions[0].passing_description
+                }
+            }
+        },
+        computed: {
+            ...Vuex.mapGetters(['getActionData']),
+            ...Vuex.mapState({ actions: state => state.concord_actions.actions }),
+        },
+        methods: {
+            ...Vuex.mapActions(['addOrUpdateAction']),
+        }
+
+    })
+
+</script>

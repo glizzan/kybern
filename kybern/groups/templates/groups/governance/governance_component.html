@@ -1,4 +1,6 @@
-<div id="governance">
+<script type="text/x-template" id="governance_component_template">
+
+    <span>
 
         <leadership-component></leadership-component>    <!-- root component is also a b-card -->
 
@@ -53,19 +55,23 @@
     <add-role-modal></add-role-modal>
     <change-role-membership-modal :role_selected=role_to_change_membership></change-role-membership-modal>
     <edit-role-modal :role_to_edit=role_to_edit></edit-role-modal>
+
+    </span>
     
-</div>
+</script>
 
 <script type="application/javascript">
 
     // Main vue instance for role app
-    var roleApp = new Vue({
+    var governanceComponent = Vue.component('governance-component', {
         delimiters: ['[[', ']]'],
-        el: '#governance',
+        template: '#governance_component_template',
         store,
-        data: {
-            role_to_change_membership: '',                  // prop for add-people-to-role-modal
-            role_to_edit: '',                           // propfor edit-role-modal
+        data: function() {
+            return {
+                role_to_change_membership: '',               // prop for add-people-to-role-modal
+                role_to_edit: '',                           // propfor edit-role-modal
+            }
         },
         computed: {
             ...Vuex.mapState({ 

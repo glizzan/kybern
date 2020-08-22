@@ -24,7 +24,6 @@
     <script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
     <script src="https://unpkg.com/vue-multiselect@2.1.0"></script>
     <script src="https://unpkg.com/vuex@2.0.0"></script>
-    
 
     <!-- Move to stylesheet eventually -->
     <style>
@@ -35,6 +34,20 @@
   </head>
 
   <body>
+
+      <script type="application/javascript">
+        var utilityMixin = {
+          methods: {
+            shorten_text: function (text, max_length=50) {
+              if ((typeof text) === "string" && text.length > max_length) {
+                  return text.substring(0, max_length) + "..."
+              } else {
+                  return text
+              }
+            }
+          }
+        }
+      </script>
 
       {% if object %} {% include 'groups/groups/group_vuex_include.html' %} {% endif %}
 
@@ -71,11 +84,11 @@
       </div>
 
       <div class="container">
-        <div class="row mt-5">{% block content %}{% endblock %}</div>
+        <div class="mt-5">{% block content %}{% endblock %}</div>
       </div>
 
-
     <script type="application/javascript">
+
       var navbarVueApp = new Vue({
         delimiters: ['[[', ']]'],
         el: '#navbarVueApp',

@@ -2,44 +2,225 @@
 
 {% block content %}
 
-<div class="col-5">
+    {% include 'groups/groups/html_templates_to_include.html' %}
+    
+    <div id="kybernApp">
 
-    <!-- Invisible (x-template) includes -->
+        <div class="row">
 
-    {% include 'groups/actions/action_include.html' %} 
-    {% include 'groups/actions/action_history_for_template_include.html' %} 
-    {% include 'groups/actions/approve_condition_include.html' %}  
-    {% include 'groups/actions/vote_condition_include.html' %}  
+            <div class="col-3">
+                <router-view name="sidebar"></router-view>
+            </div>
+            
+            <div class="col-9">
+                <router-view name="main"></router-view>
+            </div>
 
-    {% include 'groups/comments/comment_include.html' %} 
+            <router-view name="modal"></router-view>
 
-    {% include 'groups/templates/template_include.html' %}
+        </div>
 
-    <!-- Permissions templates -->
-    {% include 'groups/permissions/add_permission_component_include.html' %}
-    {% include 'groups/permissions/edit_permission_component_include.html' %}
-    {% include 'groups/permissions/permission_condition_component_include.html' %}
-    {% include 'groups/permissions/manage_leadership_condition_include.html' %}
-    {% include 'groups/permissions/role_permissions_include.html' %}
-    {% include 'groups/permissions/item_permissions_include.html' %}
-
-    {% include 'groups/governance/leadership_include.html' %}
-    {% include 'groups/governance/group_membership_include.html' %}     
-    {% include 'groups/governance/role_membership_include.html' %}
-    {% include 'groups/governance/add_role_include.html' %}
-
-    <!-- Visible includes -->
-
-    {% include 'groups/groups/group_config_include.html' %}   
-
-    <div class="mt-3">
-        {% include 'groups/governance/governance_include.html' %}
     </div>
 
-</div>
+    <script type="application/javascript">
 
-<div class="col-7">
-    {% include 'groups/forums/forums_include.html' %}
-</div>
+        const router = new VueRouter({
+        routes: [
+            {
+                name: 'home',
+                path: '/',
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: forumsListComponent
+                }
+            },
+            {
+                name: 'edit-group',
+                path: '/edit group',
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: forumsListComponent,
+                    modal: editGroupComponent
+                },
+            },
+            {
+                name: 'governance',
+                path: '/governance',
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: governanceComponent
+                }
+            },
+            {
+                name: 'group-action-history',
+                path: '/history',
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: governanceComponent,
+                    modal: actionHistoryComponent
+                }
+            },
+            {
+                name: 'group-permissions',
+                path: '/permissions',
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: governanceComponent,
+                    modal: permissionedItemComponent
+                }
+            },
+            {
+                name: 'forum-detail',
+                path: '/forums/:forum_id',
+                props: { sidebar: false, main: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: forumComponent
+                }
+            },
+            {
+                name: 'add-new-forum',
+                path: '/forums/new',
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: forumsListComponent,
+                    modal: forumFormComponent
+                }
+            },
+            {
+                name: 'edit-forum',
+                path: '/forums/:forum_id/edit',
+                props: { sidebar: false, main: true, modal: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: forumComponent,
+                    modal: forumFormComponent
+                }
+            },
+            {
+                name: 'forum-permissions',
+                path: '/forums/:forum_id/permissions/:item_id/:item_model/:item_name',
+                props: { sidebar: false, main: true, modal: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: forumComponent,
+                    modal: permissionedItemComponent
+                }
+            },
+            {
+                name: 'forum-action-history',
+                path: '/forums/:forum_id/history/:item_id/:item_model/:item_name',
+                props: { sidebar: false, main: true, modal: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: forumComponent,
+                    modal: actionHistoryComponent
+                }
+            },
+            {
+                name: 'add-new-post',
+                path: '/forums/:forum_id/new_post',
+                props: { sidebar: false, main: true, modal: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: forumComponent,
+                    modal: postFormComponent
+                }
+            },
+            {
+                name: 'edit-post',
+                path: '/forums/:forum_id/posts/:post_id/edit',
+                props: { sidebar: false, main: true, modal: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: forumComponent,  // switch to postComponent once made
+                    modal: postFormComponent
+                }
+            },
+            {
+                name: 'post-detail',
+                path: '/forums/:forum_id/posts/:post_id',
+                props: { sidebar: false, main: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: postComponent
+                }
+            },
+            {
+                name: 'post-permissions',
+                path: '/forums/:forum_id/posts/:post_id/permissions/:item_id/:item_model/:item_name',
+                props: { sidebar: false, main: true, modal: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: postComponent,
+                    modal: permissionedItemComponent
+                }
+            },
+            {
+                name: 'post-action-history',
+                path: '/forums/:forum_id/posts/:post_id/history/:item_id/:item_model/:item_name',
+                props: { sidebar: false, main: true, modal: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: postComponent,
+                    modal: actionHistoryComponent
+                }
+            },
+            // the navigation on these two comment options is terrible, we'll need to nest them on
+            // anything that has comment options and just resign ourselves to having multiple routes
+            // eg post-comment-permissions, action-comment-permissions etc
+            {
+                name: 'comment-permissions',
+                path: '/comments/:comment_id/permissions/:item_id/:item_model/:item_name',
+                props: { sidebar: false, main: true, modal: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: forumsListComponent,
+                    modal: permissionedItemComponent
+                }
+            },
+            {
+                name: 'comment-action-history',
+                path: '/comments/:comment_id/history/:item_id/:item_model/:item_name',
+                props: { sidebar: false, main: true, modal: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: forumsListComponent,
+                    modal: actionHistoryComponent
+                }
+            },
+            {
+                // we're also going to have to nest action detail on everything that could want it
+                // too aren't we
+                name: 'action-detail',
+                path: '/actions/detail/:action_id',
+                props: { sidebar: false, main: false, modal: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: forumsListComponent,
+                    modal: actionDetailComponent
+                }
+            },
+            {
+                name: 'action-template-detail',
+                path: '/actions/template-detail/:action_id',
+                props: { sidebar: false, main: false, modal: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: forumsListComponent,
+                    modal: actionTemplateDetailComponent
+                }
+            },
+        ]
+        })
+
+        var kybernApp = new Vue({
+            delimiters: ['[[', ']]'],
+            el: '#kybernApp',
+            store,
+            router
+        })
+
+    </script>
 
 {% endblock %}

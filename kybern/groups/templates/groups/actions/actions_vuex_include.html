@@ -7,6 +7,14 @@ const ActionsVuexModule = {
         actions: {},                    // { 'group_1' : [ { action_dict }, { action_dict } ] }
         containers: {}                  // { 'trigger_action_pk': [ { container_status: "waiting", action_data = [{"action_pk": X, "change_type": Y, "conditions", etc }] }
     },
+    getters: { 
+        getActionData: (state, getters) => (action_pk) => {
+            for (var action_group in state.actions) {
+                match = state.actions[action_group].find(action => action.action_pk == action_pk)
+                if (match) { return match }
+            }
+        }
+    },
     mutations: {
         REPLACE_ACTIONS_FOR_ITEM (state, data) {
                 Vue.set(state.actions, data.item_key.toLowerCase(), data.action_data)
