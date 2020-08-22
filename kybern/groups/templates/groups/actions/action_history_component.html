@@ -27,13 +27,8 @@
 
           <!-- Custom formatting for see more column -->
           <template v-slot:cell(action_target_content_type)="data">
-
-              <router-link v-if="data.item.is_template"
-                :to="{name: 'action-template-detail', params: { action_id: data.item.action_pk }}">
-                <b-button variant="outline-secondary action-link-button" class="btn-sm"">link</b-button>
-              </router-link>
         
-              <router-link v-else :to="{ name: 'action-detail', params: { action_id: data.item.action_pk }}">
+              <router-link :to="{ name: 'action-detail', params: { action_id: data.item.action_pk }}">
                 <b-button variant="outline-secondary" class="btn-sm action-link-button">link</b-button>
               </router-link>
         

@@ -82,6 +82,7 @@ def process_action(action):
         "resolution passed by": action.resolution.approved_through,
         "display": action_string,
         "is_template": action.change.get_change_type() == Changes().Actions.ApplyTemplate,
+        "template_description": action.resolution.template_info,
         "has_condition": {
             "exists": True if conditions else False,
             "conditions": [{"pk": condition.pk, "type": condition.__class__.__name__,
@@ -1143,39 +1144,6 @@ def apply_template(request, target, template_model_pk, supplied_fields=None):
 
     action_dict = get_action_dict(action)
     return JsonResponse(action_dict)
-
-
-@login_required
-@reformat_input_data(expect_target=False)
-def get_applied_template_data(request, target, trigger_action_pk):
-
-    client = Client(actor=request.user)
-    container = client.Action.get_container_given_trigger_action(action_pk=trigger_action_pk)
-    container_data = client.Action.get_container_data(container_pk=container.pk)
-
-    container_info = {"container_status": container.status}
-
-    action_data = []
-    for item in container_data:
-
-        condition_data = []
-        for condition in item["conditions"]:
-            if condition["ct"] and condition["pk"]:
-                ct = ContentType.objects.get_for_id(condition["ct"])
-                condition_data.append({"pk": condition["pk"], "ct": condition["ct"], "type": ct.model_class().__name__})
-
-        action_data.append({
-            "action_pk": item["action"].pk if item["action"] else None,
-            "action_actor": item["action"].actor.pk if item["action"] else None,
-            "action_change_description": item["action"].change.description if item["action"] else None,
-            "result_pk": item["result"].pk if item["result"] else None,
-            "result_model": item["result"].__class__.__name__ if item["result"] else None,
-            "conditions": condition_data
-        })
-
-    container_info["action_data"] = action_data
-
-    return JsonResponse({"trigger_action_pk": trigger_action_pk, "container_info": container_info})
 
 
 ########################

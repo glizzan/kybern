@@ -73,11 +73,7 @@
                         implementationCallback(response)
                     } else {
                         if (response.data.action_status == "waiting") {
-                            if (response.data.is_template) { 
-                                link = "/groups/" + {{ object.pk}} + "/#/actions/template-detail/" + response.data.action_pk
-                            } else {
-                                link = "/groups/" + {{ object.pk}} + "/#/actions/detail/" + response.data.action_pk
-                            }                      
+                            link = "/groups/" + {{ object.pk}} + "/#/actions/detail/" + response.data.action_pk
                             error_to_throw = "<span>There is a <a id='condition_link' href='" + link + "'>condition</a> " +
                                 "on your action which must be  resolved before your action can be implemented.</span>"
                         } else {

@@ -704,7 +704,7 @@ class TemplatesTestCase(BaseTestCase):
         permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
         self.assertEquals(permissions, [])
 
-    def test_apply_template_with_conditions(self):
+    def test_apply_template_with_condition(self):
 
         # set a permission and condition on permission 
 
@@ -717,12 +717,12 @@ class TemplatesTestCase(BaseTestCase):
         self.assertEquals(permissions, [])
         self.browser.find_by_id('add_permission_button').first.click()
         self.browser.select(
-            "permission_select", "concord.permission_resources.state_changes.AddPermissionStateChange"
+            "permission_select", "concord.actions.state_changes.ApplyTemplateStateChange"
         )
         self.browser.find_by_id('save_permission_button').first.click()
         time.sleep(.25)
 
-        perm_element = self.browser.find_by_text("those with role forwards have permission to add permission")
+        perm_element = self.browser.find_by_text("those with role forwards have permission to apply template")
         cond_id = "_".join(["condition"] + perm_element[0]["id"].split("_")[1:])
         self.browser.find_by_id(cond_id).first.click()
         self.browser.select("condition_select", "ApprovalCondition")
@@ -757,7 +757,6 @@ class TemplatesTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         self.browser.find_by_id('group_history_button').first.click()
         self.browser.find_by_text("link")[0].click()
-        self.browser.find_by_css("span.check-condition-badge")[0].click()
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.'))  
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span").first.click()
         time.sleep(.25)
