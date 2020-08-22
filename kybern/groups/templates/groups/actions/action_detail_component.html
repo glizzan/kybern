@@ -8,6 +8,25 @@
         <p>Action [[ action.action_pk ]] ([[ action.description ]]) was taken by [[ action.actor ]]
         on [[ action.display_date ]].</p>
 
+        <span v-if=action.is_template>
+            <hr />
+
+            <p><b>This is a template action</b></p>
+
+            <p>When a template action is implemented, it applies a series of other actions.
+            Here are the actions that will be implemented if the condition passes:</p>
+            <ul>
+                <li v-for="action in action.template_description.actions">[[ action ]]</li>
+            </ul>
+
+            <p>The user has added the following information:</p>
+            <ul>
+                <li v-for="field in action.template_description.supplied_fields.fields">[[ field ]]</li>
+            </ul>
+
+            <p>[[action.template_description.foundational]]</p>
+        </span>
+
         <hr />
 
         <p v-if="condition_type">This action has a condition on it.  To pass the condition,

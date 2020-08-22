@@ -72,6 +72,4 @@ urlpatterns = [
     # template views
     path('api/get_templates_for_scope/', views.get_templates_for_scope, name='get_templates_for_scope'),    
     path('api/<int:target>/apply_template/', views.apply_template, name='apply_template'),
-    path('api/get_applied_template_data/', views.get_applied_template_data, name='get_applied_template_data'),    
-
 ]
