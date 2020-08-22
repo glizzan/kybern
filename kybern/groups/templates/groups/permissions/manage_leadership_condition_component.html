@@ -46,9 +46,7 @@
 
         </span>
 
-        <div class="mb-3 text-danger" v-if="error_message">
-            [[ error_message ]]
-        </div>
+        <error-component :message=error_message></error-component>
 
     </div>
 

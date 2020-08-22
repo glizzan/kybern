@@ -1,32 +1,30 @@
 <script type="text/x-template" id="group_membership_template">
 
     <span>
-        <b-card header="Members" class="mb-3">
+        <b-card header="Members" class="my-3">
 
-            <!-- Membership Settings -->
+            <div class="text-center d-flex">
 
-                <!-- text util for existing add_member and remove_member permissions -->
+            <b-button class="mx-2 flex-fill" v-b-modal.group_membership_settings_modal id="group_membership_settings_button">
+                how membership works</b-button>
 
-                <b-button class="btn-sm mb-3" v-b-modal.group_membership_settings_modal 
-                    id="group_membership_settings_button">View & change membership settings</b-button>
-            
-            <hr > <!-- Membership Display--> 
+            <b-button class="mx-2 flex-fill" v-b-modal.group_membership_display id="group_membership_display_button">
+                view & change members</b-button>
 
-                <b-button class="btn-sm mb-3" v-b-modal.group_membership_display 
-                    id="group_membership_display_button">View members</b-button>
-
-            <hr > <!-- Membership Actions --> 
-
-                <b-button v-if="user_permissions.join_group" class="btn-sm mb-3" id="join_group_button"
-                    @click="join_group()">Join Group</b-button>
-                    
-                <b-button v-if="user_permissions.leave_group" class="btn-sm mb-3" id="leave_group_button"
-                    @click="leave_group()">Leave Group</b-button>  
+            <b-button class="mx-2 flex-fill" v-if="user_permissions.join_group" id="join_group_button"
+                @click="join_group()">join group</b-button>
+                
+            <b-button class="mx-2 flex-fill" v-if="user_permissions.leave_group" id="leave_group_button"
+                @click="leave_group()">leave group</b-button> 
+                
+            </div>
                                       
         </b-card>
 
         <b-modal id="group_membership_settings_modal" title="Group Membership Settings" class="modal fade"
                 size="lg" hide-footer>
+
+            <error-component :message=error_message></error-component>
 
             <span id="add_member_permissions">
                 <p class="pb-1 font-weight-bold">Permissions for Adding Members</p>
@@ -58,6 +56,8 @@
 
 
         <b-modal id="group_membership_display" title="Group Membership" class="modal fade" size="lg" hide-footer>
+
+            <error-component :message=error_message></error-component>
 
             <b>Current Members:</b>
                 <span id="current_member_list"> <b-badge v-for="member in groupMembersAsOptions" v-bind:key="member.pk" 
@@ -132,7 +132,8 @@
                 add_member_button_selected: false,
                 remove_member_button_selected: false,
                 members_to_add_selected: [],
-                members_to_remove_selected: []
+                members_to_remove_selected: [],
+                error_message: null
             }
         },
         created () {
@@ -168,11 +169,11 @@
             },
             add_members() {
                 members_to_add = this.members_to_add_selected.map(actor => actor.pk)
-                this.addMembers({ user_pks: members_to_add }).catch(error => console.log(error))
+                this.addMembers({ user_pks: members_to_add }).catch(error => this.error_message = error)
             },
             remove_members() {
                 members_to_remove = this.members_to_remove_selected.map(actor => actor.pk)
-                this.removeMembers({ user_pks: members_to_remove }).catch(error => console.log(error))
+                this.removeMembers({ user_pks: members_to_remove }).catch(error => this.error_message = error)
             }
         }
     });

@@ -1,6 +1,6 @@
 <script type="text/x-template" id="add_role_modal_template">
 
-    <b-modal id="add_role_modal" title="Add a new role" @ok="submitRoleName($event)">
+    <b-modal id="add_role_modal" title="Add a new role" hide-footer>
 
         <div class="input-group mb-3">
             <div class="input-group-prepend">
@@ -10,15 +10,9 @@
                 aria-describedby="role_name_prompt" v-model="new_role_name" name="role_name">
         </div>
 
-        <div class="mb-3" v-if="error_message">
-            [[ error_message ]]
-        </div>
+        <error-component :message=error_message></error-component>
 
-        <!-- <div>FYI, here are the current roles: <span v-for="role in roles" class="ml-3">[[role.name]]</span></div> -->
-
-        <template v-slot:modal-footer="{ ok }">
-            <b-button size="sm" variant="success" @click="ok()" id="save_role_button">Save</b-button>
-        </template>
+        <b-button size="sm" variant="success" @click="submitRoleName()" id="save_role_button">Save</b-button>
 
     </b-modal>
 
@@ -42,8 +36,7 @@
         },   // Gets existing roles from data store
         methods: {
             ...Vuex.mapActions(['addRole']),
-            submitRoleName(bvModalEvt) {
-                bvModalEvt.preventDefault(); // don't close modal
+            submitRoleName() {
                 this.addRole({ role_name: this.new_role_name }).catch(error => {  this.error_message = error  })
             }
         }

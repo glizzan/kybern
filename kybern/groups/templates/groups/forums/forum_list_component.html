@@ -1,63 +1,22 @@
 <script type="text/x-template" id="forum_list_component_template">
 
-    <span v-if="!display_forum" id="forum_list_view">
+    <span>
 
         <h4 class="text-secondary pb-3">{{ object.name }}'s Forums   
-            <span class="pl-3"><b-button variant="outline-secondary" class="btn-sm"
-                v-b-modal.forum_modal id="new_forum_button">+ add new</b-button></span>
+            <router-link :to="{ name: 'add-new-forum'}">
+                <b-button variant="outline-secondary" class="btn-sm ml-3" id="new_forum_button">
+                    + add new</b-button>
+            </router-link>
         </h4>
-    
-        <div>[[ delete_error_message ]]</div>
 
-        <b-card v-for="{ pk, name, description } in forums" :title=name v-bind:key=pk 
-                                class="bg-light text-info border-secondary mb-3">
+        <router-link v-for="{ pk, name, description } in forums" v-bind:key=pk
+                                :to="{ name: 'forum-detail', params: { forum_id: pk } }">
+            <b-card :title=name v-bind:key=pk class="bg-light text-info border-secondary mb-3">
+                <p class="mb-1 text-secondary forum-description">  [[ description ]]  </p>
+            </b-card>
+        </router-link>
 
-            <p class="mb-1 text-secondary">  [[ description ]]  </p>
-
-            <template v-slot:footer>
-                    <b-button variant="outline-secondary" class="btn-sm" @click="display_forum = pk">
-                        view</b-button>
-                    <b-button variant="outline-secondary" class="btn-sm" v-b-modal.forum_modal 
-                        @click="edit_forum_modal(pk, name, description)" :id="'edit_forum_' + pk">
-                        edit</b-button>
-                    <b-button variant="outline-secondary" class="btn-sm" :id="'delete_forum_' + pk" 
-                        @click="delete_forum(pk)">
-                        delete</b-button>
-                    <permissioned_item :item_id=pk :item_model="'forum'" :item_name=name 
-                        :display_style="'inline-button'"></permissioned_item>
-                    <action-history :item_id=pk :item_model="'forum'" :item_name=name 
-                        :display_style="'inline-button'"></action-history>  
-            </template>
-
-        </b-card>
-
-
-        <b-modal id="forum_modal" :title="title_string" size="md" hide-footer @hide="clearState()">
-            
-            <b-form-group id="name_form_group" label="Forum name:" label-for="forum_name">
-                <b-form-input id="forum_name" name="forum_name" v-model="name" required placeholder="Please pick a name">
-                </b-form-input>
-            </b-form-group>
-
-            <b-form-group id="description_form_group" label="Forum description:" label-for="forum_description">
-                <b-form-textarea id="forum_description" name="forum_description" v-model="description" placeholder="Add a description">
-                </b-form-textarea>
-            </b-form-group>
-
-            <b-button v-if=!pk variant="outline-secondary" class="btn-sm" id="add_forum_button" 
-                @click="add_forum">submit</b-button>
-            <b-button v-if=pk variant="outline-secondary" class="btn-sm" id="edit_forum_button" 
-                @click="edit_forum">submit</b-button>
-
-            <div>[[ error_message ]]</div>
-
-        </b-modal>
-        
-    </span>
-
-    <span v-else> <!-- If we have a forum to display -->
-
-        <forum-component :forum_id=display_forum @back_to_forums="display_forum = null"></forum-component>
+        <span v-if="Object.keys(forums).length === 0">You do not have any forums yet.</span>
 
     </span>
        
@@ -73,51 +32,10 @@
         store,
         data: function() {
             return {
-                name: null,
-                description: null,
-                pk: null,
-                error_message: null,
-                delete_error_message: null,
-                display_forum: null
             }
         },
         computed: {
             ...Vuex.mapState({ forums: state => state.forums.forums }),
-            title_string: function() {
-                if (this.name) {
-                    return "Edit forum '" + this.name + "'"
-                } else {
-                    return "Add a new forum"
-                }
-            },
-        },
-        methods: {
-            ...Vuex.mapActions(['addForum', 'editForum', 'deleteForum']),
-            clearState() {
-                this.name = null
-                this.description = null
-                this.pk = null
-            },
-            edit_forum_modal(pk, name, description) {
-                this.pk = pk
-                this.name = name
-                this.description = description
-            },
-            add_forum() { 
-                this.addForum({ name: this.name, description: this.description })
-                .then(response => { this.$bvModal.hide("forum_modal") })
-                .catch(error => {  console.log(error), this.error_message = error })
-                // close modal on success (in then)
-            }, 
-            edit_forum() {
-                this.editForum({ pk: this.pk, name: this.name, description: this.description })
-                .catch(error => {  this.error_message = error })
-            },
-            delete_forum(forum_pk) {
-                this.deleteForum({ pk: forum_pk })
-                .catch(error => {  this.delete_error_message = error })
-
-            }
         }
     })
 

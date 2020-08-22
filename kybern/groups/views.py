@@ -84,7 +84,9 @@ def process_action(action):
         "is_template": action.change.get_change_type() == Changes().Actions.ApplyTemplate,
         "has_condition": {
             "exists": True if conditions else False,
-            "conditions": [{"pk": condition.pk, "type": condition.__class__.__name__} for condition in conditions]
+            "conditions": [{"pk": condition.pk, "type": condition.__class__.__name__,
+                           "passing_description": condition.description_for_passing_condition()}
+                           for condition in conditions]
         }
     }
 
@@ -378,6 +380,18 @@ def get_forums(request, target):
 
 
 @login_required
+def get_forum(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    forum_pk = request_data.get("forum_pk")
+
+    client = Client(actor=request.user)
+    forum = client.Forum.get_forum_given_pk(forum_pk)
+
+    return JsonResponse({'forum_data': serialize_forum_for_vue(forum)})
+
+
+@login_required
 def add_forum(request, target):
 
     client = Client(actor=request.user)
@@ -447,6 +461,18 @@ def get_posts_for_forum(request, target):
     serialized_posts = [serialize_post_for_vue(post) for post in posts]
 
     return JsonResponse({'forum_pk': forum_pk, 'posts': serialized_posts})
+
+
+@login_required
+def get_post(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    post_pk = request_data.get("post_pk")
+
+    client = Client(actor=request.user)
+    post = client.Forum.get_post_given_pk(pk=post_pk)
+
+    return JsonResponse({'post': serialize_post_for_vue(post)})
 
 
 @login_required
@@ -1034,7 +1060,8 @@ def add_comment(request):
     action, result = client.Comment.add_comment(text=text)
 
     action_dict = get_action_dict(action)
-    action_dict.update({'comment': serialize_existing_comment_for_vue(result)})
+    if result:
+        action_dict.update({'comment': serialize_existing_comment_for_vue(result)})
     return JsonResponse(action_dict)
 
 
@@ -1133,8 +1160,9 @@ def get_applied_template_data(request, target, trigger_action_pk):
 
         condition_data = []
         for condition in item["conditions"]:
-            ct = ContentType.objects.get_for_id(condition["ct"])
-            condition_data.append({"pk": condition["pk"], "ct": condition["ct"], "type": ct.model_class().__name__})
+            if condition["ct"] and condition["pk"]:
+                ct = ContentType.objects.get_for_id(condition["ct"])
+                condition_data.append({"pk": condition["pk"], "ct": condition["ct"], "type": ct.model_class().__name__})
 
         action_data.append({
             "action_pk": item["action"].pk if item["action"] else None,

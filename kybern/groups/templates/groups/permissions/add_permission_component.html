@@ -2,7 +2,7 @@
 
     <span>
 
-        <span v-if="error_message" class="text-danger">[[ error_message ]]</span>
+        <error-component :message=error_message></error-component>
 
         <span v-if="!add_permission_button_clicked">
 

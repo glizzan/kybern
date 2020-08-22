@@ -2,7 +2,7 @@
 
     <div> 
 
-        <span v-if="error_message" class="text-danger">[[ error_message ]]</span>
+        <error-component :message=error_message></error-component>
 
         <!-- If we're creating a new condition -->
         <span v-if="mode == 'create' && !condition_selected ">

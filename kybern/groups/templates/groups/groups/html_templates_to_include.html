@@ -1,6 +1,7 @@
 <!-- Action templates -->
 {% include 'groups/actions/action_history_component.html' %} 
-{% include 'groups/actions/template_action_history_component.html' %} 
+{% include 'groups/actions/action_detail_component.html' %} 
+{% include 'groups/actions/action_template_detail_component.html' %} 
 {% include 'groups/actions/approve_condition_component.html' %}  
 {% include 'groups/actions/vote_condition_component.html' %}  
 
@@ -19,10 +20,16 @@
 {% include 'groups/governance/role_membership_component.html' %}
 {% include 'groups/governance/add_role_component.html' %}
 
+<!-- Forum templates -->
+{% include 'groups/forums/forum_component.html' %}
+{% include 'groups/forums/forum_list_component.html' %}
+{% include 'groups/forums/forum_form_component.html' %}
+{% include 'groups/forums/post_form_component.html' %}
+{% include 'groups/forums/post_component.html' %}
+
 <!-- Misc templates -->
 {% include 'groups/comments/comment_component.html' %} 
 {% include 'groups/templates/template_component.html' %}
-{% include 'groups/forums/forum_component.html' %}
-{% include 'groups/forums/forum_list_component.html' %}
 {% include 'groups/groups/group_config_component.html' %}
-        
+{% include 'groups/groups/edit_group_component.html' %}
+{% include 'groups/groups/error_component.html' %}

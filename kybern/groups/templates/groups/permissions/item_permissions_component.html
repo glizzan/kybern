@@ -1,74 +1,68 @@
 <script type="text/x-template" id="permissioned_item_template">
 
-    <span id="permissioned_item">
+    <b-modal :id=modal_id :visible=true hide-footer @hide="$router.go(-1)"> 
 
-        <span v-if="display_style == 'inline-button'">
-            <b-button variant="outline-secondary" class="btn-sm" v-b-modal="modal_id" 
-                @click="edit_permissions()">permissions</b-button>
-        </span>
-        <span v-else-if="display_style == 'group-display'">
-            <b-button variant="outline-secondary" class="mt-3" v-b-modal="modal_id" 
-                @click="edit_permissions()">permissions</b-button>
-        </span>
-        <span v-else>
-            <span v-b-modal="modal_id" v-on:click="edit_permissions()" class="badge badge-light ml-1"  >🖉</span>
-        </span>
+        <template v-slot:modal-header><h5>[[ title_string ]]</h5>
+            <router-link v-if="final_item_model == 'group'" :to="{ name: 'governance'}">
+                <b-button variant="outline-secondary" class="btn-sm">done</b-button>
+            </router-link>
+            <!-- should go to item view for item_id & item_model, hasn't been defined yet
+                <router-link v-else :to="{ name: ?????}">
+                <b-button variant="outline-secondary" class="btn-sm">done</b-button>
+            </router-link>           -->
+        </template>
 
-        <b-modal :id=modal_id :title="title_string" hide-footer> 
+        <!-- Permission overrides -->
 
-            <!-- Permission overrides -->
+        <small>
 
-            <small>
+            <p>When the governing permission is turned on, any governor can take any action on the item,
+            with <span class="text-secondary"><u>a few exceptions</u></span>.
 
-                <p>When the governing permission is turned on, any governor can take any action on the item,
-                with <span class="text-secondary"><u>a few exceptions</u></span>.
+                <span v-if=governing_permission_enabled>
+                    The governing permission is <b>turned on</b>.  
+                    <span class="text-info font-weight-bold" 
+                        @click="change_permission_override('governing', 'disable')">
+                        Click here to turn it off.</span>
+                </span>
+                <span v-else>
+                    The governing permission is <b>turned off</b>.  
+                    <span class="text-info font-weight-bold" 
+                        @click="change_permission_override('governing', 'enable')">
+                        Click here to turn it on.</span>
+                </span>
+            </p>
 
-                    <span v-if=governing_permission_enabled>
-                        The governing permission is <b>turned on</b>.  
-                        <span class="text-info font-weight-bold" 
-                            @click="change_permission_override('governing', 'disable')">
-                            Click here to turn it off.</span>
-                    </span>
-                    <span v-else>
-                        The governing permission is <b>turned off</b>.  
-                        <span class="text-info font-weight-bold" 
-                            @click="change_permission_override('governing', 'enable')">
-                            Click here to turn it on.</span>
-                    </span>
-                </p>
+            <p>When the foundational permission is turned on, only owners can act on the object.  Any 
+            specific permissions set below will not apply, and neither will the governing permission.
+    
+                <span v-if=foundational_permission_enabled>
+                    The foundational permission is <b>turned on</b>.  
+                    <span class="text-info font-weight-bold" 
+                        @click="change_permission_override('foundational', 'disable')">
+                        Click here to turn it off.</span>
+                </span>
+                <span v-else>
+                    The foundational permission is <b>turned off</b>.  
+                    <span class="text-info font-weight-bold" 
+                        @click="change_permission_override('foundational', 'enable')">
+                        Click here to turn it on.</span>
+                </span>
+            </p>
 
-                <p>When the foundational permission is turned on, only owners can act on the object.  Any 
-                specific permissions set below will not apply, and neither will the governing permission.
-        
-                    <span v-if=foundational_permission_enabled>
-                        The foundational permission is <b>turned on</b>.  
-                        <span class="text-info font-weight-bold" 
-                            @click="change_permission_override('foundational', 'disable')">
-                            Click here to turn it off.</span>
-                    </span>
-                    <span v-else>
-                        The foundational permission is <b>turned off</b>.  
-                        <span class="text-info font-weight-bold" 
-                            @click="change_permission_override('foundational', 'enable')">
-                            Click here to turn it on.</span>
-                    </span>
-                </p>
+        </small>
 
-            </small>
+        <!-- Specific permissions -->
+        <edit-permission v-for="permission in item_permission_objects" v-bind:key="permission.pk"
+            :permission=permission :item_id=final_item_id :item_model=final_item_model> 
+        </edit-permission>
+        <add-permission :item_id=final_item_id :item_model=final_item_model> </add-permission> 
+                
+        <p v-if="!item_permission_objects.length">No permissions have been set yet.</p>
 
-            <!-- Specific permissions -->
-            <edit-permission v-for="permission in item_permission_objects" v-bind:key="permission.pk"
-                :permission=permission :item_id=item_id :item_model=item_model> </edit-permission>
-            <add-permission :item_id=item_id :item_model=item_model> </add-permission> 
-                 
-            <p v-if="!item_permission_objects.length">No permissions have been set yet.</p>
-
-            <div class="mb-3" v-if="error_message">[[ error_message ]]</div>
-        
-        </b-modal>
-
-    </span>
-
+        <error-component :message=error_message></error-component>
+    
+    </b-modal>
 
 </script>
 
@@ -77,22 +71,31 @@
     permissionedItemComponent = Vue.component('permissioned_item', {
         delimiters: ['[[', ']]'],
         template: '#permissioned_item_template',
-        props: ['item_id', 'item_model', 'item_name', 'display_style'],
+        props: ['item_id', 'item_model', 'item_name'],
         store,
         data: function() {
             return {
                 error_message: ''
             }
         },
+        created: function () {
+            this.getPermissionsForItem({ item_id: this.final_item_id, item_model: this.final_item_model })
+                .catch(error => {  this.error_message = error })
+        },
         computed: { 
-            ...Vuex.mapGetters(['permissionsForItem',  'getFoundationalForItem', 'getGoverningForItem']),
+            ...Vuex.mapGetters(['permissionsForItem',  'getFoundationalForItem', 
+                'getGoverningForItem']),
+            final_item_id: function() { 
+                return (typeof this.item_id === "undefined") ? {{ object.pk }} : this.item_id },
+            final_item_model: function() { 
+                return (typeof this.item_model === "undefined") ? 'group' : this.item_model },
+            final_item_name: function() { 
+                return (typeof this.item_name === "undefined") ? '{{ object.get_name }}' : this.item_name },
             title_string: function() {
-                return "Permissions for " + this.item_name
+                return "Permissions for " + this.final_item_name
             },
             item_key: function() {
-                if (this.item_id && this.item_model) {
-                    return this.item_id + "_" + this.item_model
-                }
+                return this.final_item_id + "_" + this.final_item_model
             },
             modal_id: function() {
                 return "item_permission_modal" + "_" + this.item_key
@@ -105,13 +108,10 @@
         },
         methods: { 
             ...Vuex.mapActions(['getPermissionsForItem', 'changePermissionOverride']),
-            edit_permissions() {
-                this.getPermissionsForItem({ item_id: this.item_id, item_model: this.item_model })
-                .catch(error => {  this.error_message = error })
-            },
             change_permission_override(governing_or_foundational, enable_or_disable) {
                 this.changePermissionOverride({
-                    item_id : this.item_id, item_model: this.item_model, enable_or_disable: enable_or_disable,
+                    item_id : this.final_item_id, item_model: this.final_item_model, 
+                    enable_or_disable: enable_or_disable,
                     governing_or_foundational: governing_or_foundational })
                 .catch(error => { 
                     this.error_message = error.message
