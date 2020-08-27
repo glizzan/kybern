@@ -1,6 +1,8 @@
 <script type="text/x-template" id="template_template">
 
-    <span>
+    <span v-if="user_permissions.apply_template">
+
+        <p class="pt-4 pb-1 font-weight-bold">Templates</p>
 
         <span v-if="!browse_templates">
             <b-button :id=browse_button_id size="sm" v-on:click="browse_templates=true" 
@@ -53,11 +55,16 @@
                 browse_templates: false,
                 fill_configuration_fields: false,
                 configuration_fields: [],
-                error_message : ''
+                error_message : null
             }
         },
-        created (){ this.getTemplatesForScope({ scope: this.scope }) },
+        created (){ 
+            this.getTemplatesForScope({ scope: this.scope }) 
+            this.checkPermissions({permissions: {"apply_template": null}})
+                .catch(error => {  this.error_message = error; console.log(error) })
+        },
         computed: {
+            ...Vuex.mapState({user_permissions: state => state.permissions.current_user_permissions}),
             ...Vuex.mapGetters(['scopeTemplates', 'select_field_is_multiple', 'rolesAsOptions', 'groupMembersAsOptions']),
             scope_templates: function() {  return this.scopeTemplates(this.scope)  },
             browse_button_id: function() {
@@ -65,7 +72,7 @@
             }
         },
         methods: {
-            ...Vuex.mapActions(['getTemplatesForScope', 'applyTemplate']),
+            ...Vuex.mapActions(['checkPermissions', 'getTemplatesForScope', 'applyTemplate']),
             clearState() { 
                 this.selected_template = null
                 this.configuration_fields = []

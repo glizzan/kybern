@@ -4,8 +4,8 @@
 
         <h4 class="text-secondary pb-3">{{ object.name }}'s Forums   
             <router-link :to="{ name: 'add-new-forum'}">
-                <b-button variant="outline-secondary" class="btn-sm ml-3" id="new_forum_button">
-                    + add new</b-button>
+                <b-button v-if="user_permissions.add_forum" variant="outline-secondary" 
+                    class="btn-sm ml-3" id="new_forum_button">+ add new</b-button>
             </router-link>
         </h4>
 
@@ -35,7 +35,17 @@
             }
         },
         computed: {
-            ...Vuex.mapState({ forums: state => state.forums.forums }),
+            ...Vuex.mapState({ 
+                forums: state => state.forums.forums,
+                user_permissions: state => state.permissions.current_user_permissions
+            }),
+        },
+        created () {
+            this.checkPermissions({permissions: {"add_forum": null}})
+                .catch(error => {  this.error_message = error; console.log(error) })
+        },
+        methods: {
+            ...Vuex.mapActions(['checkPermissions'])
         }
     })
 

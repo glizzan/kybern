@@ -8,9 +8,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 
-from concord.actions.utils import Client
+from concord.actions.utils import Client, Changes
+from concord.actions.models import TemplateModel
 from concord.resources.models import Comment
-from concord.actions.utils import Changes
 from concord.permission_resources.models import PermissionsItem
 
 from accounts.models import User
@@ -146,7 +146,7 @@ def serialize_existing_permission_for_vue(permission, pk_as_key=True):
         "name": permission.change_display_string(), "display": permission.display_string(),
         "change_type": permission.change_type, "actors": permission.get_actors(),
         "roles": permission.get_roles(), "anyone": permission.anyone,
-        "fields": permission.get_configuration()
+        "fields": permission.get_configuration(), "pk": permission.pk
     }
 
     if permission.has_condition():
@@ -999,13 +999,15 @@ def change_item_permission_override(request):
 
 
 @login_required
-def toggle_anyone(request):
+def toggle_anyone(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
     permission_id = request_data.get("permission_id")
     enable_or_disable = request_data.get("enable_or_disable")
 
     client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=target)
     target_permission = client.PermissionResource.get_permission(pk=permission_id)
 
     if enable_or_disable == "enable":
@@ -1146,41 +1148,165 @@ def apply_template(request, target, template_model_pk, supplied_fields=None):
     return JsonResponse(action_dict)
 
 
-########################
-### Membership Views ###
-########################
+##############################
+### Permission Check Views ###
+##############################
 
 
-@login_required
-def check_membership_permissions(request, target):
-    """
-    Checks for "join group", "leave group", "add members" and "remove members" permissions.  In the templates
-    there's a button that says "waiting memberships" that goes to things that have open conditions, if the
-    user clicks through THEN we look for permission related to that, using a different function.
-    """
-
-    client = Client(actor=request.user)
-    client.Community.set_target(target=client.Community.get_community(community_pk=target))
+def check_individual_permission(client, actor, permission_name, params):
+    """Function which matches a permission name to the actual backend call to be performed,
+    returns a lambda function to be executed by caller."""
 
     group_members = client.Community.target.roles.get_users_given_role("members")
+    test_user = User.objects.first() if User.objects.first().pk != actor.pk else User.objects.last()
 
-    # join group - checks if user in group and, if not, check if has permission to join group
-    join_group = False if request.user.pk in group_members else \
-        client.PermissionResource.has_permission(client.Community, "add_members", {"member_pk_list": [request.user.pk]})
+    # Membership
+    if permission_name == "add_members":
+        return client.PermissionResource.has_permission(
+            client.Community, "add_members", {"member_pk_list": [test_user.pk]})
+    if permission_name == "remove_members":
+        return client.PermissionResource.has_permission(
+            client.Community, "remove_members", {"member_pk_list": [test_user.pk]})
+    if permission_name == "join_group":
+        group_members = client.Community.target.roles.get_users_given_role("members")
+        return False if actor.pk in group_members else client.PermissionResource.has_permission(
+            client.Community, "add_members", {"member_pk_list": [actor.pk]})
+    if permission_name == "leave_group":
+        group_members = client.Community.target.roles.get_users_given_role("members")
+        return True if actor.pk in group_members else client.PermissionResource.has_permission(
+            client.Community, "remove_members", {"member_pk_list": [actor.pk]})
+    # Forums & Posts
+    if permission_name == "add_forum":
+        return client.PermissionResource.has_permission(
+            client.Forum, "create_forum", {'name': 'ABC', 'description': 'DEF'})
+    if permission_name == "edit_forum":
+        return client.PermissionResource.has_permission(
+            client.Forum, "edit_forum", {"pk": params["pk"], 'name': 'ABC', 'description': 'DEF'})
+    if permission_name == "delete_forum":
+        return client.PermissionResource.has_permission(client.Forum, "delete_forum", {"pk": params["pk"]})
+    if permission_name == "add_post":
+        return client.PermissionResource.has_permission(
+            client.Forum, "add_post", {"forum_pk": params["forum_pk"], 'title': 'ABC', 'content': 'DEF'})
+    if permission_name == "edit_post":
+        return client.PermissionResource.has_permission(
+            client.Forum, "edit_post", {"pk": params["pk"], 'title': 'ABC', 'content': 'DEF'})
+    if permission_name == "delete_post":
+        return client.PermissionResource.has_permission(client.Forum, "delete_post", {"pk": params["pk"]})
+    # Roles
+    if permission_name == "add_role":
+        return client.PermissionResource.has_permission(client.Community, "add_role", {'role_name': 'ABC'})
+    if permission_name == "add_people_to_role":
+        return client.PermissionResource.has_permission(
+            client.Community, "add_people_to_role", {'role_name': 'ABC', 'people_to_add': [test_user.pk]})
+    if permission_name == "remove_people_from_role":
+        return client.PermissionResource.has_permission(
+            client.Community, "remove_people_from_role", {'role_name': 'ABC', 'people_to_remove': [[test_user.pk]]})
+    # Permissions & Conditions
+    if permission_name == "add_permission":
+        return client.PermissionResource.has_permission(
+            client.PermissionResource, "add_permission", {"permission_type": "faketype", "anyone": True})
+    if permission_name == "remove_permission":
+        return client.PermissionResource.has_permission(
+            client.PermissionResource, "remove_permission", {"item_pk": params["item_pk"]})
+    if permission_name == "add_actor_to_permission":
+        return client.PermissionResource.has_permission(
+            client.PermissionResource, "add_actor_to_permission",
+            {"permission_pk": params["permission_pk"], "actor": str(test_user.pk)})
+    if permission_name == "remove_actor_from_permission":
+        return client.PermissionResource.has_permission(
+            client.PermissionResource, "remove_actor_from_permission",
+            {"permission_pk": params["permission_pk"], "actor": str(test_user.pk)})
+    if permission_name == "add_role_to_permission":
+        return client.PermissionResource.has_permission(
+            client.PermissionResource, "add_role_to_permission",
+            {"permission_pk": params["permission_pk"], "role_name": "fakerole"})
+    if permission_name == "remove_role_from_permission":
+        return client.PermissionResource.has_permission(
+            client.PermissionResource, "remove_role_from_permission",
+            {"permission_pk": params["permission_pk"], "role_name": "fakerole"})
+    if permission_name == "give_anyone_permission":
+        return client.PermissionResource.has_permission(
+            client.PermissionResource, "give_anyone_permission", {"permission_pk": params["permission_pk"]})
+    if permission_name == "remove_anyone_from_permission":
+        return client.PermissionResource.has_permission(
+            client.PermissionResource, "remove_anyone_from_permission", {"permission_pk": params["permission_pk"]})
+    if permission_name == "change_configuration_of_permission":
+        return client.PermissionResource.has_permission(
+            client.PermissionResource, "change_configuration_of_permission", 
+            {"configurable_field_name": "ABC", "configurable_field_value": "DEF", 
+             "permission_pk": params["permission_pk"]})
+    if permission_name == "add_condition_to_permission":
+        return client.PermissionResource.has_permission(
+            client.PermissionResource, "add_condition_to_permission", 
+            {"permission_pk": params["permission_pk"], "condition_type": "ApprovalCondition"})    
+    if permission_name == "remove_condition_from_permission":
+        return client.PermissionResource.has_permission(
+            client.PermissionResource, "remove_condition_from_permission", {"permission_pk": params["permission_pk"]})
+    if permission_name == "add_leadership_condition":
+        return client.PermissionResource.has_permission(
+            client.Community, "add_leadership_condition", 
+            {"leadership_type": params["leadership_type"], "condition_type": "ApprovalCondition"})
+    if permission_name == "remove_leadership_condition":
+        return client.PermissionResource.has_permission(
+            client.Community, "remove_leadership_condition", {"leadership_type": params["leadership_type"]})
+    if permission_name == "enable_foundational_permission":
+        return client.PermissionResource.has_permission(client.Action, "enable_foundational_permission", {})
+    if permission_name == "disable_foundational_permission":
+        return client.PermissionResource.has_permission(client.Action, "disable_foundational_permission", {})
+    if permission_name == "enable_governing_permission":
+        return client.PermissionResource.has_permission(client.Action, "enable_governing_permission", {})
+    if permission_name == "disable_governing_permission":
+        return client.PermissionResource.has_permission(client.Action, "disable_governing_permission", {})
+    # leaders
+    if permission_name == "update_owners":
+        if client.PermissionResource.has_permission(client.Community, "add_owner", {"owner_pk": [test_user.pk]}):
+            return True
+        if client.PermissionResource.has_permission(client.Community, "remove_owner", {"owner_pk": [test_user.pk]}):
+            return True
+        if client.PermissionResource.has_permission(client.Community, "add_owner_role", {"owner_role": "ABC"}):
+            return True
+        if client.PermissionResource.has_permission(client.Community, "remove_owner_role", {"owner_role": "ABC"}):
+            return True
+        return False
+    if permission_name == "update_governors":
+        if client.PermissionResource.has_permission(client.Community, "add_governor", {"governor_pk": [test_user.pk]}):
+            return True
+        if client.PermissionResource.has_permission(client.Community, "remove_governor", {"governor_pk": [test_user.pk]}):
+            return True
+        if client.PermissionResource.has_permission(client.Community, "add_governor_role", {"governor_role": "ABC"}):
+            return True
+        if client.PermissionResource.has_permission(client.Community, "remove_governor_role", {"governor_role": "ABC"}):
+            return True
+        return False
+    # templates
+    if permission_name == "apply_template":
+        return client.PermissionResource.has_permission(
+            client.Template, "apply_template", {"template_model_pk": TemplateModel.objects.first().pk})
+    # comments
+    if permission_name == "add_comment":
+        return client.PermissionResource.has_permission(client.Comment, "add_comment", {"text": "ABC"})
+    if permission_name == "edit_comment":
+        return client.PermissionResource.has_permission(client.Comment, "edit_comment", {"text": "DEF", "pk": params["pk"]})
+    if permission_name == "delete_comment":
+        return client.PermissionResource.has_permission(client.Comment, "delete_comment", {"pk": params["pk"]})
 
-    # "leave group" - checks if user in group and, if true, check if use rhas permission to leave group
-    leave_group = False if request.user.pk not in group_members else \
-        client.PermissionResource.has_permission(client.Community, "remove_members", {"member_pk_list": [request.user.pk]})
+    print(f"Warning: no permission {permission_name} found")
+    return False
 
-    # gets a separate user to test add_members and remove_members.  note that perm_client's has_permission does
-    # not check validation here, so it doesn't matter who the user is.
-    test_user = User.objects.first() if User.objects.first().pk != request.user.pk else User.objects.last()
-    add_members = client.PermissionResource.has_permission(client.Community, "add_members", {"member_pk_list": [test_user.pk]})
-    remove_members = client.PermissionResource.has_permission(client.Community, "remove_members", {"member_pk_list": [test_user.pk]})
 
-    return JsonResponse({
-        "user_permissions": {
-            "join_group": join_group, "leave_group": leave_group, "add_members": add_members,
-            "remove_members": remove_members
-        }
-    })
+@reformat_input_data
+@login_required
+def check_permissions(request, target, permissions):
+    """Given a list of zero or more permission names, gets the function call to check if we have
+    that permission and calls it.  Returns a list of permissions with boolean values indicating
+    whether or not the use has the permissions."""
+
+    client = Client(actor=request.user)
+    client.update_target_on_all(target=client.Community.get_community(community_pk=target))
+
+    permission_dict = {}
+    for permission_name, params in permissions.items():
+        has_permission = check_individual_permission(client, request.user, permission_name, params)
+        permission_dict.update({permission_name: has_permission})
+
+    return JsonResponse({"user_permissions": permission_dict})

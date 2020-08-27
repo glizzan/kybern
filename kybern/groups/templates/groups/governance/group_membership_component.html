@@ -48,8 +48,6 @@
                     :item_model=item_model></add-permission>
             </span>
 
-            <p class="pt-4 pb-1 font-weight-bold">Templates</p>
-
             <template-manager :scope=template_scope></template-manager>
 
         </b-modal>
@@ -137,7 +135,8 @@
             }
         },
         created () {
-            this.checkMembershipPermissions()
+            this.checkPermissions({permissions: 
+                {"add_members": null, "remove_members": null, "join_group": null, "leave_group": null}})
                 .catch(error => {  this.error_message = error; console.log(error) })
             this.getPermissionsForItem({ item_id: this.item_id, item_model: this.item_model })
                 .catch(error => {  this.error_message = error; console.log(error) })
@@ -158,7 +157,7 @@
             }
         },
         methods: {
-            ...Vuex.mapActions(['getPermissionsForItem', 'checkMembershipPermissions', 'addMembers', 'removeMembers']),
+            ...Vuex.mapActions(['getPermissionsForItem', 'checkPermissions', 'addMembers', 'removeMembers']),
             join_group() {
                 this.addMembers({ user_pks: [this.user_pk] }).then(response => window.location.reload())
                     .catch(error => console.log(error))

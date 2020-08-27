@@ -29,7 +29,7 @@
 
         <hr />
 
-        <p v-if="condition_type">This action has a condition on it.  To pass the condition,
+        <p v-if="condition_type" class="my-3">This action has a condition on it.  To pass the condition,
             [[ condition_pass ]].</p>
         
         <approve-condition-ui v-if="condition_type=='ApprovalCondition'" :condition_pk=condition_pk
@@ -40,7 +40,7 @@
 
         <hr />
 
-        <comments :item_id=action_id :item_model="'action'"> </comments>
+        <comment-list :item_id=action_id :item_model="'action'" class="mt-3"> </comment-list>
 
     </b-modal>
 

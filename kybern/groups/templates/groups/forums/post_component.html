@@ -10,12 +10,14 @@
 
         <div class="my-3">
 
-            <router-link :to="{ name: 'edit-post', params: { forum_id: forum_id, post_id: post_id } }">
+            <router-link :to="{ name: 'edit-post', params: { forum_id: forum_id, post_id: post_id } }"
+                v-if="user_permissions.edit_post">
                 <b-button variant="outline-secondary" class="btn-sm" id="edit_post_button">
                     edit post</b-button>
             </router-link>
 
-            <b-button variant="outline-secondary" class="btn-sm" id="delete_post_button" 
+            <b-button v-if="user_permissions.delete_post" variant="outline-secondary" class="btn-sm" 
+                id="delete_post_button" 
                 @click="delete_post(post_id)">delete post</b-button>
             
             <router-link :to="{ name: 'post-action-history', params: {forum_id: forum_id,
@@ -35,7 +37,7 @@
         <!-- Content -->
         <error-component :message="get_post_error_message"></error-component>
         <p class="mb-3 text-secondary">  [[ post.content ]]  </p>
-        <comments :item_id=post_id :item_model="'post'"></comments>
+        <comment-list :item_id=post_id :item_model="'post'" class="mt-3"></comment-list>
 
     </span>
 
@@ -67,12 +69,16 @@ postComponent = Vue.component('post-component', {
         this.getForum({forum_pk: parseInt(this.forum_id)}).then(response => { 
             this.forum_name = this.getForumData(this.forum_id).name
         }).catch(error => {  console.log("Failed to get forum: ", this.forum_id, error) })
+        // Check permissions
+        this.checkPermissions({ permissions: {edit_post: {pk: this.post_id}, delete_post: {pk: this.post_id}}
+        }).catch(error => {  this.error_message = error; console.log(error) })
     },
     computed: {
+        ...Vuex.mapState({user_permissions: state => state.permissions.current_user_permissions}),
         ...Vuex.mapGetters(['getUserName', 'getPostData', 'getForumData']),
     },
     methods: {
-        ...Vuex.mapActions(['deletePost', 'getPost', 'getForum']),
+        ...Vuex.mapActions(['checkPermissions', 'deletePost', 'getPost', 'getForum']),
         display_date(date) { return Date(date) },
         delete_post(pk) {
             this.deletePost({ pk : pk, forum_pk: this.forum_id })

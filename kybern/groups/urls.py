@@ -30,9 +30,8 @@ urlpatterns = [
     path('api/get_permissions/', views.get_permissions, name='get_permissions'),
     path('api/change_item_permission_override/', views.change_item_permission_override, 
          name='change_item_permission_override'),    
-    path('api/toggle_anyone/', views.toggle_anyone, name='toggle_anyone'),
-    path('api/check_membership_permissions/<int:target>/', views.check_membership_permissions, 
-         name='check_membership_permissions'),
+    path('api/toggle_anyone/<int:target>/', views.toggle_anyone, name='toggle_anyone'),
+    path('api/check_permissions/<int:target>/', views.check_permissions, name='check_permissions'),
 
     # path('get_user_permissions/<int:target>/', views.get_user_permissions, name='get_user_permissions'),
 

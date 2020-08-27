@@ -6,8 +6,8 @@
 
         <span v-if="!add_permission_button_clicked">
 
-            <b-button size="sm" v-on:click="add_permission_button_clicked=true" variant="outline-dark"
-                class="my-2" id="add_permission_button">Add Permission</b-button>
+            <b-button v-if="user_permissions.add_permission" size="sm" v-on:click="add_permission_button_clicked=true" 
+                variant="outline-dark" class="my-2" id="add_permission_button">Add Permission</b-button>
 
         </span>
 
@@ -73,6 +73,8 @@
         },
         created () {
             this.permission_selected = this.default_selection
+            this.checkPermissions({permissions: {add_permission: null}})
+            .catch(error => {  this.error_message = error; console.log(error) })
         },
         watch: {
             permission_selected: function (val) {
@@ -85,6 +87,7 @@
             ...Vuex.mapState({ 
                 permissions: state => state.permissions.permissions,
                 permission_options: state => state.permissions.permission_options, 
+                user_permissions: state => state.permissions.current_user_permissions
                 }),
             ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getPermissionConfigurationFields', 
                 'select_field_is_multiple', 'role_to_options', 'user_pk_to_options']),
@@ -109,7 +112,7 @@
             }
         },
         methods: {
-            ...Vuex.mapActions(['addPermission']),
+            ...Vuex.mapActions(['checkPermissions', 'addPermission']),
             clearState() { 
                 if (!this.default_selection) { this.permission_selected = '' }
                 this.add_permission_button_clicked = false
