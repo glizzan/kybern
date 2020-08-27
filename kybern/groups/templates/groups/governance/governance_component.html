@@ -13,7 +13,8 @@
                 role has different rights and responsibilities within the community.
             </p>
 
-            <b-button class="btn-sm mb-3" v-b-modal.add_role_modal id="add_role_button">Add a role</b-button>
+            <b-button v-if="user_permissions.add_role" class="btn-sm mb-3" 
+                v-b-modal.add_role_modal id="add_role_button">Add a role</b-button>
 
             <b-list-group>
 
@@ -73,13 +74,19 @@
                 role_to_edit: '',                           // propfor edit-role-modal
             }
         },
+        created () {
+            this.checkPermissions({permissions: {"add_role": null}})
+            .catch(error => {  this.error_message = error; console.log(error) })
+        },
         computed: {
             ...Vuex.mapState({ 
                 roles: state => state.governance.roles,
-                group_members: state => state.governance.members
+                group_members: state => state.governance.members,
+                user_permissions: state => state.permissions.current_user_permissions
             }),
         },
         methods: {
+            ...Vuex.mapActions(['checkPermissions'])
         }
     });
 

@@ -2,42 +2,29 @@
 
     <span>
 
-        <b-button class="btn-sm" v-b-modal="comment_modal_id">
-            Add a comment</b-button>
-        <b-button v-if="item_comments.length > 0 && show_comments == false" class="btn-sm" 
-            v-on:click="show_comments = true">
-            Show comments</b-button>
-        <b-button v-if="item_comments.length > 0 && show_comments == true" class="btn-sm" 
-            v-on:click="show_comments = false">
-            Hide comments</b-button>
+        <b-card class="my-3">
 
-        <span v-if="show_comments">
+            <b-card-text>[[ comment.text ]]</b-card-text>
 
-            <b-card v-for="comment in item_comments" v-bind:key=comment.pk class="my-3 w-100 bg-light">
+            <template v-slot:footer>
+                <b-button v-if="user_permissions.edit_comment" variant="outline-secondary" class="btn-sm" v-b-modal="comment_modal_id">
+                    edit</b-button>
+                <b-button v-if="user_permissions.delete_comment" variant="outline-secondary" class="btn-sm"
+                    @click="delete_comment(comment.pk)">delete</b-button>
+                <router-link :to="{ name: 'comment-action-history', params: {comment_id: comment.pk, 
+                    item_id: comment.pk, item_model: 'comment', item_name: comment_name(comment.text) }}">
+                    <b-button variant="outline-secondary" class="btn-sm"">comment history</b-button>
+                </router-link>
+                <router-link :to="{ name: 'comment-permissions', params: { comment_id: comment.pk, 
+                    item_id: comment.pk, item_model: 'comment', item_name: comment_name(comment.text)}}">
+                    <b-button variant="outline-secondary" class="btn-sm"">comment permissions</b-button>
+                </router-link>
+                <br />
+                <small class="text-muted">Posted [[ display_date(comment.created_at) ]] 
+                    by [[ getUserName(comment.commentor_pk) ]]</small>
+            </template>
 
-                    <b-card-text>[[ comment.text ]]</b-card-text>
-    
-                    <template v-slot:footer>
-                        <b-button variant="outline-secondary" class="btn-sm" v-b-modal="comment_modal_id" 
-                            @click="prep_comment_modal_for_edit(comment.pk)">edit</b-button>
-                        <b-button variant="outline-secondary" class="btn-sm"
-                            @click="delete_comment(comment.pk)">delete</b-button>
-                        <router-link :to="{ name: 'comment-action-history', params: {comment_id: comment.pk, 
-                            item_id: comment.pk, item_model: 'comment', item_name: comment_name(comment.text) }}">
-                            <b-button variant="outline-secondary" class="btn-sm"">comment history</b-button>
-                        </router-link>
-                        <router-link :to="{ name: 'comment-permissions', params: { comment_id: comment.pk, 
-                            item_id: comment.pk, item_model: 'comment', item_name: comment_name(comment.text)}}">
-                            <b-button variant="outline-secondary" class="btn-sm"">comment permissions</b-button>
-                        </router-link>
-                        <br />
-                        <small class="text-muted">Posted [[ display_date(comment.created_at) ]] 
-                            by [[ getUserName(comment.commentor_pk) ]]</small>
-                    </template>
-    
-                </b-card>
-
-        </span>
+        </b-card>
 
         <b-modal :id="comment_modal_id" :title="title_string" hide-footer>
 
@@ -46,8 +33,7 @@
                 </b-form-textarea>
             </b-form-group>
 
-            <b-button v-if="mode=='add'" variant="outline-secondary" class="btn-sm"  @click="add_comment">submit</b-button>
-            <b-button v-if="mode=='edit'" variant="outline-secondary" class="btn-sm"  @click="edit_comment">submit</b-button>
+            <b-button variant="outline-secondary" class="btn-sm"  @click="edit_comment">submit</b-button>
 
             <error-component :message=error_message></error-component>
 
@@ -61,43 +47,35 @@
 <script type="application/javascript"> 
 
 
-    commentComponent = Vue.component('comments', {
+    commentComponent = Vue.component('comment', {
         delimiters: ['[[', ']]'],
         template: '#comment_template',
-        props: ['item_id', 'item_model'],
+        props: ['item_id', 'item_model', 'comment'],
         store,
         data: function() {
             return {
-                show_comments: false,
-                mode: "add",
-                comment_pk: null,
                 comment_text: '',
                 error_message: ''
             }
         },
         created () {
-            this.getCommentData({ item_id: this.item_id, item_model: this.item_model })
-            .catch(error => { console.log("Error getting comment data")  })
+            this.checkPermissions({permissions: 
+                {"edit_comment": {pk: this.comment.pk}, "delete_comment": {pk: this.comment.pk}}})
+                .catch(error => {  this.error_message = error; console.log(error) })
+            this.comment_text = this.comment.text
         },
         computed: {
-            ...Vuex.mapGetters(['getCommentsForItem', 'getUserName']),
-            item_comments: function() {
-              if (this.item_id && this.item_model) {
-                  return this.getCommentsForItem(this.item_id + "_" + this.item_model)
-              } else {
-                  return []
-              }
-            },
+            ...Vuex.mapState({ user_permissions: state => state.permissions.current_user_permissions }),
+            ...Vuex.mapGetters(['getUserName']),
             title_string: function() {
-                if (this.mode == "add") {  return "Add comment"  } 
-                else {  return "Edit " + this.comment_name(this.comment_text)  }
+                return "Edit " + this.comment_name(this.comment_text)
             },
             comment_modal_id: function() {
                 return "item_comment_modal_" + this.item_id + "_" + this.item_model
             }
         },
         methods: {
-            ...Vuex.mapActions(['getCommentData', 'addComment', 'editComment', 'deleteComment']),
+            ...Vuex.mapActions(['checkPermissions', 'editComment', 'deleteComment']),
             display_date(date) { return Date(date) },
             comment_name(text) {
                 if (text.length > 50) {
@@ -105,19 +83,6 @@
                 } else {
                     return "Comment: '" + text + "'"
                 }
-            },
-            prep_comment_modal_for_edit(pk) {
-                this.mode = 'edit'
-                this.comment_pk = pk
-                for (index in this.item_comments) {
-                    if (this.item_comments[index].pk == pk) {
-                        this.comment_text = this.item_comments[index].text
-                    }
-                }
-            },
-            add_comment() {
-                this.addComment({ item_id: this.item_id, item_model: this.item_model, text: this.comment_text })
-                .catch(error => {  this.error_message = error })
             },
             edit_comment() {
                 this.editComment({ item_id: this.item_id, item_model: this.item_model, text: this.comment_text,

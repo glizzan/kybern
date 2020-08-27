@@ -1,31 +1,29 @@
 
-<span v-if="permission_exists && anyone_can_take_permission" class="text-left">
+<span v-if="permission_exists" class="text-left">
+    <!-- We don't show this on create, since all permissions must have a role or actor specified.
+    Permissions can only be assigned to "anyone" on update, aka when permission exists. -->
 
-    <p>Anyone can take the action described by this permission. You can remove the permission from anyone, 
-        and give it to the previous roles and/or actors specified.</p>
+    <span v-if="anyone_can_take_permission">
+        Anyone can take the action described by this permission.
+        <span v-if="user_permissions.give_anyone_permission">
+            You can remove the permission from anyone, and give it to the previous roles and/or actors specified.
+            <b-button variant="outline-secondary" size="sm" @click="toggle_anyone('disable')">
+                Remove from anyone</b-button>
+        </span>
+    </span>
 
-    <b-button variant="outline-secondary" size="sm" @click="toggle_anyone('disable')">
-        Remove from anyone</b-button>
+    <span v-else>
+        Currently, only the roles and actors below have this permission.
+        <span v-if="user_permissions.remove_anyone_from_permission">
+            You can give permission to everyone.
+            <b-button variant="outline-secondary" size="sm" @click="toggle_anyone('enable')">
+                Give to everyone</b-button></p>
+        </span>
+    </span>
 
-    <span>[[ toggle_error_message ]]</span>
-    <br />
-    
 </span>
 
-<span v-else class="text-left">
-
-    <span v-if="permission_exists" class="pb-3">
-        <!-- We don't show this on create, since all permissions must have a role or actor specified.
-        Permissions can only be assigned to "anyone" on update, aka when permission exists. -->
-
-        <p>Give this permission to specific roles or actors below, or give it to everyone: 
-        <b-button variant="outline-secondary" size="sm" @click="toggle_anyone('enable')">
-            Give to everyone</b-button></p>
-
-        <span>[[ toggle_error_message ]]</span>
-        <br />
-        
-    </span>
+<span v-if="!anyone_can_take_permission" class="text-left">
 
     <!-- Should be a choice field populated by current roles -->
     <div class="input-group mb-3 permissionrolefield">
@@ -33,8 +31,8 @@
         Roles who have this permission
     
         <vue-multiselect v-model=permission_roles_selected :multiple=true :options=rolesAsOptions :allow-empty="true"
-            :close-on-select="true" placeholder="Select roles" 
-            label="name" track-by="name">
+            :close-on-select="true" placeholder="Select roles" label="name" track-by="name" 
+            :disabled="permission_exists && !(user_permissions.add_role_to_permission || user_permissions.remove_role_from_permission)">
             <template slot="selection" slot-scope="{ values, search, isOpen }">
                 <span v-if="!isOpen">
                     Selected: [[ values ]]
@@ -50,8 +48,8 @@
         Actors who have this permission
     
         <vue-multiselect v-model=permission_actors_selected :multiple=true :options=groupMembersAsOptions :allow-empty="true"
-            :close-on-select="true" placeholder="Select actors" 
-            label="name" track-by="pk">
+            :close-on-select="true" placeholder="Select actors" label="name" track-by="pk"
+            :disabled="permission_exists && !(user_permissions.add_actor_to_permission || user_permissions.remove_actor_from_permission)">
             <template slot="selection" slot-scope="{ values, search, isOpen }">
                 <span v-if="!isOpen">
                     Selected: [[ values ]]

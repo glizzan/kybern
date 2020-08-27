@@ -2,20 +2,23 @@
 
     <div class="border m-2 p-2 text-center"> 
 
+        <error-component :message=error_message></error-component>
+
         <!-- Before anyone has indicated they want add or edit a condition -->
         <span v-if="mode == 'start'">
 
             <span v-if="existing_condition">
                 [[ condition_display_helper ]]
-                <b-button variant="outline-secondary" size="sm" class="ml-2" @click="mode = 'update'">
-                    Edit</b-button>
-                <b-button variant="outline-secondary" size="sm" class="ml-2" @click="remove_condition()">
-                    Remove</b-button>
+
+                <b-button v-if="user_permissions.remove_leadership_condition" @click="mode = 'update'"
+                    variant="outline-secondary" size="sm" class="ml-2">Edit</b-button>
+                <b-button v-if="user_permissions.remove_leadership_condition" @click="remove_condition()"
+                    variant="outline-secondary" size="sm" class="ml-2">Remove</b-button>
             </span>
             <span v-else>
                 There is no condition currently set. 
-                <b-button variant="outline-secondary" size="sm" class="ml-2" @click="mode = 'create'">
-                    Add one?</b-button>
+                <b-button v-if="user_permissions.add_leadership_condition" @click="mode = 'create'"
+                    variant="outline-secondary" size="sm" class="ml-2">Add one?</b-button>
             </span>
 
 
@@ -46,8 +49,6 @@
 
         </span>
 
-        <error-component :message=error_message></error-component>
-
     </div>
 
 </script>
@@ -67,6 +68,13 @@
                 error_message : ''
             }
         },
+        mounted () {
+            // No idea why this only works on mounted, not created
+            this.checkPermissions({permissions: {
+                add_leadership_condition: {leadership_type: this.called_for},
+                remove_leadership_condition: {leadership_type: this.called_for}}
+            }).catch(error => {  this.error_message = error; console.log(error) })
+        },
         watch: {
             // The parent of the condition include can change the mode - overrides current mode (on change, not permanently)
             mode_from_parent: function (val) { this.mode = val; },                           
@@ -76,8 +84,9 @@
             ...Vuex.mapState({ 
                 condition_options: state => state.permissions.condition_options,
                 owner_condition: state => state.permissions.owner_condition,
-                governor_condition: state => state.permissions.governor_condition
-                }),
+                governor_condition: state => state.permissions.governor_condition,
+                user_permissions: state => state.permissions.current_user_permissions
+            }),
             ...Vuex.mapGetters(['getConditionConfigurationFields', 'getLeadershipConditionConfigurationFieldsWithData', 
                 'select_field_is_multiple', 'rolesAsOptions', 'groupMembersAsOptions']),
             existing_condition: function() {
@@ -96,7 +105,7 @@
         },
         created (){ this.update_configuration_fields() },
         methods: {
-            ...Vuex.mapActions(['addCondition', 'updateCondition', 'removeCondition']),
+            ...Vuex.mapActions(['checkPermissions', 'addCondition', 'updateCondition', 'removeCondition']),
             update_configuration_fields(){
                 // Note that only one of condition_selected or condition_to_edit should be defined
                 if (this.condition_selected) {
@@ -127,7 +136,7 @@
                 }).then(response => { 
                     this.$emit("clearState"); 
                     this.mode = 'start'; 
-                }).catch(error => { this.error_message = error.message })
+                }).catch(error => { this.error_message = error })
             }
         }
     });

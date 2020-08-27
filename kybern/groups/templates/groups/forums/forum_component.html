@@ -5,17 +5,17 @@
         <h3 class="mt-3">[[ forum_name ]]</h3>
         <p>[[ forum_description ]]</p>
 
-        <router-link :to="{ name: 'edit-forum', params: { forum_id: forum_id } }">
+        <router-link :to="{ name: 'edit-forum', params: { forum_id: forum_id } }" v-if="user_permissions.edit_forum">
             <b-button variant="outline-secondary" class="btn-sm" id="edit_forum_button">
                 edit forum info</b-button>
         </router-link>
 
-        <b-button variant="outline-secondary" class="btn-sm" id="delete_forum_button" 
+        <b-button variant="outline-secondary" class="btn-sm" id="delete_forum_button" v-if="user_permissions.delete_forum" 
             @click="delete_forum(forum_id)">delete forum</b-button>
         
         <router-link :to="{ name: 'forum-action-history', 
             params: {forum_id: forum_id, item_id: forum_id, item_model: 'forum', item_name: forum_name }}">
-            <b-button variant="outline-secondary" class="btn-sm"">forum history</b-button>
+            <b-button variant="outline-secondary" class="btn-sm"" id="forum_history_button">forum history</b-button>
         </router-link>
 
         <router-link :to="{ name: 'forum-permissions', 
@@ -27,7 +27,7 @@
 
         <hr >
 
-            <router-link :to="{ name: 'add-new-post'}">
+            <router-link :to="{ name: 'add-new-post'}" v-if="user_permissions.add_post">
                 <b-button variant="outline-secondary" class="btn-sm mr-3 mb-3" id="add_post_button">
                     + add post</b-button>
             </router-link>
@@ -65,8 +65,15 @@ forumComponent = Vue.component('forum-component', {
     created (){ 
         this.getPosts({ forum_pk: parseInt(this.forum_id) })
         .catch(error => { this.list_post_error_message = "Error getting post data from server " })
+        this.checkPermissions({
+            permissions: 
+                {edit_forum: {pk: this.forum_id}, 
+                delete_forum: {pk: this.forum_id}, 
+                add_post: {forum_pk: this.forum_id}}
+        }).catch(error => {  this.error_message = error; console.log(error) })
     },
     computed: {
+        ...Vuex.mapState({user_permissions: state => state.permissions.current_user_permissions}),
         ...Vuex.mapGetters(['getForumData', 'getPostsDataForForum', 'getUserName']),
         posts: function() {
             if (this.forum_id) { return this.getPostsDataForForum(this.forum_id) }
@@ -79,7 +86,7 @@ forumComponent = Vue.component('forum-component', {
         }
     },
     methods: {
-        ...Vuex.mapActions(['getPosts', 'addPost', 'deleteForum']),
+        ...Vuex.mapActions(['checkPermissions', 'getPosts', 'addPost', 'deleteForum']),
         display_date(date) { return Date(date) },
         delete_forum(forum_pk) {
             this.deleteForum({ pk: forum_pk })

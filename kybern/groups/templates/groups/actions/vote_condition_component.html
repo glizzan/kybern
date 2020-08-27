@@ -4,14 +4,14 @@
 
         <!-- Information about the vote. -->
         <span v-if="is_resolved">
-            This vote, on [[ action_details.description ]], ended on [[ voting_deadline_display ]]. 
+            This vote ended on [[ voting_deadline_display ]]. 
             The results were [[ vote_results ]], which means the action was [[ condition_details.status ]].
             It required a [[ majority_or_plurality ]] vote and abstentions were 
             <span v-if="!allow_abstain">not</span> allowed.
         </span>
 
         <span v-else>
-            This vote, on [[ action_details.description ]], will end on [[ voting_deadline_display ]]. 
+            This vote will end on [[ voting_deadline_display ]]. 
             The results so far are [[ vote_results ]].
             It requires a [[ majority_or_plurality ]] vote and abstentions are 
             <span v-if="!allow_abstain">not</span> allowed.

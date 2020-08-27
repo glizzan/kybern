@@ -30,7 +30,7 @@
                         <p class="text-center font-italic">Roles</p>
                         <vue-multiselect v-model="owner_roles_selected" :options="rolesAsOptions" :multiple="true" 
                         :close-on-select="true" :clear-on-select="false" placeholder="No roles selected" 
-                        label="name" track-by="name">
+                        :disabled="!(user_permissions.update_owners)" label="name" track-by="name">
                             <template slot="selection" slot-scope="{ values, search, isOpen }">
                                 <span v-if="!isOpen"> Selected: [[ values ]] </span>
                             </template>
@@ -40,7 +40,7 @@
                         <p class="text-center font-italic">Individuals</p>
                         <vue-multiselect v-model="owner_actors_selected" :options="groupMembersAsOptions" :multiple="true" 
                         :close-on-select="true" :clear-on-select="true" placeholder="No individuals selected" 
-                        label="name" track-by="pk" prepend="Individuals">
+                        :disabled="!(user_permissions.update_owners)" label="name" track-by="pk" prepend="Individuals">
                             <template slot="selection" slot-scope="{ values, search, isOpen }">
                                 <span v-if="!isOpen"> Selected: [[ values ]] </span>
                             </template>
@@ -48,7 +48,8 @@
                         </div>
                     </div>
 
-                    <b-button variant="outline-secondary" class="mx-auto btn-sm mt-3" @click="update_leadership('owners')">
+                    <b-button v-if="user_permissions.update_owners" variant="outline-secondary" 
+                        class="mx-auto btn-sm mt-3" @click="update_leadership('owners')">
                         Update owners</b-button>
                     
                 </b-form>
@@ -82,7 +83,7 @@
                     <p class="text-center font-italic">Roles</p>
                     <vue-multiselect v-model="governor_roles_selected" :options="rolesAsOptions" :multiple="true" 
                     :close-on-select="true" :clear-on-select="false" placeholder="No roles selected" 
-                    label="name" track-by="name">
+                    :disabled="!(user_permissions.update_governors)" label="name" track-by="name">
                         <template slot="selection" slot-scope="{ values, search, isOpen }">
                             <span v-if="!isOpen"> Selected: [[ values ]] </span>
                         </template>
@@ -92,7 +93,7 @@
                     <p class="text-center font-italic">Individuals</p>
                     <vue-multiselect v-model="governor_actors_selected" :options="groupMembersAsOptions" :multiple="true" 
                     :close-on-select="true" :clear-on-select="true" placeholder="No individuals selected" 
-                    label="name" track-by="pk" prepend="Individuals">
+                    :disabled="!(user_permissions.update_governors)" label="name" track-by="pk" prepend="Individuals">
                         <template slot="selection" slot-scope="{ values, search, isOpen }">
                             <span v-if="!isOpen"> Selected: [[ values ]] </span>
                         </template>
@@ -100,7 +101,7 @@
                     </div>
                 </div>
 
-                <b-button variant="outline-secondary" class="mx-auto btn-sm mt-3" @click="update_leadership('governors')">
+                <b-button v-if="user_permissions.update_governors"  variant="outline-secondary" class="mx-auto btn-sm mt-3" @click="update_leadership('governors')">
                     Update governors</b-button>
                 
             </b-form>
@@ -173,7 +174,8 @@
                 roles: state => state.governance.roles,
                 governance_info: state => state.governance.governance_info,
                 owner_condition_pk: state => state.governance.owner_condition_pk,
-                governor_condition_pk: state => state.governance.governor_condition_pk
+                governor_condition_pk: state => state.governance.governor_condition_pk,
+                user_permissions: state => state.permissions.current_user_permissions
             }),
             ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getUserName', 'leadershipAsOptions']),
             title_string: function() {
@@ -205,9 +207,12 @@
         },
         created (){ 
             this.populate_from_store()
+            this.checkPermissions({permissions: 
+                {"update_owners": null, "update_governors": null}})
+                .catch(error => {  this.error_message = error; console.log(error) })
         },
         methods: {
-            ...Vuex.mapActions(['updateOwners', 'updateGovernors']),
+            ...Vuex.mapActions(['checkPermissions', 'updateOwners', 'updateGovernors']),
             populate_from_store() {
                 this.owner_roles_selected = this.leadershipAsOptions.owner_role_options
                 this.owner_actors_selected = this.leadershipAsOptions.owner_actor_options

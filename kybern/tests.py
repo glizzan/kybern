@@ -295,10 +295,9 @@ class ActionConditionsTestCase(BaseTestCase):
         self.browser.find_by_id('forwards_editrole')[0].scroll_to()
         self.browser.find_by_id('forwards_editrole').first.click()
         time.sleep(.25)
-        permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
-        self.assertEquals(permissions, ["those with role forwards have permission to add role to community"])
-        css_selector = "#permission_element_" + str(self.permission.pk) + " > div > button.btn.btn-secondary"
-        self.browser.find_by_css(css_selector).first.click()
+        perm_element = self.browser.find_by_text("those with role forwards have permission to add role to community")
+        cond_id = "_".join(["condition"] + perm_element[0]["id"].split("_")[1:])
+        self.browser.find_by_id(cond_id).first.click()
         self.browser.select("condition_select", "VoteCondition")
         element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
@@ -604,6 +603,7 @@ class ForumsTestCase(BaseTestCase):
         self.browser.find_by_id('add_forum_button').first.click()
         self.browser.find_by_css(".close").first.click()  # close modal
         self.browser.find_by_css(".forum-description").first.click()
+        time.sleep(.25)
 
         # Add permissions
         self.browser.find_by_id("forum_permissions").first.click()
@@ -611,6 +611,7 @@ class ForumsTestCase(BaseTestCase):
         self.assertEquals(permissions, [])
         self.browser.find_by_id('add_permission_button').first.click()
         self.browser.select("permission_select", "groups.state_changes.EditForumStateChange")
+        time.sleep(.25)
         element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
         self.browser.find_by_id('save_permission_button').first.click()
@@ -670,39 +671,13 @@ class TemplatesTestCase(BaseTestCase):
 
     def test_rejected_template(self):
 
-        # specify a role that can add permissions that does not include Crystal 
-        self.login_user("meganrapinoe", "badlands2020")
-        self.go_to_group("USWNT")
-        self.browser.find_by_id('governance_button').first.click()
-        self.browser.find_by_id('forwards_editrole')[0].scroll_to()
-        self.browser.find_by_id('forwards_editrole').first.click()
-        permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
-        self.assertEquals(permissions, [])
-        self.browser.find_by_id('add_permission_button').first.click()
-        self.browser.select(
-            "permission_select", "concord.permission_resources.state_changes.AddPermissionStateChange"
-        )
-        self.browser.find_by_id('save_permission_button').first.click()
-        time.sleep(.5)
-
-        # Crystal tries to apply the template, and it doesn't work
+        # Crystal tries to apply the template, but she doesn't get the interface because she doesn't have permission
         self.login_user("crystaldunn", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('group_membership_settings_button').first.click()
-        time.sleep(.2)
-        self.browser.find_by_id('browse_membership_templates_button').first.click()
-        self.browser.find_by_id('apply_template_invite_only').first.click()
-        roles_that_can_invite_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
-        self.select_from_multiselect("forwards", search_within=roles_that_can_invite_dropdown)
-        self.browser.find_by_id('submit_apply_template').first.click()
-
-        # the template has not been applied applied
-        self.browser.reload()
-        self.browser.find_by_id('group_membership_settings_button').first.click()
-        time.sleep(.2)
-        permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
-        self.assertEquals(permissions, [])
+        button = self.browser.find_by_id('browse_membership_templates_button')
+        self.assertEquals(len(button), 0)
 
     def test_apply_template_with_condition(self):
 
@@ -865,7 +840,7 @@ class MembershipTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('group_membership_display_button').first.click()
-        time.sleep(.25)
+        time.sleep(.5)
         self.browser.find_by_id('add_member_button').first.click()
         time.sleep(.25)
         self.select_from_multiselect(selection="midgepurce")

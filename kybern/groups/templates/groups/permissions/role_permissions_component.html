@@ -4,11 +4,11 @@
 
         <b>People with this role can...</b>
 
+        <p v-if="!role_permissions.length">This role has no permissions yet.</p>
+
         <edit-permission v-for="permission in role_permissions" v-bind:key="permission.pk"
             :permission=permission :role_to_edit=role_to_edit> </edit-permission>
         <add-permission :role_to_edit=role_to_edit :item_model="'group'"> </add-permission>     
-
-        <p v-if="!role_permissions.length">This role has no permissions yet.</p>
 
         <error-component :message=error_message></error-component>
 

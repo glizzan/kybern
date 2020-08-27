@@ -5,22 +5,30 @@
         <error-component :message=error_message></error-component>
 
         <!-- Display existing permission -->
-        
-        <span :id=pair_element_id><div class="btn-group" role="group">
-            <b-button variant="light">
-                <small :id="'display_' + pair_element_id" class="permission-display">[[ permission.display ]]</small>
-                <span v-on:click="edit_permission_mode=true" class="badge badge-light ml-1"  >🖉</span>
-                <span v-on:click="delete_permission()" class="badge badge-light ml-1"  >🗑</span>
-            </b-button>
-            <b-button v-if="permission.condition" variant="secondary" :id="'condition_' + pair_element_id">
-                <small>on the condition that [[ permission.condition.how_to_pass ]]</small>
-                <span v-on:click="edit_condition_mode='update'" class="badge badge-secondary ml-1">🖉</span>
-                <span v-on:click="delete_condition()" class="badge badge-secondary ml-1"  >🗑</span>
-            </b-button>
-            <b-button v-else v-on:click="edit_condition_mode='create'" variant="secondary"
-                :id="'condition_' + pair_element_id">
-                <small>add condition</small></b-button>
-        </div></span>
+
+        <div :id=pair_element_id class="card my-4 small">
+            <div class="card-header">
+                <span class="permission-display" :id="'display_' + pair_element_id">[[ permission.display ]]</span>
+                <span v-if="can_edit_permission" v-on:click="edit_permission_mode=true" 
+                    class="badge badge-light ml-1"  >🖉</span>
+                <span v-if="user_permissions.remove_permission" v-on:click="delete_permission()" 
+                    class="badge badge-light ml-1"  >🗑</span>
+            </div>
+            <div class="card-header" variant="info">
+                <span v-if="permission.condition" :id="'condition_' + pair_element_id">
+                    <span>on the condition that [[ permission.condition.how_to_pass ]]</span>
+                    <span v-if=user_permissions.remove_condition_from_permission
+                        v-on:click="edit_condition_mode='update'" class="badge badge-light ml-1">🖉</span>
+                    <span v-if=user_permissions.remove_condition_from_permission 
+                        v-on:click="delete_condition()" class="badge badge-light ml-1"  >🗑</span>
+                </span>
+                <span v-else v-on:click="edit_condition_mode='create'" :id="'condition_' + pair_element_id">
+                    <span v-if="user_permissions.add_condition_to_permission">
+                        <b-button variant="outline-secondary" class="btn-sm">add condition</b-button></span>
+                    <span v-else>no condition</span>
+                </span>
+            </div>
+        </div>
 
         <span v-if="edit_permission_mode">
             
@@ -72,6 +80,20 @@
                 permission_actors_selected: []
             }
         },
+        created () {
+            this.checkPermissions({permissions: {
+                remove_permission: {item_pk: this.permission.pk},
+                add_condition_to_permission: {permission_pk: this.permission.pk},
+                remove_condition_from_permission: {permission_pk: this.permission.pk},
+                add_actor_to_permission: {permission_pk: this.permission.pk},
+                remove_actor_from_permission: {permission_pk: this.permission.pk},
+                add_role_to_permission: {permission_pk: this.permission.pk},
+                remove_role_from_permission: {permission_pk: this.permission.pk},
+                give_anyone_permission: {permission_pk: this.permission.pk},
+                remove_anyone_from_permission: {permission_pk: this.permission.pk},
+                change_configuration_of_permission: {permission_pk: this.permission.pk}}
+            }).catch(error => {  this.error_message = error; console.log(error) })
+        },
         watch: {
             permission: function(val) {
                 if (val) {
@@ -85,7 +107,10 @@
             }
         },
         computed: {
-            ...Vuex.mapState({ permissions: state => state.permissions.permissions }),
+            ...Vuex.mapState({ 
+                permissions: state => state.permissions.permissions,
+                user_permissions: state => state.permissions.current_user_permissions
+            }),
             ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getPermissionConfigurationFields',
                 'getPermissionConfigurationFieldsWithData', 'select_field_is_multiple', 'role_to_options',
                 'user_pk_to_options']),
@@ -96,10 +121,20 @@
             },
             pair_element_id() {
                 return "permission_element_" + permission.pk
+            },
+            can_edit_permission() {
+                if (this.user_permissions.add_actor_to_permission || this.user_permissions.remove_actor_from_permission || 
+                this.user_permissions.add_role_to_permission || this.user_permissions.remove_role_from_permission ||
+                this.user_permissions.give_anyone_permission || this.user_permissions.remove_anyone_from_permission ||
+                this.user_permissions.change_configuration_of_permission) {
+                    return true 
+                } else {
+                    return false
+                }
             }
         },
         methods: {
-            ...Vuex.mapActions(['removePermission', 'updatePermission', 'removeCondition']),
+            ...Vuex.mapActions(['checkPermissions', 'removePermission', 'updatePermission', 'removeCondition', 'toggleAnyone']),
             get_roles() {
                 if (this.item_or_role == "role") { return [this.role_to_edit] }
                 else if (this.item_or_role == "item") { return this.permission_roles_selected }
