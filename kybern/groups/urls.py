@@ -17,6 +17,7 @@ urlpatterns = [
 
     # role & membership views
     path('api/add_role/<int:target>/', views.add_role, name='add_role_to_group'),
+    path('api/remove_role/<int:target>/', views.remove_role, name='remove_role_from_group'),
     path('api/add_people_to_role/<int:target>/', views.add_people_to_role, name='add_people_to_role'),
     path('api/remove_people_from_role/<int:target>/', views.remove_people_from_role, name='remove_people_from_role'),
     path('api/add_members/<int:target>/', views.add_members, name='add_members'),

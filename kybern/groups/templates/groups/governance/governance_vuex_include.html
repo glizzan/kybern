@@ -27,6 +27,10 @@
                     state.roles.push({ name: data.role_name, current_members: [] })
                 }
             },
+            REMOVE_ROLE (state, data) {
+                index = state.roles.findIndex(role => role.name == data.role_name)
+                if (index) { state.roles.splice(index, 1)}
+            },
             ADD_MEMBERS (state, data ) {
                 for (index in data.user_pks) {
                     user_pk = data.user_pks[index]
@@ -147,6 +151,12 @@
                 url = "{% url 'add_role_to_group' target=object.pk %}"    
                 params = { role_name: payload.role_name }
                 implementationCallback = () => { commit('ADD_ROLE', { role_name: payload.role_name }) }
+                return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
+            removeRole ({ commit, state, dispatch }, payload) {
+                url = "{% url 'remove_role_from_group' target=object.pk %}"    
+                params = { role_name: payload.role_name }
+                implementationCallback = () => { commit('REMOVE_ROLE', { role_name: payload.role_name }) }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
             updateOwners({ commit, state, dispatch}, payload) {
