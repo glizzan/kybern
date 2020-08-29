@@ -100,7 +100,7 @@ def get_action_dict(action, fetch_template_actions=False):
     if action.pk == "Invalid Action":
         return {
             "action_status": "invalid",
-            "action_log": "We're sorry, this request is invalid.",
+            "action_log": action.error_message,
             "action_developer_log": action.error_message
         }
 
@@ -549,6 +549,20 @@ def add_role(request, target):
     client.update_target_on_all(target=target)
 
     action, result = client.Community.add_role(role_name=request_data['role_name'])
+
+    return JsonResponse(get_action_dict(action))
+
+
+@login_required
+def remove_role(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=target)
+
+    action, result = client.Community.remove_role(role_name=request_data['role_name'])
 
     return JsonResponse(get_action_dict(action))
 

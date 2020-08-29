@@ -16,6 +16,8 @@
             <b-button v-if="user_permissions.add_role" class="btn-sm mb-3" 
                 v-b-modal.add_role_modal id="add_role_button">Add a role</b-button>
 
+            <error-component :message=error_message></error-component>
+
             <b-list-group>
 
                     <b-list-group-item class="d-flex justify-content-between align-items-center" 
@@ -25,7 +27,7 @@
                             <small class="ml-2" :id="'members_member_count'"> [[ group_members.length ]] people </small>
                        </span>
                        <div class="role_interactions">
-                           <b-badge variant="primary" pill v-b-modal.edit_role_modal
+                           <b-badge variant="info" pill v-b-modal.edit_role_modal
                                v-on:click="role_to_edit = 'members'" :id="'members_editrole'">
                                edit role</b-badge>
                        </div>
@@ -42,9 +44,11 @@
                                 <b-badge variant="secondary" pill v-b-modal.role_membership_modal
                                     v-on:click="role_to_change_membership = role.name" :id="role.name + '_changemembers'">
                                     change members</b-badge>
-                                <b-badge variant="primary" pill v-b-modal.edit_role_modal
+                                <b-badge variant="info" pill v-b-modal.edit_role_modal
                                     v-on:click="role_to_edit = role.name" :id="role.name + '_editrole'">
                                     edit role</b-badge>
+                                <b-badge variant="danger" pill v-on:click="remove_role(role.name)">
+                                    remove</b-badge>
                             </div>
                     </b-list-group-item>
                     
@@ -72,6 +76,7 @@
             return {
                 role_to_change_membership: '',               // prop for add-people-to-role-modal
                 role_to_edit: '',                           // propfor edit-role-modal
+                error_message: null,
             }
         },
         created () {
@@ -86,7 +91,11 @@
             }),
         },
         methods: {
-            ...Vuex.mapActions(['checkPermissions'])
+            ...Vuex.mapActions(['checkPermissions', 'removeRole']),
+            remove_role(role_name) {
+                this.removeRole({role_name: role_name})
+                .catch(error => {  this.error_message = error  })
+            }
         }
     });
 
