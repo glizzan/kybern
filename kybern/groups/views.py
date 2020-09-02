@@ -10,7 +10,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from concord.actions.utils import Client, Changes
 from concord.actions.models import TemplateModel
-from concord.resources.models import Comment
+from concord.resources.models import Comment, SimpleList
 from concord.permission_resources.models import PermissionsItem
 
 from accounts.models import User
@@ -97,7 +97,7 @@ def get_action_dict(action, fetch_template_actions=False):
     unlike process_action, which is always called regarding existing actions, get_action_dict 
     may be passed an invalid action."""
 
-    if action.pk == "Invalid Action":
+    if action.status == "invalid":
         return {
             "action_status": "invalid",
             "action_log": action.error_message,
@@ -193,6 +193,18 @@ def serialize_forums_for_vue(forums):
     return forum_list
 
 
+def serialize_list_for_vue(simple_list):
+    return {'pk': simple_list.pk, 'name': simple_list.name, 'description': simple_list.description,
+            'rows': simple_list.get_rows()}
+
+
+def serialize_lists_for_vue(simple_lists):
+    serialized_lists = []
+    for simple_list in simple_lists:
+        serialized_lists.append(serialize_list_for_vue(simple_list))
+    return serialized_lists
+
+
 ############################
 ### Standard Django CBVs ###
 ############################
@@ -260,7 +272,7 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
         context["permission_options"] = {}
         context["permission_configuration_options"] = {}
 
-        for model_class in [Group, Forum, Post, Comment, PermissionsItem]:
+        for model_class in [Group, Forum, Post, Comment, PermissionsItem, SimpleList]:
 
             # get settable permissions given model class
             settable_permissions = self.client.PermissionResource.get_settable_permissions_for_model(model_class)
@@ -423,7 +435,7 @@ def edit_forum(request, target):
     forum = client.Forum.get_forum_given_pk(pk)
     client.Forum.set_target(target=forum)
 
-    action, result = client.Forum.edit_forum(pk=pk, name=name, description=description)
+    action, result = client.Forum.edit_forum(name=name, description=description)
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
@@ -441,7 +453,7 @@ def delete_forum(request, target):
     forum = client.Forum.get_forum_given_pk(pk)
     client.Forum.set_target(target=forum)
 
-    action, result = client.Forum.delete_forum(pk=pk)
+    action, result = client.Forum.delete_forum()
 
     action_dict = get_action_dict(action)
     action_dict["deleted_forum_pk"] = pk
@@ -488,7 +500,7 @@ def add_post(request, target):
     forum = client.Forum.get_forum_given_pk(forum_pk)
     client.Forum.set_target(target=forum)
 
-    action, result = client.Forum.add_post(forum_pk, title, content)
+    action, result = client.Forum.add_post(title, content)
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
@@ -508,7 +520,7 @@ def edit_post(request, target):
     post = client.Forum.get_post_given_pk(pk)
     client.Forum.set_target(target=post)
 
-    action, result = client.Forum.edit_post(pk, title, content)
+    action, result = client.Forum.edit_post(title, content)
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
@@ -521,13 +533,12 @@ def delete_post(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
     pk = request_data.get("pk")
-    forum_pk = request_data.get("forum_pk")
 
     client = Client(actor=request.user)
-    forum = client.Forum.get_forum_given_pk(forum_pk)
-    client.Forum.set_target(target=forum)
+    post = client.Forum.get_post_given_pk(pk)
+    client.Forum.set_target(target=post)
 
-    action, result = client.Forum.delete_post(pk=pk)
+    action, result = client.Forum.delete_post()
 
     action_dict = get_action_dict(action)
     action_dict["deleted_post_pk"] = pk
@@ -669,22 +680,18 @@ def get_permission_info(permission):
     }
 
 
-def get_permission_target_helper(request, target, item_or_role, item_id, item_model):
-
-    if item_or_role == "item":    # If an item has been passed in, make it the target
-        model_class = get_model(item_model)
-        return model_class.objects.get(pk=item_id)
-    if item_or_role == "role":    # Otherwise the role the community is set on is the target
-        return Client(actor=request.user).Community.get_community(community_pk=target)
-
-
 @login_required
 @reformat_input_data
 def add_permission(request, target, permission_type, item_or_role, permission_actors=None, 
                    permission_roles=None, permission_configuration=None, item_id=None, 
                    item_model=None):
 
-    target = get_permission_target_helper(request, target, item_or_role, item_id, item_model)
+    if item_or_role == "item":    # If an item has been passed in, make it the target
+        model_class = get_model(item_model)
+        target = model_class.objects.get(pk=item_id)
+    if item_or_role == "role":    # Otherwise the role the community is set on is the target
+        target = Client(actor=request.user).Community.get_community(community_pk=target)
+
     client = Client(actor=request.user, target=target)
 
     action, result = client.PermissionResource.add_permission(
@@ -700,12 +707,10 @@ def add_permission(request, target, permission_type, item_or_role, permission_ac
 
 @login_required
 @reformat_input_data
-def update_permission(request, target, permission_id, item_or_role, permission_actors=None,
-                      permission_roles=None, permission_configuration=None, item_id=None, 
-                      item_model=None):
+def update_permission(request, target, permission_id, permission_actors=None, permission_roles=None, 
+                      permission_configuration=None):
 
-    target = get_permission_target_helper(request, target, item_or_role, item_id, item_model)
-    client = Client(actor=request.user, target=target)
+    client = Client(actor=request.user)
     target_permission = client.PermissionResource.get_permission(pk=permission_id)
 
     actions = client.PermissionResource.update_configuration(
@@ -734,13 +739,14 @@ def update_permission(request, target, permission_id, item_or_role, permission_a
 
 @login_required
 @reformat_input_data
-def delete_permission(request, target, permission_id, item_or_role, item_id=None, item_model=None):
+def delete_permission(request, target, permission_id):
 
-    target = get_permission_target_helper(request, target, item_or_role, item_id, item_model)
     client = Client(actor=request.user, target=target)
+    permission = client.PermissionResource.get_permission(pk=permission_id)
+    client.update_target_on_all(permission)
 
     # now remove permission
-    action, result = client.PermissionResource.remove_permission(item_pk=permission_id)
+    action, result = client.PermissionResource.remove_permission()
     action_dict = get_action_dict(action)
     action_dict.update({"removed_permission_pk": permission_id})
     return JsonResponse(action_dict)
@@ -758,19 +764,21 @@ def add_condition(request, target, condition_type, permission_or_leadership,
                   permission_data=None):
 
     client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=target)
-    client.update_target_on_all(target)
 
     if permission_or_leadership == "permission":
 
+        target = client.PermissionResource.get_permission(pk=target_permission_id)
+        client.PermissionResource.set_target(target)
+
         action, result = client.PermissionResource.add_condition_to_permission(
-            condition_type=condition_type, permission_pk=target_permission_id, 
-            condition_data=condition_data, permission_data=permission_data
-        )
+            condition_type=condition_type, condition_data=condition_data, permission_data=permission_data)
         if action.status == "implemented": 
             condition_data = result.get_condition_data(info="all")
 
     elif permission_or_leadership == "leadership":
+
+        target = client.Community.get_community(community_pk=target)
+        client.Community.set_target(target)
 
         action, result = client.Community.add_leadership_condition(
             condition_type=condition_type, leadership_type=leadership_type, 
@@ -792,12 +800,14 @@ def add_condition(request, target, condition_type, permission_or_leadership,
 def remove_condition(request, target, permission_or_leadership, target_permission_id=None, leadership_type=None):
 
     client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=target)
-    client.update_target_on_all(target)
 
     if permission_or_leadership == "permission":
-        action, result = client.PermissionResource.remove_condition_from_permission(permission_pk=target_permission_id)
+        target = client.PermissionResource.get_permission(pk=target_permission_id)
+        client.update_target_on_all(target)
+        action, result = client.PermissionResource.remove_condition_from_permission()
     elif permission_or_leadership == "leadership":
+        target = client.Community.get_community(community_pk=target)
+        client.update_target_on_all(target)
         action, result = client.Community.remove_leadership_condition(leadership_type=leadership_type)    
 
     action_dict = get_action_dict(action)
@@ -1020,14 +1030,13 @@ def toggle_anyone(request, target):
     enable_or_disable = request_data.get("enable_or_disable")
 
     client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=target)
+    target = client.PermissionResource.get_permission(pk=permission_id)
     client.update_target_on_all(target=target)
-    target_permission = client.PermissionResource.get_permission(pk=permission_id)
 
     if enable_or_disable == "enable":
-        action, result = client.PermissionResource.give_anyone_permission(permission_pk=target_permission.pk)
+        action, result = client.PermissionResource.give_anyone_permission()
     elif enable_or_disable == "disable":
-        action, result = client.PermissionResource.remove_anyone_from_permission(permission_pk=target_permission.pk)
+        action, result = client.PermissionResource.remove_anyone_from_permission()
 
     action_dict = get_action_dict(action)
     action_dict.update({"permission": get_permission_info(result)})
@@ -1086,15 +1095,12 @@ def add_comment(request):
 def edit_comment(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
+    client = Client(actor=request.user)
+    comment = client.Comment.get_comment(pk=request_data.get("comment_pk"))
+    client.update_target_on_all(comment)
 
-    item_id = request_data.get("item_id")
-    model_class = get_model(request_data.get("item_model"))
-    target = model_class.objects.get(pk=item_id)
     text = request_data.get("text")
-    comment_pk = request_data.get("comment_pk")
-
-    client = Client(actor=request.user, target=target)
-    action, result = client.Comment.edit_comment(pk=comment_pk, text=text)
+    action, result = client.Comment.edit_comment(text=text)
 
     action_dict = get_action_dict(action)
     action_dict.update({'comment': serialize_existing_comment_for_vue(result)})
@@ -1105,14 +1111,12 @@ def edit_comment(request):
 def delete_comment(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
-
-    item_id = request_data.get("item_id")
-    model_class = get_model(request_data.get("item_model"))
-    target = model_class.objects.get(pk=item_id)
+    client = Client(actor=request.user)
     comment_pk = request_data.get("comment_pk")
+    comment = client.Comment.get_comment(pk=comment_pk)
+    client.update_target_on_all(comment)
 
-    client = Client(actor=request.user, target=target)
-    action, result = client.Comment.delete_comment(pk=comment_pk)
+    action, result = client.Comment.delete_comment()
 
     action_dict = get_action_dict(action)
     action_dict.update({'deleted_comment_pk': comment_pk})
@@ -1162,6 +1166,111 @@ def apply_template(request, target, template_model_pk, supplied_fields=None):
     return JsonResponse(action_dict)
 
 
+##################
+### List Views ###
+##################
+
+
+@login_required
+def get_lists(request, target):
+
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=target)
+
+    lists = client.List.get_all_lists_given_owner(owner=target)
+    serialized_lists = serialize_lists_for_vue(lists)
+
+    return JsonResponse({"lists": serialized_lists})
+
+
+@login_required
+@reformat_input_data
+def add_list(request, target, name, description=None):
+
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.List.set_target(target=target)
+
+    action, result = client.List.add_list(name=name, description=description)
+
+    action_dict = get_action_dict(action)
+    if action.status == "implemented":
+        action_dict["list_data"] = serialize_list_for_vue(result)
+    return JsonResponse(action_dict)
+
+
+@login_required
+@reformat_input_data
+def edit_list(request, target, list_pk, name=None, description=None):
+
+    client = Client(actor=request.user)
+    target = client.List.get_list(pk=list_pk)
+    client.List.set_target(target=target)
+
+    action, result = client.List.edit_list(name=name, description=description)
+
+    action_dict = get_action_dict(action)
+    if action.status == "implemented":
+        action_dict["list_data"] = serialize_list_for_vue(result)
+    return JsonResponse(action_dict)
+
+
+@login_required
+@reformat_input_data
+def delete_list(request, target, list_pk):
+    client = Client(actor=request.user)
+    target = client.List.get_list(pk=list_pk)
+    client.List.set_target(target=target)
+
+    action, result = client.List.delete_list()
+
+    action_dict = get_action_dict(action)
+
+    if action.status == "implemented":
+        action_dict["deleted_list_pk"] = list_pk
+    return JsonResponse(action_dict)
+
+
+@login_required
+@reformat_input_data
+def add_row(request, target, list_pk, row_content, index=None):
+
+    client = Client(actor=request.user)
+    target = client.List.get_list(pk=list_pk)
+    client.List.set_target(target=target)
+
+    action, result = client.List.add_row(row_content=row_content, index=index)
+
+    return JsonResponse(get_action_dict(action))
+
+
+@login_required
+@reformat_input_data
+def edit_row(request, target, list_pk, row_content, index):
+
+    client = Client(actor=request.user)
+    target = client.List.get_list(pk=list_pk)
+    client.List.set_target(target=target)
+
+    action, result = client.List.edit_row(row_content=row_content, index=index)
+
+    return JsonResponse(get_action_dict(action))
+
+
+@login_required
+@reformat_input_data
+def delete_row(request, target, list_pk, index):
+
+    client = Client(actor=request.user)
+    target = client.List.get_list(pk=list_pk)
+    client.List.set_target(target=target)
+
+    action, result = client.List.delete_row(index=index)
+
+    return JsonResponse(get_action_dict(action))
+
+
 ##############################
 ### Permission Check Views ###
 ##############################
@@ -1173,6 +1282,17 @@ def check_individual_permission(client, actor, permission_name, params):
 
     group_members = client.Community.target.roles.get_users_given_role("members")
     test_user = User.objects.first() if User.objects.first().pk != actor.pk else User.objects.last()
+
+    # create new client with new target if target is not community
+    alt_target = params.pop("alt_target", None) if params else None
+    if alt_target:
+        model, pk = alt_target.split("_")
+        if model == "action":
+            """Action is not a PermissionedModel but rarely gets set as target (through
+            comments mostly), we automatically give people access to Action comments"""
+            return True
+        target = client.Action.get_object_given_model_and_pk(model, int(pk))
+        client.update_target_on_all(target)
 
     # Membership
     if permission_name == "add_members":
@@ -1195,17 +1315,17 @@ def check_individual_permission(client, actor, permission_name, params):
             client.Forum, "create_forum", {'name': 'ABC', 'description': 'DEF'})
     if permission_name == "edit_forum":
         return client.PermissionResource.has_permission(
-            client.Forum, "edit_forum", {"pk": params["pk"], 'name': 'ABC', 'description': 'DEF'})
+            client.Forum, "edit_forum", {'name': 'ABC', 'description': 'DEF'})
     if permission_name == "delete_forum":
-        return client.PermissionResource.has_permission(client.Forum, "delete_forum", {"pk": params["pk"]})
+        return client.PermissionResource.has_permission(client.Forum, "delete_forum", {})
     if permission_name == "add_post":
         return client.PermissionResource.has_permission(
-            client.Forum, "add_post", {"forum_pk": params["forum_pk"], 'title': 'ABC', 'content': 'DEF'})
+            client.Forum, "add_post", {'title': 'ABC', 'content': 'DEF'})
     if permission_name == "edit_post":
         return client.PermissionResource.has_permission(
-            client.Forum, "edit_post", {"pk": params["pk"], 'title': 'ABC', 'content': 'DEF'})
+            client.Forum, "edit_post", {'title': 'ABC', 'content': 'DEF'})
     if permission_name == "delete_post":
-        return client.PermissionResource.has_permission(client.Forum, "delete_post", {"pk": params["pk"]})
+        return client.PermissionResource.has_permission(client.Forum, "delete_post", {})
     # Roles
     if permission_name == "add_role":
         return client.PermissionResource.has_permission(client.Community, "add_role", {'role_name': 'ABC'})
@@ -1221,41 +1341,35 @@ def check_individual_permission(client, actor, permission_name, params):
             client.PermissionResource, "add_permission", {"permission_type": "faketype", "anyone": True})
     if permission_name == "remove_permission":
         return client.PermissionResource.has_permission(
-            client.PermissionResource, "remove_permission", {"item_pk": params["item_pk"]})
+            client.PermissionResource, "remove_permission", {})
     if permission_name == "add_actor_to_permission":
         return client.PermissionResource.has_permission(
-            client.PermissionResource, "add_actor_to_permission",
-            {"permission_pk": params["permission_pk"], "actor": str(test_user.pk)})
+            client.PermissionResource, "add_actor_to_permission", {"actor": str(test_user.pk)})
     if permission_name == "remove_actor_from_permission":
         return client.PermissionResource.has_permission(
-            client.PermissionResource, "remove_actor_from_permission",
-            {"permission_pk": params["permission_pk"], "actor": str(test_user.pk)})
+            client.PermissionResource, "remove_actor_from_permission", {"actor": str(test_user.pk)})
     if permission_name == "add_role_to_permission":
         return client.PermissionResource.has_permission(
-            client.PermissionResource, "add_role_to_permission",
-            {"permission_pk": params["permission_pk"], "role_name": "fakerole"})
+            client.PermissionResource, "add_role_to_permission", {"role_name": "fakerole"})
     if permission_name == "remove_role_from_permission":
         return client.PermissionResource.has_permission(
-            client.PermissionResource, "remove_role_from_permission",
-            {"permission_pk": params["permission_pk"], "role_name": "fakerole"})
+            client.PermissionResource, "remove_role_from_permission", {"role_name": "fakerole"})
     if permission_name == "give_anyone_permission":
         return client.PermissionResource.has_permission(
-            client.PermissionResource, "give_anyone_permission", {"permission_pk": params["permission_pk"]})
+            client.PermissionResource, "give_anyone_permission", {})
     if permission_name == "remove_anyone_from_permission":
         return client.PermissionResource.has_permission(
-            client.PermissionResource, "remove_anyone_from_permission", {"permission_pk": params["permission_pk"]})
+            client.PermissionResource, "remove_anyone_from_permission", {})
     if permission_name == "change_configuration_of_permission":
         return client.PermissionResource.has_permission(
             client.PermissionResource, "change_configuration_of_permission", 
-            {"configurable_field_name": "ABC", "configurable_field_value": "DEF", 
-             "permission_pk": params["permission_pk"]})
+            {"configurable_field_name": "ABC", "configurable_field_value": "DEF"})
     if permission_name == "add_condition_to_permission":
         return client.PermissionResource.has_permission(
-            client.PermissionResource, "add_condition_to_permission", 
-            {"permission_pk": params["permission_pk"], "condition_type": "ApprovalCondition"})    
+            client.PermissionResource, "add_condition_to_permission", {"condition_type": "ApprovalCondition"})    
     if permission_name == "remove_condition_from_permission":
         return client.PermissionResource.has_permission(
-            client.PermissionResource, "remove_condition_from_permission", {"permission_pk": params["permission_pk"]})
+            client.PermissionResource, "remove_condition_from_permission", {})
     if permission_name == "add_leadership_condition":
         return client.PermissionResource.has_permission(
             client.Community, "add_leadership_condition", 
@@ -1300,9 +1414,22 @@ def check_individual_permission(client, actor, permission_name, params):
     if permission_name == "add_comment":
         return client.PermissionResource.has_permission(client.Comment, "add_comment", {"text": "ABC"})
     if permission_name == "edit_comment":
-        return client.PermissionResource.has_permission(client.Comment, "edit_comment", {"text": "DEF", "pk": params["pk"]})
+        return client.PermissionResource.has_permission(client.Comment, "edit_comment", {"text": "DEF"})
     if permission_name == "delete_comment":
-        return client.PermissionResource.has_permission(client.Comment, "delete_comment", {"pk": params["pk"]})
+        return client.PermissionResource.has_permission(client.Comment, "delete_comment", {})
+    # lists
+    if permission_name == "add_list":
+        return client.PermissionResource.has_permission(client.List, "add_list", {"name": "ABC"})
+    if permission_name == "edit_list":
+        return client.PermissionResource.has_permission(client.List, "edit_list", {"name": "DEF"})
+    if permission_name == "delete_list":
+        return client.PermissionResource.has_permission(client.List, "delete_list", {})
+    if permission_name == "add_row":
+        return client.PermissionResource.has_permission(client.List, "add_row", {"row_content": "ABC"})
+    if permission_name == "edit_row":
+        return client.PermissionResource.has_permission(client.List, "edit_row", {"row_content": "ABC", "index": 0})
+    if permission_name == "delete_row":
+        return client.PermissionResource.has_permission(client.List, "delete_row", {"index": 0})
 
     print(f"Warning: no permission {permission_name} found")
     return False
@@ -1316,10 +1443,12 @@ def check_permissions(request, target, permissions):
     whether or not the use has the permissions."""
 
     client = Client(actor=request.user)
-    client.update_target_on_all(target=client.Community.get_community(community_pk=target))
+    target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=target)
 
     permission_dict = {}
     for permission_name, params in permissions.items():
+        client.update_target_on_all(target=target)  # reset target if it was edited for last permission
         has_permission = check_individual_permission(client, request.user, permission_name, params)
         permission_dict.update({permission_name: has_permission})
 

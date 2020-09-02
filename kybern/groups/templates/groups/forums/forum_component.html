@@ -65,11 +65,12 @@ forumComponent = Vue.component('forum-component', {
     created (){ 
         this.getPosts({ forum_pk: parseInt(this.forum_id) })
         .catch(error => { this.list_post_error_message = "Error getting post data from server " })
+        alt_target = "forum_" + this.forum_id
         this.checkPermissions({
             permissions: 
-                {edit_forum: {pk: this.forum_id}, 
-                delete_forum: {pk: this.forum_id}, 
-                add_post: {forum_pk: this.forum_id}}
+                {edit_forum: {alt_target : alt_target}, 
+                delete_forum: {alt_target : alt_target}, 
+                add_post: {alt_target : alt_target}}
         }).catch(error => {  this.error_message = error; console.log(error) })
     },
     computed: {

@@ -52,7 +52,8 @@
         created () {
             this.getCommentData({ item_id: this.item_id, item_model: this.item_model })
             .catch(error => { console.log("Error getting comment data")  })
-            this.checkPermissions({permissions: {"add_comment": null}})
+            alt_target = this.item_model + "_" + this.item_id
+            this.checkPermissions({permissions: {"add_comment": {alt_target : alt_target}}})
                 .catch(error => {  this.error_message = error; console.log(error) })
         },
         computed: {

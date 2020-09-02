@@ -344,9 +344,9 @@ class ApprovalConditionsTestCase(BaseTestCase):
             {"permission_type": Changes().Conditionals.Approve, "permission_roles": ["forwards"]},
             {"permission_type": Changes().Conditionals.Reject, "permission_roles": ["forwards"]}
         ]
+        self.client.PermissionResource.set_target(self.permission)
         self.client.PermissionResource.add_condition_to_permission(
-            permission_pk=self.permission.pk, condition_type="approvalcondition",
-            permission_data=perm_data)
+            condition_type="approvalcondition", permission_data=perm_data)
 
         # have person take action that triggers permission/condition
         self.client.Community.set_actor(heath)
@@ -426,9 +426,9 @@ class VotingConditionTestCase(BaseTestCase):
             permission_type=Changes().Communities.AddRole, permission_roles=["forwards"]
         )   
         perm_data = [{"permission_type": Changes().Conditionals.AddVote, "permission_roles": ["forwards"]}]
+        self.client.PermissionResource.set_target(self.permission)
         self.client.PermissionResource.add_condition_to_permission(
-            permission_pk=self.permission.pk, condition_type="votecondition", permission_data=perm_data
-        )
+            condition_type="votecondition", permission_data=perm_data)
 
         # have person take action that triggers permission/condition
         self.client.Community.set_actor(heath)
@@ -910,3 +910,111 @@ class MembershipTestCase(BaseTestCase):
         self.assertEquals(self.browser.find_by_id('members_member_count')[0].text, "5 people")
 
     # TODO: suite of comments test cases
+
+
+class ListTestCase(BaseTestCase):
+
+    def setUp(self):
+
+        # Basic setup
+        self.create_users()
+        self.actor = User.objects.first()
+        self.client = Client(actor=self.actor)
+        self.community = self.client.Community.create_community(name="USWNT")
+        self.client.update_target_on_all(target=self.community)
+        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()[:4]])
+        self.client.Community.add_role(role_name="forwards")
+        pinoe = User.objects.get(username="meganrapinoe")
+        press = User.objects.get(username="christenpress")
+        self.client.Community.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk])
+
+    def test_list_functionality_for_governor(self):
+
+        from selenium.webdriver.common.keys import Keys
+
+        # create a list
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('new_list_button').first.click()
+        self.browser.fill('list_name', "Best NWSL Teams")
+        self.browser.fill('list_description', "The best NWSL teams, in order of awesomeness")
+        self.browser.find_by_id('add_list_button').first.click()
+        self.browser.back()
+        self.assertTrue(self.browser.is_text_present('The best NWSL teams, in order of awesomeness'))
+
+        # go to list & edit it
+        self.browser.find_by_id('link_to_list_0').first.click()
+        self.browser.find_by_id('edit_list_button').first.click()
+        self.browser.fill('list_name', "Best NWSL Teams!")
+        self.browser.fill('list_description', "The best NWSL teams, in order of awesomeness!")
+        self.browser.find_by_id('edit_list_save_button').first.click()
+        self.browser.back()
+        self.assertTrue(self.browser.is_text_present('The best NWSL teams, in order of awesomeness!'))
+
+        # add some items
+        self.browser.find_by_id('add_row_button').first.click()
+        self.browser.fill('row_contents', 'Chicago Red Stars')
+        self.browser.find_by_id('add_row_save_button').first.click()
+        self.assertTrue(self.browser.is_text_present('Chicago Red Stars'))
+        self.browser.find_by_id('add_row_button').first.click()
+        self.browser.fill('row_contents', 'NJ Sky Blue')
+        self.browser.find_by_id('index')[0].type(Keys.RIGHT)
+        self.browser.find_by_id('add_row_save_button').first.click()
+        self.browser.find_by_id('add_row_button').first.click()
+        self.browser.fill('row_contents', 'Washington Spirit')
+        self.browser.find_by_id('add_row_save_button').first.click()
+        time.sleep(.5)
+        teams = [team.text for team in self.browser.find_by_xpath("//td")]
+        teams = list(filter(lambda x: x not in ["edit delete", "0", "1", "2", "3"], teams))
+        self.assertEquals(teams, ["Washington Spirit", "Chicago Red Stars", "NJ Sky Blue"])
+
+        # edit a row
+        self.browser.find_by_id('edit_row_2').first.click()
+        self.browser.fill('row_contents', 'Sky Blue FC')
+        self.browser.find_by_id('edit_row_save_button').first.click()
+        teams = [team.text for team in self.browser.find_by_xpath("//td")]
+        teams = list(filter(lambda x: x not in ["edit delete", "0", "1", "2", "3"], teams))
+        self.assertEquals(teams, ["Washington Spirit", "Chicago Red Stars", "Sky Blue FC"])
+
+        # delete a row
+        self.browser.find_by_id('delete_row_2').first.click()
+        time.sleep(.5)
+        teams = [team.text for team in self.browser.find_by_xpath("//td")]
+        teams = list(filter(lambda x: x not in ["edit delete", "0", "1", "2", "3"], teams))
+        self.assertEquals(teams, ["Washington Spirit", "Chicago Red Stars"])
+
+        # delete list
+        self.browser.find_by_id('delete_list_button').first.click()
+        self.assertTrue(self.browser.is_text_present('You do not have any lists yet.'))
+
+    def test_list_check_permissions(self):
+
+        # setup
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('new_list_button').first.click()
+        self.browser.fill('list_name', "Best NWSL Teams")
+        self.browser.fill('list_description', "The best NWSL teams, in order of awesomeness")
+        self.browser.find_by_id('add_list_button').first.click()
+        self.browser.back()
+        self.browser.find_by_id('link_to_list_0').first.click()
+        self.browser.find_by_id('add_row_button').first.click()
+        self.browser.fill('row_contents', 'Washington Spirit')
+        self.browser.find_by_id('add_row_save_button').first.click()
+
+        self.assertEquals(len(self.browser.find_by_id('edit_list_button')), 1)
+        self.assertEquals(len(self.browser.find_by_id('delete_list_button')), 1)
+        self.assertEquals(len(self.browser.find_by_id('add_row_button')), 1)
+        self.assertEquals(len(self.browser.find_by_id('edit_row_0')), 1)
+        self.assertEquals(len(self.browser.find_by_id('delete_row_0')), 1)
+
+        # new user has no permissions, can't do most things
+        self.login_user("christenpress", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('link_to_list_0').first.click()
+
+        self.assertEquals(len(self.browser.find_by_id('edit_list_button')), 0)
+        self.assertEquals(len(self.browser.find_by_id('delete_list_button')), 0)
+        self.assertEquals(len(self.browser.find_by_id('add_row_button')), 0)
+        self.assertEquals(len(self.browser.find_by_id('edit_row_0')), 0)
+        self.assertEquals(len(self.browser.find_by_id('delete_row_0')), 0)

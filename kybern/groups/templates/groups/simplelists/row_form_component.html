@@ -1,0 +1,85 @@
+<script type="text/x-template" id="row_form_component_template">
+
+    <b-modal id="list_modal" :title="title_string" size="md" :visible=true hide-footer @hide="$router.go(-1)">
+
+        <b-form-group v-if="mode=='create'" id="index_form_group">
+            Index to add row at: <b> [[ index ]] </b>
+            <b-form-input id="index" v-model="index" type="range" min="0" :max="row_length">
+            </b-form-input>
+        </b-form-group>
+        <span class="mb-3" v-else>You are editing the item at index: [[ index ]]</span>
+
+        <b-form-group id="content_form_group" label="Row contents" label-for="row_contents">
+            <b-form-textarea id="row_contents" name="row_contents" v-model="content" 
+                placeholder="Add your contents">
+            </b-form-textarea>
+        </b-form-group>
+
+        <b-button v-if="mode=='create'" variant="outline-secondary" class="btn-sm" id="add_row_save_button" 
+            @click="add_row">submit</b-button>
+        <b-button v-if="mode=='edit'" variant="outline-secondary" class="btn-sm" id="edit_row_save_button" 
+            @click="edit_row">submit</b-button>
+
+        <error-component :message=error_message></error-component>
+
+    </b-modal>
+
+</script>
+
+<script type="application/javascript"> 
+
+    var listRowFormComponent = Vue.component('list-row-form-component', {
+        delimiters: ['[[', ']]'],
+        template: '#row_form_component_template',
+        props: ['list_id', 'row_index', 'mode'],
+        store,
+        data: function() {
+            return {
+                index: null,
+                content: null,
+                row_length: 0,
+                error_message: null
+            }
+        },
+        created () {
+            if (this.lists_loaded) { this.get_initial_data() }
+            else { this.getLists().then(response => { this.get_initial_data() }) }
+        },
+        computed: {
+            ...Vuex.mapState({ lists: state => state.simplelists.lists }),
+            ...Vuex.mapGetters(['getListData']),
+            lists_loaded: function() { if (this.lists.length == 0) { return false } else { return true }},
+            title_string: function() {
+                if (this.mode == 'edit') {  return "Edit row '" + this.row_index + "'" }
+                else { return "Add a new row" }
+            }
+        },
+        methods: {
+            ...Vuex.mapActions(['getLists', 'addRow', 'editRow']),
+            get_initial_data() {
+                list = this.getListData(this.list_id)
+                if (this.mode == 'edit') {
+                    this.index = this.row_index
+                    this.content = list.rows[this.row_index]
+                    this.row_length = list.rows.length 
+                } else {
+                    this.index = 0
+                    this.row_length = list.rows.length
+                }
+            },
+            add_row() { 
+                this.addRow({list_pk:this.list_id, index:parseInt(this.index), row_content: this.content})
+                .then(response => { 
+                    this.$router.push({name: 'list-detail', params: {list_id: this.list_id}}) 
+                }).catch(error => {  this.error_message = error })
+            }, 
+            edit_row() {
+                this.editRow({list_pk:this.list_id, index:parseInt(this.index), row_content: this.content})
+                .then(response => { 
+                    this.$router.push({name: 'list-detail', params: {list_id: this.list_id}}) 
+                }).catch(error => {  this.error_message = error })
+            }        
+        }
+    })
+
+</script>

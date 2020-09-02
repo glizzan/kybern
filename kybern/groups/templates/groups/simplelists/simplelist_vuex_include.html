@@ -1,0 +1,119 @@
+<script type="application/javascript">
+
+    const SimplelistVuexModule = {
+        state: {
+            lists: []           // {'pk': x, 'name': y, 'description': z, 'rows': ['str', 'str']}
+        },
+        getters: {
+            getListData: (state, getters) => (list_pk) => {
+                return state.lists.find(list => list.pk == list_pk)
+            }
+        },
+        mutations: {
+            ADD_OR_UPDATE_LIST (state, data) {
+                // Maybe want to only update name & description here?
+                // Otherwise we may replace 10,000 rows when we're just editing the name
+                for (index in state.lists) {
+                    if (state.lists[index].pk == data.list_data.pk) {
+                        state.lists.splice(index, 1, data.list_data)
+                        return
+                    }
+                }
+                state.lists.push(data.list_data)
+            },
+            DELETE_LIST (state, data) {
+                for (index in state.lists) {
+                    if (state.lists[index].pk == data.deleted_list_pk) {
+                        state.lists.splice(index, 1)
+                    }
+                }
+            },
+            ADD_ROW (state, data) {
+                list_to_edit = state.lists.find(list => list.pk == data.list_pk)
+                if (data.index || data.index == 0) {
+                    list_to_edit.rows.splice(data.index, 0, data.row_content)
+                } else {
+                    list_to_edit.rows.push(data.row_content)
+                }
+            },
+            EDIT_ROW (state, data) {
+                list_to_edit = state.lists.find(list => list.pk == data.list_pk)
+                list_to_edit.rows.splice(data.index, 1, data.row_content)
+            },
+            DELETE_ROW (state, data) {
+                list_to_edit = state.lists.find(list => list.pk == data.list_pk)
+                list_to_edit.rows.splice(data.index, 1)
+            }
+        },
+        actions: {
+            getLists({ commit, state, dispatch}, payload) { 
+                url = "{% url 'get_lists' target=object.pk %}"    
+                params = {}
+                implementationCallback = (response) => { 
+                    for (list in response.data.lists) {
+                        commit('ADD_OR_UPDATE_LIST', { list_data : response.data.lists[list] })
+                    }
+                }
+                return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
+            addList({ commit, state, dispatch}, payload) { 
+                url = "{% url 'add_list' target=object.pk %}"    
+                params = { name: payload.name, description: payload.description }
+                implementationCallback = (response) => {
+                    commit('ADD_OR_UPDATE_LIST', { list_data : response.data.list_data })
+                }
+                return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
+            editList({ commit, state, dispatch}, payload) { 
+                url = "{% url 'edit_list' target=object.pk %}"    
+                params = { name: payload.name, description: payload.description,
+                    list_pk: payload.list_pk }
+                implementationCallback = (response) => {
+                    commit('ADD_OR_UPDATE_LIST', { list_data : response.data.list_data })
+                }
+                return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
+            deleteList({ commit, state, dispatch}, payload) { 
+                url = "{% url 'delete_list' target=object.pk %}"    
+                params = { list_pk: payload.list_pk }
+                implementationCallback = (response) => {
+                    commit('DELETE_LIST', { deleted_list_pk : response.data.deleted_list_pk })
+                }
+                return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
+            addRow({ commit, state, dispatch}, payload) { 
+                url = "{% url 'add_row' target=object.pk %}"    
+                params = { list_pk: payload.list_pk, row_content: payload.row_content, 
+                    index: payload.index }
+                implementationCallback = (response) => {
+                    commit('ADD_ROW', { list_pk : payload.list_pk, row_content: payload.row_content, 
+                        index: payload.index })
+                }
+                return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
+            editRow({ commit, state, dispatch}, payload) { 
+                url = "{% url 'edit_row' target=object.pk %}"    
+                params = { list_pk: payload.list_pk, row_content: payload.row_content, 
+                    index: payload.index }
+                implementationCallback = (response) => {
+                    commit('EDIT_ROW', { list_pk : payload.list_pk, row_content: payload.row_content, 
+                        index: payload.index })
+                }
+                return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
+            deleteRow({ commit, state, dispatch}, payload) { 
+                url = "{% url 'delete_row' target=object.pk %}"    
+                params = { list_pk: payload.list_pk, index: payload.index }
+                implementationCallback = (response) => {
+                    commit('DELETE_ROW', { list_pk: payload.list_pk, index: payload.index })
+                }
+                return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            }
+        }
+    }
+
+
+
+
+</script>
+

@@ -13,7 +13,7 @@ class GroupClient(CommunityClient):
     # state changes
 
     def change_group_description(self, new_description):
-        change = sc.ChangeGroupDescriptionStateChange(new_description=new_description)
+        change = sc.ChangeGroupDescriptionStateChange(group_description=new_description)
         return self.create_and_take_action(change)
 
 
@@ -44,22 +44,22 @@ class ForumClient(BaseClient):
         change = sc.AddForumStateChange(name=name, description=description)
         return self.create_and_take_action(change)
 
-    def edit_forum(self, pk, name, description):
-        change = sc.EditForumStateChange(pk=pk, name=name, description=description)
+    def edit_forum(self, name, description):
+        change = sc.EditForumStateChange(name=name, description=description)
         return self.create_and_take_action(change)
 
-    def delete_forum(self, pk):
-        change = sc.DeleteForumStateChange(pk=pk)
+    def delete_forum(self):
+        change = sc.DeleteForumStateChange()
         return self.create_and_take_action(change)
 
-    def add_post(self, forum_pk, title, content):
-        change = sc.AddPostStateChange(forum_pk=forum_pk, title=title, content=content)
+    def add_post(self, title, content):
+        change = sc.AddPostStateChange(title=title, content=content)
         return self.create_and_take_action(change)
 
-    def edit_post(self, pk, title, content):
-        change = sc.EditPostStateChange(pk=pk, title=title, content=content)
+    def edit_post(self, title, content):
+        change = sc.EditPostStateChange(title=title, content=content)
         return self.create_and_take_action(change)
 
-    def delete_post(self, pk):
-        change = sc.DeletePostStateChange(pk=pk)
+    def delete_post(self):
+        change = sc.DeletePostStateChange()
         return self.create_and_take_action(change)

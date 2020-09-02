@@ -8,7 +8,7 @@
 
         <edit-permission v-for="permission in role_permissions" v-bind:key="permission.pk"
             :permission=permission :role_to_edit=role_to_edit> </edit-permission>
-        <add-permission :role_to_edit=role_to_edit :item_model="'group'"> </add-permission>     
+        <add-permission :role_to_edit=role_to_edit :item_model="'group'" :item_id=group_id> </add-permission>     
 
         <error-component :message=error_message></error-component>
 
@@ -24,7 +24,8 @@
         props: ['role_to_edit'],
         store,
         data: function() {
-            return {                
+            return {  
+                group_id: {{ object.pk }},              
                 error_message: ''
             }
         },

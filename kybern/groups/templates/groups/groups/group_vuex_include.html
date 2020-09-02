@@ -6,6 +6,7 @@
 {% include 'groups/forums/forums_vuex_include.html' %}
 {% include 'groups/comments/comments_vuex_include.html' %}
 {% include 'groups/templates/templates_vuex_include.html' %}
+{% include 'groups/simplelists/simplelist_vuex_include.html' %}
 
 
 <script type="application/javascript"> 
@@ -23,7 +24,8 @@
             permissions: PermissionsVuexModule,
             governance: GovernanceVuexModule,
             comments: CommentVuexModule,
-            templates: TemplateVuexModule 
+            templates: TemplateVuexModule,
+            simplelists: SimplelistVuexModule
         },
         state: { 
             group_name: '{{ object.name|escapejs }}',

@@ -81,17 +81,18 @@
             }
         },
         created () {
+            alt_target = "permissionsitem_" + this.permission.pk
             this.checkPermissions({permissions: {
-                remove_permission: {item_pk: this.permission.pk},
-                add_condition_to_permission: {permission_pk: this.permission.pk},
-                remove_condition_from_permission: {permission_pk: this.permission.pk},
-                add_actor_to_permission: {permission_pk: this.permission.pk},
-                remove_actor_from_permission: {permission_pk: this.permission.pk},
-                add_role_to_permission: {permission_pk: this.permission.pk},
-                remove_role_from_permission: {permission_pk: this.permission.pk},
-                give_anyone_permission: {permission_pk: this.permission.pk},
-                remove_anyone_from_permission: {permission_pk: this.permission.pk},
-                change_configuration_of_permission: {permission_pk: this.permission.pk}}
+                remove_permission: {alt_target:alt_target},
+                add_condition_to_permission: {alt_target:alt_target},
+                remove_condition_from_permission: {alt_target:alt_target},
+                add_actor_to_permission: {alt_target:alt_target},
+                remove_actor_from_permission: {alt_target:alt_target},
+                add_role_to_permission: {alt_target:alt_target},
+                remove_role_from_permission: {alt_target:alt_target},
+                give_anyone_permission: {alt_target:alt_target},
+                remove_anyone_from_permission: {alt_target:alt_target},
+                change_configuration_of_permission: {alt_target:alt_target}}
             }).catch(error => {  this.error_message = error; console.log(error) })
         },
         watch: {
@@ -154,8 +155,7 @@
                 .catch(error => {  this.error_message = error.message  })               
             },
             update_permission() {
-                this.updatePermission({ item_or_role: this.item_or_role, item_id : this.item_id, 
-                    item_model: this.item_model, permission_id: this.permission.pk, 
+                this.updatePermission({ permission_id: this.permission.pk, 
                     configuration : this.configuration_fields, roles: this.get_roles(),
                     actors: this.permission_actors_selected
                 }).then(response => { this.clearState() })

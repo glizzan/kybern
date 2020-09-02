@@ -74,8 +74,7 @@
             },
             editComment({ commit, state, dispatch }, payload) { 
                 url = "{% url 'edit_comment' %}"    
-                params = { item_id: payload.item_id, item_model: payload.item_model, text: payload.text,
-                    comment_pk: payload.comment_pk }
+                params = { text: payload.text, comment_pk: payload.comment_pk }
                 implementationCallback = (response) => { 
                     pk = Object.keys(response.data.comment)[0]
                     data = response.data.comment[pk]
@@ -85,7 +84,7 @@
             },
             deleteComment({ commit, state, dispatch }, payload) { 
                 url = "{% url 'delete_comment' %}"    
-                params = { item_id: payload.item_id, item_model: payload.item_model, comment_pk: payload.comment_pk }
+                params = { comment_pk: payload.comment_pk }
                 implementationCallback = (response) => { 
                     commit('REMOVE_COMMENT_FROM_ITEM', { item_id: payload.item_id, item_model: payload.item_model,
                         comment_pk:response.data.deleted_comment_pk })

@@ -1,4 +1,5 @@
 from concord.actions.state_changes import BaseStateChange
+from concord.permission_resources.utils import delete_permissions_on_target
 
 from .models import Group, Forum, Post
 
@@ -11,9 +12,10 @@ from .models import Group, Forum, Post
 class ChangeGroupDescriptionStateChange(BaseStateChange):
     description = "Change group description"
     preposition = "for"
+    input_fields = ["group_description"]
 
-    def __init__(self, new_description):
-        self.new_description = new_description
+    def __init__(self, group_description):
+        self.group_description = group_description
 
     @classmethod
     def get_allowable_targets(cls):
@@ -24,18 +26,13 @@ class ChangeGroupDescriptionStateChange(BaseStateChange):
         return [Group]
 
     def description_present_tense(self):
-        return "change description of group to %s" % (self.new_description)  
+        return f"change description of group to {self.group_description}"
 
     def description_past_tense(self):
-        return "changed description of group to %s" % (self.new_description)  
-
-    def validate(self, actor, target):
-        if actor and target and self.new_description:
-            return True
-        return False
+        return f"changed description of group to {self.group_description}"
 
     def implement(self, actor, target):
-        target.group_description = self.new_description
+        target.group_description = self.group_description
         target.save()
         return target
 
@@ -48,6 +45,8 @@ class ChangeGroupDescriptionStateChange(BaseStateChange):
 class AddForumStateChange(BaseStateChange):
     description = "Create a forum"
     preposition = "on"
+    input_fields = ["name", "description"]
+    input_target = Forum
 
     def __init__(self, *, name, description):
         self.name = name
@@ -59,57 +58,24 @@ class AddForumStateChange(BaseStateChange):
 
     @classmethod
     def get_settable_classes(cls):
-        return cls.get_community_models()
+        return cls.get_community_models() + [Forum]
 
     def description_present_tense(self):
-        return "add forum %s" % self.name  
+        return f"add forum {self.name}"
 
     def description_past_tense(self):
-        return "added forum %s" % self.name
-
-    def validate(self, actor, target):
-        return True
+        return f"added forum {self.name}"
 
     def implement(self, actor, target):
         return Forum.objects.create(name=self.name, description=self.description, owner=target.get_owner())
 
 
-class DeleteForumStateChange(BaseStateChange):
-    description = "Delete a forum"
-    preposition = "in"
-
-    def __init__(self, *, pk):
-        self.pk = pk
-
-    @classmethod
-    def get_allowable_targets(cls):
-        return [Forum]
-
-    @classmethod
-    def get_settable_classes(cls):
-        return cls.get_community_models() + [Forum]
-
-    def description_present_tense(self):
-        return "remove forum %s" % str(self.pk)  
-
-    def description_past_tense(self):
-        return "removed forum %s" % str(self.pk)
-
-    def validate(self, actor, target):
-        return True
-
-    def implement(self, actor, target):
-        forum = Forum.objects.get(pk=self.pk)
-        forum.delete()
-        return self.pk
-
-
 class EditForumStateChange(BaseStateChange):
     description = "Edit a forum"
     preposition = "in"
+    input_fields = ["name", "description"]
 
-    def __init__(self, *, pk, name, description):
-        self.pk = pk
+    def __init__(self, *, name, description):
         self.name = name
         self.description = description
 
@@ -122,25 +88,48 @@ class EditForumStateChange(BaseStateChange):
         return cls.get_community_models() + [Forum]
 
     def description_present_tense(self):
-        return "edit forum %s" % str(self.pk)    
+        return "edit forum"   
 
     def description_past_tense(self):
-        return "edited forum %s" % str(self.pk) 
+        return "edited forum"
 
     def validate(self, actor, target):
+        super().validate(actor=actor, target=target)
         if not self.name and not self.description:
             self.set_validation_error("Must provide either a new name or a new description")
             return False
         return True
 
     def implement(self, actor, target):
-        forum = Forum.objects.get(pk=self.pk)
-        if self.name:
-            forum.name = self.name
-        if self.description:
-            forum.description = self.description
-        forum.save()
-        return forum
+        target.name = self.name if self.name else target.name
+        target.description = self.description if self.description else target.description
+        target.save()
+        return target
+
+
+class DeleteForumStateChange(BaseStateChange):
+    description = "Delete a forum"
+    preposition = "in"
+
+    @classmethod
+    def get_allowable_targets(cls):
+        return [Forum]
+
+    @classmethod
+    def get_settable_classes(cls):
+        return cls.get_community_models() + [Forum]
+
+    def description_present_tense(self):
+        return "remove forum"
+
+    def description_past_tense(self):
+        return "removed forum"
+
+    def implement(self, actor, target):
+        pk = target.pk
+        delete_permissions_on_target(target)
+        target.delete()
+        return pk
 
 
 ##########################
@@ -150,9 +139,10 @@ class EditForumStateChange(BaseStateChange):
 
 class AddPostStateChange(BaseStateChange):
     description = "Add a post"
+    input_fields = ["title", "content"]
+    input_target = Post
 
-    def __init__(self, *, forum_pk, title, content):
-        self.forum_pk = forum_pk
+    def __init__(self, *, title, content):
         self.title = title
         self.content = content
 
@@ -165,33 +155,23 @@ class AddPostStateChange(BaseStateChange):
         return cls.get_community_models() + [Forum]
 
     def description_present_tense(self):
-        return "add post with title %s" % str(self.title)    
+        return f"add post with title {self.title}"
 
     def description_past_tense(self):
-        return "added post with title %s" % str(self.title) 
-
-    def validate(self, actor, target):
-        if not self.forum_pk:
-            self.set_validation_error("Must specify forum for post")
-            return False
-        if not self.title:
-            self.set_validation_error("Must provide a title for your post")
-            return False
-        return True
+        return f"added post with title {self.title}"
 
     def implement(self, actor, target):
-        forum = Forum.objects.get(pk=self.forum_pk)
         return Post.objects.create(
-            title=self.title, content=self.content, author=actor, owner=target.get_owner(), forum=forum
+            title=self.title, content=self.content, author=actor, owner=target.get_owner(), forum=target
         )
 
 
 class EditPostStateChange(BaseStateChange):
     description = "Edit a post"
     preposition = "in"
+    input_fields = ["title", "content"]
 
-    def __init__(self, *, pk, title, content):
-        self.pk = pk
+    def __init__(self, *, title, content):
         self.title = title
         self.content = content
 
@@ -204,36 +184,28 @@ class EditPostStateChange(BaseStateChange):
         return cls.get_community_models() + [Forum, Post]
 
     def description_present_tense(self):
-        return "edit post %s" % str(self.pk)    
+        return "edit post"  
 
     def description_past_tense(self):
-        return "edited post %s" % str(self.pk) 
+        return "edited post"
 
     def validate(self, actor, target):
-        if not self.pk:
-            self.set_validation_error("Must specify post to edit")
-            return False
+        super().validate(actor=actor, target=target)
         if not self.title and not self.content:
             self.set_validation_error("Must provide either a new title or new content when editing post")
             return False
         return True
 
     def implement(self, actor, target):
-        post = Post.objects.get(pk=self.pk)
-        if self.title:
-            post.title = self.title
-        if self.content:
-            post.content = self.content
-        post.save()
-        return post
-
+        target.title = self.title if self.title else target.title
+        target.content = self.content if self.content else target.content
+        target.save()
+        return target
+        
 
 class DeletePostStateChange(BaseStateChange):
     description = "Delete a post"
     preposition = "from"
-
-    def __init__(self, *, pk):
-        self.pk = pk
 
     @classmethod
     def get_allowable_targets(cls):
@@ -244,18 +216,13 @@ class DeletePostStateChange(BaseStateChange):
         return cls.get_community_models() + [Forum, Post]
 
     def description_present_tense(self):
-        return "remove post %s" % str(self.pk)  
+        return "remove post"
 
     def description_past_tense(self):
-        return "removed post %s" % str(self.pk)
-
-    def validate(self, actor, target):
-        if not self.pk:
-            self.set_validation_error("Must provide pk of post to be deleted")
-            return False
-        return True
+        return "removed post"
 
     def implement(self, actor, target):
-        post = Post.objects.get(pk=self.pk)
-        post.delete()
-        return self.pk
+        pk = target.pk
+        delete_permissions_on_target(target)
+        target.delete()
+        return pk

@@ -59,8 +59,9 @@
             }
         },
         created () {
-            this.checkPermissions({permissions: 
-                {"edit_comment": {pk: this.comment.pk}, "delete_comment": {pk: this.comment.pk}}})
+            alt_target = this.item_model + "_" + this.item_id
+            this.checkPermissions({permissions: {"edit_comment": {alt_target: alt_target}, 
+                "delete_comment": {alt_target: alt_target}}})
                 .catch(error => {  this.error_message = error; console.log(error) })
             this.comment_text = this.comment.text
         },
@@ -85,8 +86,7 @@
                 }
             },
             edit_comment() {
-                this.editComment({ item_id: this.item_id, item_model: this.item_model, text: this.comment_text,
-                    comment_pk: this.comment_pk })
+                this.editComment({ text: this.comment_text, comment_pk: this.comment_pk })
                 .then(response => { this.mode = 'add'; this.comment_pk = null; })
                 .catch(error => {  this.error_message = error })
             },
