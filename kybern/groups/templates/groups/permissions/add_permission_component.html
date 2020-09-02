@@ -73,7 +73,8 @@
         },
         created () {
             this.permission_selected = this.default_selection
-            this.checkPermissions({permissions: {add_permission: null}})
+            alt_target = this.item_model + "_" + this.item_id
+            this.checkPermissions({permissions: {add_permission: {alt_target:alt_target}}})
             .catch(error => {  this.error_message = error; console.log(error) })
         },
         watch: {

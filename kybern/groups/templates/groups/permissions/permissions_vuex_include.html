@@ -238,10 +238,8 @@ on actions are in the actions module. -->
             updatePermission ({ commit, state, dispatch }, payload) {    
 
                 url = "{% url 'update_permission' target=object.pk %}"    
-                params = { permission_id : payload.permission_id, item_or_role: payload.item_or_role, 
-                    item_id: payload.item_id, item_model: payload.item_model,  
-                    permission_roles : payload.roles, permission_actors : payload.actors, permission_configuration : payload.configuration }
-                    
+                params = { permission_id : payload.permission_id, permission_roles : payload.roles, 
+                    permission_actors : payload.actors, permission_configuration : payload.configuration }
                 implementationCallback = (response) => { 
                     pk = response.data.permission.pk
                     permission_data = response.data.permission.permission_data[0]
@@ -252,8 +250,7 @@ on actions are in the actions module. -->
             
             removePermission ({ commit, getters, dispatch }, payload) {  
                 url = "{% url 'delete_permission' target=object.pk %}"
-                params = { permission_id : payload.permission_id, item_or_role: payload.item_or_role, 
-                    item_id: payload.item_id, item_model: payload.item_model }
+                params = { permission_id : payload.permission_id }
                 implementationCallback = (response) => {
 
                     commit('REMOVE_PERMISSION_FROM_ROLES', { pk: response.data.removed_permission_pk } )

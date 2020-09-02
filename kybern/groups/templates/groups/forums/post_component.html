@@ -70,7 +70,9 @@ postComponent = Vue.component('post-component', {
             this.forum_name = this.getForumData(this.forum_id).name
         }).catch(error => {  console.log("Failed to get forum: ", this.forum_id, error) })
         // Check permissions
-        this.checkPermissions({ permissions: {edit_post: {pk: this.post_id}, delete_post: {pk: this.post_id}}
+        alt_target = "post_" + this.post_id
+        this.checkPermissions({ permissions: {edit_post: {alt_target:alt_target}, 
+            delete_post: {alt_target:alt_target}}
         }).catch(error => {  this.error_message = error; console.log(error) })
     },
     computed: {
