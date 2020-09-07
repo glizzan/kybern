@@ -58,7 +58,8 @@
             },
             addList({ commit, state, dispatch}, payload) { 
                 url = "{% url 'add_list' target=object.pk %}"    
-                params = { name: payload.name, description: payload.description }
+                params = { name: payload.name, description: payload.description, 
+                    configuration: payload.configuration }
                 implementationCallback = (response) => {
                     commit('ADD_OR_UPDATE_LIST', { list_data : response.data.list_data })
                 }
@@ -67,7 +68,7 @@
             editList({ commit, state, dispatch}, payload) { 
                 url = "{% url 'edit_list' target=object.pk %}"    
                 params = { name: payload.name, description: payload.description,
-                    list_pk: payload.list_pk }
+                    list_pk: payload.list_pk, configuration: payload.configuration }
                 implementationCallback = (response) => {
                     commit('ADD_OR_UPDATE_LIST', { list_data : response.data.list_data })
                 }

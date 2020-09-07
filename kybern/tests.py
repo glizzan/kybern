@@ -953,15 +953,15 @@ class ListTestCase(BaseTestCase):
 
         # add some items
         self.browser.find_by_id('add_row_button').first.click()
-        self.browser.fill('row_contents', 'Chicago Red Stars')
+        self.browser.fill('content', 'Chicago Red Stars')
         self.browser.find_by_id('add_row_save_button').first.click()
         self.assertTrue(self.browser.is_text_present('Chicago Red Stars'))
         self.browser.find_by_id('add_row_button').first.click()
-        self.browser.fill('row_contents', 'NJ Sky Blue')
+        self.browser.fill('content', 'NJ Sky Blue')
         self.browser.find_by_id('index')[0].type(Keys.RIGHT)
         self.browser.find_by_id('add_row_save_button').first.click()
         self.browser.find_by_id('add_row_button').first.click()
-        self.browser.fill('row_contents', 'Washington Spirit')
+        self.browser.fill('content', 'Washington Spirit')
         self.browser.find_by_id('add_row_save_button').first.click()
         time.sleep(.5)
         teams = [team.text for team in self.browser.find_by_xpath("//td")]
@@ -970,7 +970,7 @@ class ListTestCase(BaseTestCase):
 
         # edit a row
         self.browser.find_by_id('edit_row_2').first.click()
-        self.browser.fill('row_contents', 'Sky Blue FC')
+        self.browser.fill('content', 'Sky Blue FC')
         self.browser.find_by_id('edit_row_save_button').first.click()
         teams = [team.text for team in self.browser.find_by_xpath("//td")]
         teams = list(filter(lambda x: x not in ["edit delete", "0", "1", "2", "3"], teams))
@@ -999,7 +999,7 @@ class ListTestCase(BaseTestCase):
         self.browser.back()
         self.browser.find_by_id('link_to_list_0').first.click()
         self.browser.find_by_id('add_row_button').first.click()
-        self.browser.fill('row_contents', 'Washington Spirit')
+        self.browser.fill('content', 'Washington Spirit')
         self.browser.find_by_id('add_row_save_button').first.click()
 
         self.assertEquals(len(self.browser.find_by_id('edit_list_button')), 1)
@@ -1018,3 +1018,85 @@ class ListTestCase(BaseTestCase):
         self.assertEquals(len(self.browser.find_by_id('add_row_button')), 0)
         self.assertEquals(len(self.browser.find_by_id('edit_row_0')), 0)
         self.assertEquals(len(self.browser.find_by_id('delete_row_0')), 0)
+
+    def test_enhanced_list_configuration(self):
+
+        # rapinoe begins creating a list
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('new_list_button').first.click()
+        self.browser.fill('list_name', "Best NWSL Teams")
+        self.browser.fill('list_description', "The best NWSL teams, in our honest opinion")
+
+        # can't delete default column until new one is added
+        self.browser.find_by_id('delete_column_content').first.click()
+        self.assertTrue(self.browser.is_text_present('Must have at least one column'))
+        self.browser.find_by_css(".alert > button")[0].click()
+        
+        # add a column, now can delete the old one
+        self.browser.fill('column_name', "Team Name")
+        self.browser.find_by_id('column_required').check()
+        self.browser.find_by_id('add_new_col_button').first.click()
+        self.browser.find_by_id('delete_column_content').first.click()
+
+        # can't add a column with an empty name
+        self.browser.fill('column_name', "")
+        self.browser.find_by_id('add_new_col_button').first.click()
+        self.assertTrue(self.browser.is_text_present('New column must have a name'))
+        self.browser.find_by_css(".alert > button")[0].click()
+
+        # can't add a column with a duplicate name
+        self.browser.fill('column_name', "Team Name")
+        self.browser.find_by_id('add_new_col_button').first.click()
+        self.assertTrue(self.browser.is_text_present('Columns must have unique names'))
+        self.browser.find_by_css(".alert > button")[0].click()
+
+        # can add a new unique column
+        self.browser.find_by_id('column_required').uncheck()
+        self.browser.fill('column_name', "City")
+        self.browser.find_by_id('add_new_col_button').first.click()
+        self.browser.fill('column_name', "State")
+        self.browser.find_by_id('add_new_col_button').first.click()
+
+        # save successfully
+        self.browser.find_by_id('add_list_button').first.click()
+        self.browser.back()
+        self.browser.find_by_id('link_to_list_0').first.click()
+
+        # rapinoe adds two rows with original configuration
+        self.browser.find_by_id('add_row_button').first.click()
+        self.browser.fill('Team Name', 'Sky Blue')
+        self.browser.fill('State', 'NJ')
+        self.browser.find_by_id('add_row_save_button').first.click()
+        self.browser.find_by_id('add_row_button').first.click()
+        self.browser.fill('Team Name', 'Spirit')
+        self.browser.fill('City', 'Washington')
+        self.browser.fill('State', 'DC')       
+        self.browser.find_by_id('add_row_save_button').first.click()
+
+        # rapinoe edits configuration but can't add a required field without default
+        self.browser.find_by_id('edit_list_button').first.click()
+        time.sleep(.25)
+        self.browser.find_by_id('column_required').check()
+        self.browser.fill('column_name', "Is Reigning Champion")
+        self.browser.find_by_id('add_new_col_button').first.click()
+        self.assertTrue(self.browser.is_text_present('If column is required, must supply default value'))   
+
+        # with default supplied, she adds a new field
+        self.browser.fill('column_default', "No")
+        self.browser.find_by_id('add_new_col_button').first.click()
+        self.browser.find_by_id('edit_list_save_button').first.click()
+
+        # upated list missing removed field, has new field
+        time.sleep(.5)
+        teams = [team.text for team in self.browser.find_by_xpath("//td")]
+        teams = list(filter(lambda x: x not in ["edit delete", "0", "1", "2", "3"], teams))
+        self.assertEquals(teams, ['Spirit', 'Washington', 'DC', 'No', 'Sky Blue', '', 'NJ', 'No'])
+        
+        # new add row has different prompts
+        self.browser.find_by_id('add_row_button').first.click()
+        self.assertTrue(self.browser.is_text_present("Team Name"))
+        self.assertTrue(self.browser.is_text_present("City"))
+        self.assertTrue(self.browser.is_text_present("State"))
+        self.assertTrue(self.browser.is_text_present("Is Reigning Champion"))
+        self.assertTrue(self.browser.is_text_present('The default value for this column is No.'))   
