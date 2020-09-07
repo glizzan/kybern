@@ -1,6 +1,13 @@
 <script type="text/x-template" id="error_component_template">
 
-    <div :id="unique_identifier" :class="styleclass">[[ message ]]</div>
+    <div :id="unique_identifier" :class="styleclass">
+        <span v-if="dismissable && message">
+            <b-alert variant="danger" show dismissible class="my-2"> [[ message ]] </b-alert>
+        </span>
+        <span v-else>
+            [[ message ]]
+        </span>
+    </div>
     
 </script>
 
@@ -9,12 +16,11 @@
     var errorComponent = Vue.component('error-component', {
         delimiters: ['[[', ']]'],
         template: '#error_component_template',
-        props: ['message'],
+        props: ['message', 'dismissable'],
         data: function() {
             return {
                 unique_identifier: null,
                 styleclass: ".text-danger"
-                
             }
         },
         created () {
@@ -28,7 +34,7 @@
         },
         methods: {
             render_html() {
-                if (this.message && this.message.indexOf("href")) {
+                if (this.message && this.message.indexOf("href") !== -1 ) {
                     var tag_id = document.getElementById(this.unique_identifier)
                     if (tag_id) {  
                         tag_id.innerHTML = this.message 
