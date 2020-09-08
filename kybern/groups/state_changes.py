@@ -74,6 +74,7 @@ class EditForumStateChange(BaseStateChange):
     description = "Edit a forum"
     preposition = "in"
     input_fields = ["name", "description"]
+    optional_input_fields = ["name", "description"]
 
     def __init__(self, *, name, description):
         self.name = name
@@ -94,7 +95,8 @@ class EditForumStateChange(BaseStateChange):
         return "edited forum"
 
     def validate(self, actor, target):
-        super().validate(actor=actor, target=target)
+        if not super().validate(actor=actor, target=target):
+            return False
         if not self.name and not self.description:
             self.set_validation_error("Must provide either a new name or a new description")
             return False
@@ -170,6 +172,7 @@ class EditPostStateChange(BaseStateChange):
     description = "Edit a post"
     preposition = "in"
     input_fields = ["title", "content"]
+    optional_input_fields = ["title", "content"]
 
     def __init__(self, *, title, content):
         self.title = title
@@ -190,7 +193,8 @@ class EditPostStateChange(BaseStateChange):
         return "edited post"
 
     def validate(self, actor, target):
-        super().validate(actor=actor, target=target)
+        if not super().validate(actor=actor, target=target):
+            return False
         if not self.title and not self.content:
             self.set_validation_error("Must provide either a new title or new content when editing post")
             return False
