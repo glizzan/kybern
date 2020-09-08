@@ -71,12 +71,7 @@
         mixins: [utilityMixin],
         data: function() {
                 return {
-                    error_message: null,
-                    list_fields: [ 
-                        { key: 'index', sortable: true }, 
-                        { key: 'content', sortable: true }, 
-                        'change' 
-                    ]
+                    error_message: null
                 }
             },
         created (){ 
@@ -100,16 +95,33 @@
             lists_loaded: function() { if (this.lists.length == 0) { return false } else { return true }},
             rows: function() {
                 if (this.lists_loaded) { return this.getListData(this.list_id).rows } else { return [] }},
+            configuration: function() {
+                if (this.lists_loaded) { return this.getListData(this.list_id).configuration } else { return {} }},
             list_name: function() {
                 if (this.lists_loaded) { return this.getListData(this.list_id).name } else { return "" }},
             list_description: function() {
                 if (this.lists_loaded) { return this.getListData(this.list_id).description } 
                 else { return }},
+            list_fields: function() {
+                list_fields = [{ key: 'index', sortable: true }]
+                if (this.lists_loaded) {
+                    for (field in this.configuration) {
+                        list_fields.push({key: field, sortable: true})
+                    }
+                }
+                list_fields.push('change')
+                return list_fields
+            },
             list_data: function() {
                 list_data = []
                 index = 0
                 for (row in this.rows) {
-                    list_data.push({content: this.rows[row], index: index })
+                    row_dict = {}
+                    for (field in this.rows[row]) {
+                        row_dict[field] = this.rows[row][field]
+                    }
+                    row_dict["index"] = index
+                    list_data.push(row_dict)
                     index++
                 }
                 return list_data

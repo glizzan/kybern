@@ -82,7 +82,6 @@
             ...Vuex.mapGetters(['permissionsForItem',  'getFoundationalForItem', 
                 'getGoverningForItem']),
             final_item_id: function() { 
-                console.log("returning ", (typeof this.item_id === "undefined") ? {{ object.pk }} : this.item_id )
                 return (typeof this.item_id === "undefined") ? {{ object.pk }} : this.item_id },
             final_item_model: function() { 
                 return (typeof this.item_model === "undefined") ? 'group' : this.item_model },

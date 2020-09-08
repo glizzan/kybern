@@ -86,7 +86,7 @@
                 }
             },
             edit_comment() {
-                this.editComment({ text: this.comment_text, comment_pk: this.comment_pk })
+                this.editComment({ text: this.comment_text, comment_pk: this.comment.pk })
                 .then(response => { this.mode = 'add'; this.comment_pk = null; })
                 .catch(error => {  this.error_message = error })
             },

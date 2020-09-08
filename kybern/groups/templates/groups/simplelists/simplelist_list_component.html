@@ -10,10 +10,12 @@
         </router-link>
         </h4>
 
-        <router-link v-for="({ pk, name, description }, index) in lists" v-bind:key=pk
+        <router-link v-for="({ pk, name, description, rows }, index) in lists" v-bind:key=pk
                 :to="{ name: 'list-detail', params: { list_id: pk } }" :id="'link_to_list_' + index">
-            <b-card :title=name v-bind:key=pk class="bg-light text-info border-secondary mb-3">
-                <p class="mb-1 text-secondary list-description">  [[ description ]]  </p>
+            <b-card v-bind:key=pk class="bg-light text-info border-secondary mb-3">
+                <b-card-title>[[ name ]]<span class="text-dark ml-2"><small>
+                    [[ rows.length ]] items</small></span></b-card-title>
+                <p class="mb-1 text-secondary list-description"> [[ description ]] </p>
             </b-card>
         </router-link>
 

@@ -195,7 +195,7 @@ def serialize_forums_for_vue(forums):
 
 def serialize_list_for_vue(simple_list):
     return {'pk': simple_list.pk, 'name': simple_list.name, 'description': simple_list.description,
-            'rows': simple_list.get_rows()}
+            'configuration': simple_list.get_row_configuration(), 'rows': simple_list.get_rows()}
 
 
 def serialize_lists_for_vue(simple_lists):
@@ -1096,7 +1096,7 @@ def edit_comment(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
     client = Client(actor=request.user)
-    comment = client.Comment.get_comment(pk=request_data.get("comment_pk"))
+    comment = client.Comment.get_comment(pk=int(request_data.get("comment_pk")))
     client.update_target_on_all(comment)
 
     text = request_data.get("text")
@@ -1186,13 +1186,14 @@ def get_lists(request, target):
 
 @login_required
 @reformat_input_data
-def add_list(request, target, name, description=None):
+def add_list(request, target, name, configuration, description=None):
 
     client = Client(actor=request.user)
     target = client.Community.get_community(community_pk=target)
     client.List.set_target(target=target)
 
-    action, result = client.List.add_list(name=name, description=description)
+    action, result = client.List.add_list(name=name, configuration=configuration, 
+                                          description=description)
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
@@ -1202,13 +1203,14 @@ def add_list(request, target, name, description=None):
 
 @login_required
 @reformat_input_data
-def edit_list(request, target, list_pk, name=None, description=None):
+def edit_list(request, target, list_pk, name=None, configuration=None, description=None):
 
     client = Client(actor=request.user)
     target = client.List.get_list(pk=list_pk)
     client.List.set_target(target=target)
 
-    action, result = client.List.edit_list(name=name, description=description)
+    action, result = client.List.edit_list(name=name, configuration=configuration, 
+                                           description=description)
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
@@ -1419,7 +1421,8 @@ def check_individual_permission(client, actor, permission_name, params):
         return client.PermissionResource.has_permission(client.Comment, "delete_comment", {})
     # lists
     if permission_name == "add_list":
-        return client.PermissionResource.has_permission(client.List, "add_list", {"name": "ABC"})
+        return client.PermissionResource.has_permission(
+            client.List, "add_list", {"name": "ABC", "configuration": {"content": {"required": True}}})
     if permission_name == "edit_list":
         return client.PermissionResource.has_permission(client.List, "edit_list", {"name": "DEF"})
     if permission_name == "delete_list":
