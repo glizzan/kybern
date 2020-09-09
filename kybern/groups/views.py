@@ -10,7 +10,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from concord.actions.utils import Client, Changes
 from concord.actions.models import TemplateModel
-from concord.resources.models import Comment, SimpleList
+from concord.resources.models import Comment, SimpleList, CommentCatcher
 from concord.permission_resources.models import PermissionsItem
 
 from accounts.models import User
@@ -174,7 +174,7 @@ def serialize_existing_comment_for_vue(comment):
 
 
 def serialize_forum_for_vue(forum):
-    return {'pk': forum.pk, 'name': forum.name, 'description': forum.description}
+    return {'pk': forum.pk, 'name': forum.name, 'description': forum.description, 'special': forum.special}
 
 
 def serialize_post_for_vue(post):

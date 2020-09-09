@@ -56,14 +56,14 @@
             ...Vuex.mapActions(['addPost', 'editPost']),
             add_post() {
                 this.addPost({ forum_pk: this.forum_id, title: this.title, content: this.content })
-                    .then(response => { this.$router.push({name: 'forum-detail', 
-                                                             params: {forum_id: this.forum_id}}) })
+                    .then(response => { this.$router.go(-1) })
+
+                                                             
                     .catch(error => { this.error_message = error })
             },
             edit_post() {
                 this.editPost({ pk: this.post_id, title: this.title, content: this.content })
-                    .then(response => { this.$router.push({name: 'post-detail', 
-                                    params: {forum_id: this.forum_id, post_id: this.post_id }}) })
+                    .then(response => { this.$router.go(-1) })
                     .catch(error => {  this.error_message = error })
             }
         }

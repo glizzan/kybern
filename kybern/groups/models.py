@@ -16,9 +16,11 @@ class Group(BaseCommunityModel):
 class Forum(PermissionedModel):
     name = models.CharField(max_length=120)
     description = models.CharField(max_length=500)
-
-    # note that there's no direct relationship to a group here, instead this is 
-    # handled by the owner field
+    SPECIAL_FORUM_CHOICES = (
+        ('None', 'None'),
+        ('Gov', 'Governance Forum'),
+    )
+    special = models.CharField(max_length=4, choices=SPECIAL_FORUM_CHOICES, default="None")
 
     def get_name(self):
         return self.name

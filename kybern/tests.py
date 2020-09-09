@@ -535,7 +535,7 @@ class ForumsTestCase(BaseTestCase):
 
         # Edit forum
         time.sleep(.25)
-        self.browser.find_by_css(".forum-description").first.click()
+        self.browser.find_by_css(".forum-description").last.click()
         self.browser.find_by_id("edit_forum_button").first.click()
         self.browser.fill('forum_description', 'A place to make strategy')
         self.browser.find_by_id('edit_forum_save_button').first.click()
@@ -555,8 +555,13 @@ class ForumsTestCase(BaseTestCase):
         self.browser.find_by_id('add_forum_button').first.click()
         self.browser.find_by_css(".close").first.click()  # close modal
 
-        # delete forum
+        # can't delete first (governance) forum
         self.browser.find_by_css(".forum-description").first.click()
+        self.assertFalse(self.browser.is_text_present('delete forum'))
+        self.browser.back()
+
+        # delete forum
+        self.browser.find_by_css(".forum-description").last.click()
         self.browser.find_by_id('delete_forum_button').first.click()
         time.sleep(.25)
         self.assertFalse(self.browser.is_text_present('A place to discuss strategy'))

@@ -91,7 +91,7 @@ forumComponent = Vue.component('forum-component', {
         display_date(date) { return Date(date) },
         delete_forum(forum_pk) {
             this.deleteForum({ pk: forum_pk })
-            .then(response => { this.$router.push({name: 'home'}) })
+            .then(response => { console.log(response); this.$router.push({name: 'home'}) })
             .catch(error => {  this.delete_error_message = error })
         },
         add_post() {

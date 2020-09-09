@@ -79,6 +79,15 @@
                 }
             },
             {
+                name: 'governance-forum-detail',
+                path: '/forums/governance/:forum_id',
+                props: { sidebar: false, main: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: governanceForumComponent
+                }
+            },
+            {
                 name: 'add-new-forum',
                 path: '/forums/new',
                 components: {
