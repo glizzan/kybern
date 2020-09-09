@@ -2,6 +2,8 @@
 
     <span>
 
+        <governance-forum-link-component :forum=governance_forum></governance-forum-link-component>
+
         <leadership-component></leadership-component>    <!-- root component is also a b-card -->
 
         <group-membership-component></group-membership-component>
@@ -87,8 +89,14 @@
             ...Vuex.mapState({ 
                 roles: state => state.governance.roles,
                 group_members: state => state.governance.members,
-                user_permissions: state => state.permissions.current_user_permissions
+                user_permissions: state => state.permissions.current_user_permissions,
+                forums: state => state.forums.forums
             }),
+            governance_forum: function() {
+                gov_forum = null
+                this.forums.forEach((forum) => { if (forum.special == "Gov") { gov_forum = forum } })
+                return gov_forum
+            }
         },
         methods: {
             ...Vuex.mapActions(['checkPermissions', 'removeRole']),

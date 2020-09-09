@@ -1,0 +1,36 @@
+<script type="text/x-template" id="governance_forum_link_component_template">
+
+    <router-link v-if=forum :to="{ name: 'governance-forum-detail', params: { forum_id: pk } }">
+        <b-card class="bg-light text-info border-secondary mb-3">
+            <b-card-title>[[ name ]]<b-icon-star-fill v-if=star class="ml-2"></b-icon-star-fill>
+            </b-card-title>
+            <p class="mb-1 text-secondary forum-description">
+                [[ description ]] of {{ object.get_name }}</p>
+        </b-card>
+    </router-link>
+
+</script>
+
+<script type="application/javascript"> 
+
+governanceForumLinkComponent = Vue.component('governance-forum-link-component', {
+    delimiters: ['[[', ']]'],
+    template: '#governance_forum_link_component_template',
+    props: ['forum', 'star'],
+    store,
+    mixins: [utilityMixin],
+    data: function() { return {} },
+    computed: {
+        name: function() { 
+            if (this.forum) { return this.forum.name } else { return "Governance Forum" }
+        },
+        pk: function() {
+            if (this.forum) { return this.forum.pk } else { return null }
+        },
+        description: function() {
+            if (this.forum) { return this.forum.description } else { return null }
+        }
+    }
+})
+
+</script>

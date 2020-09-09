@@ -9,7 +9,10 @@
             </router-link>
         </h4>
 
-        <router-link v-for="{ pk, name, description } in forums" v-bind:key=pk
+        <governance-forum-link-component :forum=governance_forum :star=true>
+        </governance-forum-link-component>
+
+        <router-link v-for="{ pk, name, description } in regular_forums" v-bind:key=pk
                                 :to="{ name: 'forum-detail', params: { forum_id: pk } }">
             <b-card :title=name v-bind:key=pk class="bg-light text-info border-secondary mb-3">
                 <p class="mb-1 text-secondary forum-description">  [[ description ]]  </p>
@@ -32,6 +35,7 @@
         store,
         data: function() {
             return {
+                governance_forum: null
             }
         },
         computed: {
@@ -39,6 +43,17 @@
                 forums: state => state.forums.forums,
                 user_permissions: state => state.permissions.current_user_permissions
             }),
+            regular_forums: function() {
+                regular_forums = []
+                for (index in this.forums) {
+                    if (this.forums[index].special == "Gov") {
+                        this.governance_forum = this.forums[index]
+                    } else {
+                        regular_forums.push(this.forums[index])
+                    }
+                }
+                return regular_forums
+            }
         },
         created () {
             this.checkPermissions({permissions: {"add_forum": null}})

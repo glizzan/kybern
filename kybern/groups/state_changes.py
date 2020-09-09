@@ -127,6 +127,14 @@ class DeleteForumStateChange(BaseStateChange):
     def description_past_tense(self):
         return "removed forum"
 
+    def validate(self, actor, target):
+        if not super().validate(actor=actor, target=target):
+            return False
+        if target.special == "Gov":
+            self.set_validation_error(message="You cannot delete a governance forum")
+            return False
+        return True
+
     def implement(self, actor, target):
         pk = target.pk
         delete_permissions_on_target(target)

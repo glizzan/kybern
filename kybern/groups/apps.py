@@ -10,3 +10,6 @@ class GroupsConfig(AppConfig):
     def get_concord_module(self, module_name):
         """Helper method to let utils easily access specific files."""
         return importlib.import_module("groups." + module_name)
+
+    def ready(self):
+        from groups import signals
