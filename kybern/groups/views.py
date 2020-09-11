@@ -40,7 +40,7 @@ readable_log_dict = {
 def make_action_errors_readable(action):
     """If needed, gets or creates both a developer-friendly (detailed) log and a user-friendly log."""
 
-    if action.status in ["accepted", "implemented"]:
+    if action.status in ["accepted", "implemented"]:  # should be approved, but do we want accepted/approved here at all?
         return "Your action has been implemented.", action.resolution.log     # unlikely to be displayed/accessed
     if action.status == "waiting":
         return "This action cannot be completed until a condition is passed.", action.resolution.log

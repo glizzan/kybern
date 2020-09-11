@@ -2,41 +2,50 @@
 
 {% block content %}
 
-<div class="col-2"></div>
-<div class="col-8"><h3>Welcome to Kybern!</h3>
+<div class="row">
 
-<p class="text-justify mt-2">
-    Most websites on this here internet assume a hierarchical model of user governance.  Each person's posts,
-    comments, content are theirs and theirs alone, to do with as they please.  This works out well some of the 
-    time, but what about communities that don't want a single all-powerful leader?  What about when consensus is
-    important, or when community buy-in is necessary?
-</p>
+    <div class="col-2"></div>
+    <div class="col-8"><h3>Welcome to Kybern!</h3>
 
-<p class="text-justify">
-    Kybern is built to help communities explore new, non-hierarchical forms of governance.  There are a lot of
-    new concepts we're introducing -- and we'll add a link to documentation right here, very soon! 
-</p>
+    <p class="text-justify">
+        Kybern is a website which helps communities explore new, non-hierarchical forms of governance and manage
+        their resources in collaborative ways.
+    </p>
 
-<p class="text-justify">
-    Kybern is currently in early alpha, which means we <b>cannot</b> promise anything with regard to your data.
-    Please do not assume that it will be kept private or that the data will not disappear suddenly.  Instead,
-    treat this site like a playground, and poke around the features.  Do let us know if you find bugs of any
-    kind, or if you have feature suggestions.  Thank you so much for your patience!
-</p>
+    <p class="text-justify mt-2">
+        Most websites assume a hierarchical model of user governance.  Each person's posts, comments, content are theirs and 
+        theirs alone, to do with as they please.  This works out well some of the time, but what about communities that don't 
+        want a single all-powerful leader?  What about when consensus is important, or when community buy-in is necessary?  
+        When systemic problems arise, like the spread of misinformation or harrassment?
+    </p>
 
-<p class="text-justify">Ready to get started?</p>
+    <p class="text-justify">
+        Kybern is currently in early alpha, which means we <b><u><i>cannot</i></u></b> promise anything with regard to your data.
+        Please do not assume that it will be kept private or that the data will not disappear suddenly.  Instead,
+        treat this site like a playground, and poke around the features.  Do let us know if you find bugs of any
+        kind, or if you have feature suggestions.  Thank you so much for your patience!
+    </p>
 
-{% if user.is_authenticated %}
+    <p class="text-justify">
+        To get access to the site, please email glizzanplatform at gmail dot com.  If you just want to see what the 
+        platform does, check out <a href="https://www.glizzan.com/governance/projects/2020/09/08/a-sneak-peak-at-kybern.html">this blog post</a>.
+    </p>
 
-    <a class="btn btn-info" href="/groups/create/" role="button">Create a group</a></h5>
+    <p class="text-justify">Ready to get started?</p>
 
-{% else %}
+    {% if user.is_authenticated %}
 
-    <a class="btn btn-info" href="/login" role="button">Sign In</a></h5>
-    <a class="btn btn-info" href="/register/" role="button">Register</a></h5>
+        <a class="btn btn-info" href="/groups/create/" role="button">Create a group</a></h5>
 
-{% endif %}
+    {% else %}
 
+        <a class="btn btn-info" href="/login" role="button">Sign In</a></h5>
+        <a class="btn btn-info" href="/register/" role="button">Register</a></h5>
+
+    {% endif %}
+
+
+    </div>
 
 </div>
 
