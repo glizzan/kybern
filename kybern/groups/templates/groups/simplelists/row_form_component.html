@@ -7,22 +7,24 @@
             <b-form-input id="index" v-model="index" type="range" min="0" :max="row_length">
             </b-form-input>
         </b-form-group>
-        <span class="mb-3" v-else>You are editing the item at index: [[ index ]]</span>
+        <span class="mb-3" v-else>
+            You are editing the item at index: [[ index ]].
+        </span>
 
         <span class="my-3">
             <b-form-group v-for="column in columns" :label=column.name :label-for=column.name v-bind:key=column.name>
                 <b-form-input :id=column.name :name=column.name v-model=column.current_value></b-form-input>
                 <b-form-text>
                     <span v-if=is_column_required(column)>You must fill out a value for this column.</span>
-                    <span v-if=column.default_value>The default value for this column is 
+                    <span v-if=column.default_value>The default value for this column is
                         [[ column.default_value ]].</span>
                 </b-form-text>
             </b-form-group>
         </span>
 
-        <b-button v-if="mode=='create'" variant="outline-secondary" class="btn-sm" id="add_row_save_button" 
+        <b-button v-if="mode=='create'" variant="outline-secondary" class="btn-sm" id="add_row_save_button"
             @click="add_row">submit</b-button>
-        <b-button v-if="mode=='edit'" variant="outline-secondary" class="btn-sm" id="edit_row_save_button" 
+        <b-button v-if="mode=='edit'" variant="outline-secondary" class="btn-sm" id="edit_row_save_button"
             @click="edit_row">submit</b-button>
 
         <error-component :message=error_message></error-component>
@@ -31,7 +33,7 @@
 
 </script>
 
-<script type="application/javascript"> 
+<script type="application/javascript">
 
     var listRowFormComponent = Vue.component('list-row-form-component', {
         delimiters: ['[[', ']]'],
@@ -63,7 +65,7 @@
             ...Vuex.mapActions(['getLists', 'addRow', 'editRow']),
             get_initial_data() {
                 list = this.getListData(this.list_id)
-                this.row_length = list.rows.length 
+                this.row_length = list.rows.length
                 if (this.mode == 'edit') { this.index = this.row_index } else { this.index = 0 }
                 row_data = (this.mode == 'edit') ? list.rows[this.index] : null
                 this.columns = this.initialize_columns(list.configuration, row_data)
@@ -73,21 +75,21 @@
                 for (col_name in configuration){
                     params = configuration[col_name]
                     current_value = row_data ? row_data[col_name] : ""
-                    columns.push({name: col_name, required: params.required, 
+                    columns.push({name: col_name, required: params.required,
                         default_value: params.default_value, current_value: current_value })
                 }
                 return columns
             },
-            add_row() { 
+            add_row() {
                 this.addRow({list_pk:this.list_id, index:parseInt(this.index), row_content: this.format_row_content()})
-                .then(response => { 
-                    this.$router.push({name: 'list-detail', params: {list_id: this.list_id}}) 
+                .then(response => {
+                    this.$router.push({name: 'list-detail', params: {list_id: this.list_id}})
                 }).catch(error => {  this.error_message = error })
-            }, 
+            },
             edit_row() {
                 this.editRow({list_pk:this.list_id, index:parseInt(this.index), row_content: this.format_row_content()})
-                .then(response => { 
-                    this.$router.push({name: 'list-detail', params: {list_id: this.list_id}}) 
+                .then(response => {
+                    this.$router.push({name: 'list-detail', params: {list_id: this.list_id}})
                 }).catch(error => {  this.error_message = error })
             },
             format_row_content() {
@@ -100,7 +102,7 @@
             },
             is_column_required(column){
                 if (column.required && column.default_value == "") { return true } else { return false }
-            }   
+            }
         }
     })
 

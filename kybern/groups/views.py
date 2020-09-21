@@ -1303,6 +1303,19 @@ def edit_row(request, target, list_pk, row_content, index):
 
 @login_required
 @reformat_input_data
+def move_row(request, target, list_pk, old_index, new_index):
+
+    client = Client(actor=request.user)
+    target = client.List.get_list(pk=list_pk)
+    client.List.set_target(target=target)
+
+    action, result = client.List.move_row(old_index=old_index, new_index=new_index)
+
+    return JsonResponse(get_action_dict(action))
+
+
+@login_required
+@reformat_input_data
 def delete_row(request, target, list_pk, index):
 
     client = Client(actor=request.user)
@@ -1472,6 +1485,8 @@ def check_individual_permission(client, actor, permission_name, params):
         return client.PermissionResource.has_permission(client.List, "add_row", {"row_content": "ABC"})
     if permission_name == "edit_row":
         return client.PermissionResource.has_permission(client.List, "edit_row", {"row_content": "ABC", "index": 0})
+    if permission_name == "move_row":
+        return client.PermissionResource.has_permission(client.List, "move_row", {"old_index": 0, "new_index": 0})
     if permission_name == "delete_row":
         return client.PermissionResource.has_permission(client.List, "delete_row", {"index": 0})
 
