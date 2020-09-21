@@ -11,6 +11,9 @@ urlpatterns = [
     # catch all for single-page vue app
     path('<int:pk>/<path:resource>', views.GroupDetailView.as_view(), name='group_detail_catchall'),
 
+    # create group ajax view
+    path('create-group/', views.create_group, name='create_group'),
+
     # group change views
     path('api/change_group_name/', views.change_group_name, name='change_group_name'),
     path('api/change_group_description/', views.change_group_description, name='change_group_description'),
@@ -28,6 +31,7 @@ urlpatterns = [
     path('api/add_permission/<int:target>/', views.add_permission, name='add_permission'),
     path('api/update_permission/<int:target>/', views.update_permission, name='update_permission'),
     path('api/delete_permission/<int:target>/', views.delete_permission, name='delete_permission'),
+    path('api/get_permission/', views.get_permission, name='get_permission'),
     path('api/get_permissions/', views.get_permissions, name='get_permissions'),
     path('api/change_item_permission_override/', views.change_item_permission_override, 
          name='change_item_permission_override'),    
@@ -71,7 +75,7 @@ urlpatterns = [
 
     # template views
     path('api/get_templates_for_scope/', views.get_templates_for_scope, name='get_templates_for_scope'),    
-    path('api/<int:target>/apply_template/', views.apply_template, name='apply_template'),
+    path('api/apply_template/', views.apply_template, name='apply_template'),
 
     # list views
     path('api/<int:target>/get_lists/', views.get_lists, name='get_lists'),

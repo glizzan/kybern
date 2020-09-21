@@ -16,7 +16,8 @@ on actions are in the actions module. -->
             condition_options: {{ condition_options|safe }},
                 // [ { value: x , text: x } ]
             condition_configuration_options: {{ condition_configuration_options|safe }},
-                // { condition_type: { fieldname: { display: x, type: x, required: x, value: x, field_name: x } }         
+                // { condition_type: { fieldname: { display: x, type: x, required: x, value: x, field_name: x } }
+            dependent_field_options: {{ dependent_field_options|safe }},       
 
             // Permission data (loaded opportunistically)
             permissions: {},                // { int(pk) : { name: x, display: x, change_type: x } }
@@ -37,10 +38,11 @@ on actions are in the actions module. -->
 
         getters: { 
             get_permission_given_pk: (state, getters) => (pk, as_dict) => {
+                permission = state.permissions[pk];
+                if (!permission) { console.log("No permission found for ", pk); return }
                 if (as_dict) {
                     return { [pk] : state.permissions[pk] }
                 } else {
-                    permission = state.permissions[pk]
                     permission["pk"] = pk
                     return permission
                 }
@@ -75,9 +77,10 @@ on actions are in the actions module. -->
                 return JSON.parse( JSON.stringify( configuration ))
             },
             fix_permission_field_values: (state, getters) => (field) => {
-                if (field.type == "PermissionRoleField") {
+                if (typeof(field.value) == "string" && field.value.indexOf("{{") > -1) { return field }  // leave replaced field as is
+                if (field.type == "RoleField") {
                     field.value = getters.role_to_options(field.value)
-                } else if (field.type == "PermissionActorField") {
+                } else if (field.type == "ActorField") {
                     field.value = getters.user_pk_to_options(field.value)
                 }
                 return field
@@ -89,6 +92,8 @@ on actions are in the actions module. -->
                     if (existing_data[field_name]) {
                         fields[field_name].value = existing_data[field_name]
                         fields[field_name] = getters.fix_permission_field_values(fields[field_name])
+                        return fields[field_name]
+                    } else {
                         return fields[field_name]
                     }
                 });
@@ -303,7 +308,14 @@ on actions are in the actions module. -->
             },
 
             // Misc other actions
-
+            getPermission({ commit, state, dispatch}, payload) { 
+                url = "{% url 'get_permission' %}" 
+                var params = { permission_pk: payload.permission_pk }
+                var implementationCallback = (response) => { 
+                    commit('ADD_OR_UPDATE_PERMISSION', { pk : payload.permission_pk, data : response.data.permission_data })
+                }
+                return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
             getPermissionsForItem({ commit, state, dispatch}, payload) { 
                 url = "{% url 'get_permissions' %}"    
                 var params = { item_id: payload.item_id, item_model: payload.item_model }

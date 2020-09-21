@@ -15,8 +15,8 @@
                     item_id: comment.pk, item_model: 'comment', item_name: comment_name(comment.text) }}">
                     <b-button variant="outline-secondary" class="btn-sm"">comment history</b-button>
                 </router-link>
-                <router-link :to="{ name: 'comment-permissions', params: { comment_id: comment.pk, 
-                    item_id: comment.pk, item_model: 'comment', item_name: comment_name(comment.text)}}">
+                <router-link :to="{ name: 'item-permissions', params: { item_id: comment.pk, item_model: 'comment', 
+                        item_name: comment_name(comment.text)}}">
                     <b-button variant="outline-secondary" class="btn-sm"">comment permissions</b-button>
                 </router-link>
                 <br />
@@ -29,11 +29,11 @@
         <b-modal :id="comment_modal_id" :title="title_string" hide-footer>
 
             <b-form-group id="comment_text_group">
-                <b-form-textarea id="comment_text" v-model="comment_text" placeholder="Write your comment here">
-                </b-form-textarea>
+                <b-form-textarea id="comment_text" name="comment_text" v-model="comment_text" 
+                    placeholder="Write your comment here"></b-form-textarea>
             </b-form-group>
 
-            <b-button variant="outline-secondary" class="btn-sm"  @click="edit_comment">submit</b-button>
+            <b-button variant="outline-secondary" class="btn-sm"  id="sumbit_comment_button" @click="edit_comment">submit</b-button>
 
             <error-component :message=error_message></error-component>
 

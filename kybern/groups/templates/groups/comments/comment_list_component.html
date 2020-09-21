@@ -2,12 +2,12 @@
 
     <span>
 
-        <b-button v-if="user_permissions.add_comment" class="btn-sm" v-b-modal.edit_comment_modal>
+        <b-button v-if="user_permissions.add_comment" class="btn-sm add-comment" v-b-modal.edit_comment_modal>
             Add a comment</b-button>
-        <b-button v-if="item_comments.length > 0 && show_comments == false" class="btn-sm" 
+        <b-button v-if="item_comments.length > 0 && show_comments == false" class="btn-sm show-comments" 
             v-on:click="show_comments = true">
             Show comments</b-button>
-        <b-button v-if="item_comments.length > 0 && show_comments == true" class="btn-sm" 
+        <b-button v-if="item_comments.length > 0 && show_comments == true" class="btn-sm hide-comments" 
             v-on:click="show_comments = false">
             Hide comments</b-button>
             
@@ -19,11 +19,11 @@
         <b-modal id="edit_comment_modal" title="Edit comment" hide-footer>
 
             <b-form-group id="comment_text_group">
-                <b-form-textarea id="comment_text" v-model="comment_text" placeholder="Write your comment here">
+                <b-form-textarea id="comment_text" name="comment_text" v-model="comment_text" placeholder="Write your comment here">
                 </b-form-textarea>
             </b-form-group>
 
-            <b-button variant="outline-secondary" class="btn-sm"  @click="add_comment">submit</b-button>
+            <b-button variant="outline-secondary" class="btn-sm" id="submit_comment_button"  @click="add_comment">submit</b-button>
 
             <error-component :message=error_message></error-component>
 
@@ -44,7 +44,7 @@
         store,
         data: function() {
             return {
-                show_comments: false,
+                show_comments: true,
                 comment_text: '',
                 error_message: ''
             }

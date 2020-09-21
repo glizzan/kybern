@@ -37,10 +37,10 @@ def reformat_actor_select(permission_actors):
 
 def reformat_role_or_actor_field(field):
     """
-    Expects some version of PermissionRoleField or PermissionActor field, but doesn't break if it gets a
+    Expects some version of RoleField or ActorField, but doesn't break if it gets a
     different field type.
     """
-    if field["type"] == "PermissionRoleField":
+    if field["type"] in ["RoleField", "RoleListField"]:
 
         # Single select treated differently
         if "other_data" in field and "multiple" in field["other_data"] and not field["other_data"]["multiple"]:
@@ -48,7 +48,7 @@ def reformat_role_or_actor_field(field):
         else:
             field["value"] = reformat_role_select(field["value"])
 
-    if field["type"] == "PermissionActorField":
+    if field["type"] in ["ActorField", "ActorListField"]:
 
         try:
             field["value"] = reformat_actor_select(field["value"])
@@ -72,7 +72,7 @@ def reformat_form_field_data(form_field_data):
     """
     Return format:
 
-    [{'field_name': 'role_name', 'display': 'Roles people can be added to', 'type': 'PermissionRoleField', 
+    [{'field_name': 'role_name', 'display': 'Roles people can be added to', 'type': 'RoleField', 
     'required': False, 'value': [{'name': 'romans'}]}]
     """
     fields = {}
@@ -89,7 +89,7 @@ def reformat_supplied_fields(supplied_fields):
 
     reformatted_dict = {}
     for field in supplied_fields:
-        if field["type"] in ["PermissionRoleField", "PermissionActorField"]:
+        if field["type"] in ["RoleField", "ActorField", "RoleListField", "ActorListField", "BooleanField", "IntegerField", "CharField"]:
             reformatted_dict[field["field_name"]] = reformat_role_or_actor_field(field)["value"]
 
     return reformatted_dict
@@ -113,7 +113,7 @@ def reformat_combined_permission_and_condition_data(combined_data):
     condition_fields = []
     permission_fields = []
     for field in combined_data:
-        if field["type"] in ["PermissionRoleField", "PermissionActorField"]:
+        if field["type"] in ["RoleField", "RoleListField", "ActorField", "ActorListField"]:
             permission_fields.append(field)
         else:
             condition_fields.append(field)
@@ -127,9 +127,9 @@ def reformat_combined_permission_and_condition_data(combined_data):
         field = reformat_role_or_actor_field(field)  # keeps structure the same, just reformats value field
         if field["full_name"] not in permission_field_data:
             permission_field_data[field["full_name"]] = {"permission_type": field["full_name"]}
-        if field["type"] == "PermissionRoleField":
+        if field["type"] in ["RoleField", "RoleListField"]:
             permission_field_data[field["full_name"]]["permission_roles"] = field["value"]
-        if field["type"] == "PermissionActorField":
+        if field["type"] in ["ActorField", "ActorListField"]:
             permission_field_data[field["full_name"]]["permission_actors"] = field["value"]
 
     permission_fields = []

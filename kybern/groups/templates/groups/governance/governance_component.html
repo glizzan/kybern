@@ -2,7 +2,18 @@
 
     <span>
 
-        <governance-forum-link-component :forum=governance_forum></governance-forum-link-component>
+        <b-row>
+            <b-col>
+                <governance-forum-link-component :forum=governance_forum></governance-forum-link-component>
+            </b-col>
+            <b-col>
+                <router-link v-if="user_permissions.apply_template" :to="{ name: 'templates', params: {scope: 'community'}}">
+                <b-card title="Community Templates" class="bg-light text-info border-secondary mb-4">
+                    <p id="community_templates_link" class="mb-1 text-secondary">Browse pre-existing governance setups and 
+                        apply them to your community.</p></b-card>
+                </router-link>
+            </b-col>
+        </b-row>
 
         <leadership-component></leadership-component>    <!-- root component is also a b-card -->
 
@@ -17,6 +28,12 @@
 
             <b-button v-if="user_permissions.add_role" class="btn-sm mb-3" 
                 v-b-modal.add_role_modal id="add_role_button">Add a role</b-button>
+
+            <router-link v-if="user_permissions.apply_template" 
+                :to="{ name: 'item-templates', params: {scope: 'role', target_id: {{object.pk}}, target_model: 'group'} }">
+                <b-button class="mb-3 btn-sm" id="apply_role_templates">Role Templates</b-button>
+            </router-link>
+
 
             <error-component :message=error_message></error-component>
 
@@ -82,7 +99,7 @@
             }
         },
         created () {
-            this.checkPermissions({permissions: {"add_role": null}})
+            this.checkPermissions({permissions: {"add_role": null, "apply_template": null}})
             .catch(error => {  this.error_message = error; console.log(error) })
         },
         computed: {

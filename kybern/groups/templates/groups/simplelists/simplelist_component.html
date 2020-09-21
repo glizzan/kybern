@@ -20,8 +20,7 @@
                     list history</b-button>
         </router-link>
 
-        <router-link :to="{ name: 'list-permissions', 
-            params: {list_id: list_id, item_id: list_id, item_model: 'simplelist', item_name: list_name }}">
+        <router-link :to="{ name: 'item-permissions', params: {item_id: list_id, item_model: 'simplelist', item_name: list_name }}">
                 <b-button variant="outline-secondary" id="list_permissions" class="btn-sm"">
                     list permissions</b-button>
         </router-link>

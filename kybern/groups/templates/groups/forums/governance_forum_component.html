@@ -15,9 +15,8 @@
             <b-button variant="outline-secondary" class="btn-sm"" id="forum_history_button">forum history</b-button>
         </router-link>
 
-        <router-link :to="{ name: 'forum-permissions', 
-            params: {forum_id: forum_id, item_id: forum_id, item_model: 'forum', item_name: forum_name }}">
-            <b-button variant="outline-secondary" id="forum_permissions" class="btn-sm"">forum permissions</b-button>
+        <router-link :to="{ name: 'item-permissions', params: {item_id: forum_id, item_model: 'forum', item_name: forum_name }}">
+            <b-button variant="outline-secondary" id="forum_permissions_button" class="btn-sm"">forum permissions</b-button>
         </router-link>
 
         <error-component :message="delete_error_message"></error-component>
