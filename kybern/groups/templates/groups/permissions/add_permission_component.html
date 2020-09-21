@@ -6,7 +6,7 @@
 
         <span v-if="!add_permission_button_clicked">
 
-            <b-button v-if="user_permissions.add_permission" size="sm" v-on:click="add_permission_button_clicked=true" 
+            <b-button v-if="user_permissions.add_permission" size="sm" v-on:click="add_permission_button_clicked=true"
                 variant="outline-dark" class="my-2" id="add_permission_button">Add Permission</b-button>
 
         </span>
@@ -15,7 +15,7 @@
 
             <span v-if="!permission_selected">
 
-                <b>Select permission to add</b> 
+                <b>Select permission to add</b>
                 <template><div>
                     <b-form-select v-model="permission_selected" :options="permission_options_to_use" :select-size="4"
                         name="permission_select">
@@ -86,22 +86,22 @@
             }
         },
         computed: {
-            ...Vuex.mapState({ 
+            ...Vuex.mapState({
                 permissions: state => state.permissions.permissions,
-                permission_options: state => state.permissions.permission_options, 
+                permission_options: state => state.permissions.permission_options,
                 user_permissions: state => state.permissions.current_user_permissions
                 }),
-            ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getPermissionConfigurationFields', 
+            ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getPermissionConfigurationFields',
                 'select_field_is_multiple', 'role_to_options', 'user_pk_to_options']),
-            item_or_role() { 
-                if (this.role_to_edit) { return "role"} 
+            item_or_role() {
+                if (this.role_to_edit) { return "role"}
                 else if (this.item_id && this.item_model) { return "item" }
             },
             item_permission_options() {
                 return this.permission_options[this.item_model]
             },
             permission_options_to_use() {
-                if (this.role_to_edit) { 
+                if (this.role_to_edit) {
                     let options = new Map()
                     for (var permissioned_object_model in this.permission_options) {
                         this.permission_options[permissioned_object_model].forEach(option => {
@@ -115,7 +115,7 @@
         },
         methods: {
             ...Vuex.mapActions(['checkPermissions', 'addPermission']),
-            clearState() { 
+            clearState() {
                 if (!this.default_selection) { this.permission_selected = '' }
                 this.add_permission_button_clicked = false
                 this.permission_actors_selected = []
@@ -128,10 +128,14 @@
             },
             add_permission() {
                 this.addPermission({ item_or_role : this.item_or_role, item_id : this.item_id, item_model: this.item_model,
-                    permission_selected : this.permission_selected, configuration : this.configuration_fields, 
-                    roles: this.get_roles(), actors: this.permission_actors_selected 
-                }).then(response => { this.clearState() 
+                    permission_selected : this.permission_selected, configuration : this.configuration_fields,
+                    roles: this.get_roles(), actors: this.permission_actors_selected, anyone: this.anyone
+                }).then(response => { this.clearState()
                 }).catch(error => {  this.error_message = error })
+            },
+            toggle_anyone(enable_or_disable) {
+                if (enable_or_disable == "enable") { this.anyone_can_take_permission = true }
+                else { this.anyone_can_take_permission = false }
             }
         }
     });
