@@ -40,33 +40,38 @@
                 list_to_edit = state.lists.find(list => list.pk == data.list_pk)
                 list_to_edit.rows.splice(data.index, 1, data.row_content)
             },
+            MOVE_ROW (state, data) {
+                list_to_edit = state.lists.find(list => list.pk == data.list_pk)
+                row_to_move = list_to_edit.rows.splice(data.old_index, 1)
+                list_to_edit.rows.splice(data.new_index, 0, row_to_move[0])
+            },
             DELETE_ROW (state, data) {
                 list_to_edit = state.lists.find(list => list.pk == data.list_pk)
                 list_to_edit.rows.splice(data.index, 1)
             }
         },
         actions: {
-            getLists({ commit, state, dispatch}, payload) { 
-                url = "{% url 'get_lists' target=object.pk %}"    
+            getLists({ commit, state, dispatch}, payload) {
+                url = "{% url 'get_lists' target=object.pk %}"
                 params = {}
-                implementationCallback = (response) => { 
+                implementationCallback = (response) => {
                     for (list in response.data.lists) {
                         commit('ADD_OR_UPDATE_LIST', { list_data : response.data.lists[list] })
                     }
                 }
                 return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            addList({ commit, state, dispatch}, payload) { 
-                url = "{% url 'add_list' target=object.pk %}"    
-                params = { name: payload.name, description: payload.description, 
+            addList({ commit, state, dispatch}, payload) {
+                url = "{% url 'add_list' target=object.pk %}"
+                params = { name: payload.name, description: payload.description,
                     configuration: payload.configuration }
                 implementationCallback = (response) => {
                     commit('ADD_OR_UPDATE_LIST', { list_data : response.data.list_data })
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            editList({ commit, state, dispatch}, payload) { 
-                url = "{% url 'edit_list' target=object.pk %}"    
+            editList({ commit, state, dispatch}, payload) {
+                url = "{% url 'edit_list' target=object.pk %}"
                 params = { name: payload.name, description: payload.description,
                     list_pk: payload.list_pk, configuration: payload.configuration }
                 implementationCallback = (response) => {
@@ -74,36 +79,45 @@
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            deleteList({ commit, state, dispatch}, payload) { 
-                url = "{% url 'delete_list' target=object.pk %}"    
+            deleteList({ commit, state, dispatch}, payload) {
+                url = "{% url 'delete_list' target=object.pk %}"
                 params = { list_pk: payload.list_pk }
                 implementationCallback = (response) => {
                     commit('DELETE_LIST', { deleted_list_pk : response.data.deleted_list_pk })
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            addRow({ commit, state, dispatch}, payload) { 
-                url = "{% url 'add_row' target=object.pk %}"    
-                params = { list_pk: payload.list_pk, row_content: payload.row_content, 
+            addRow({ commit, state, dispatch}, payload) {
+                url = "{% url 'add_row' target=object.pk %}"
+                params = { list_pk: payload.list_pk, row_content: payload.row_content,
                     index: payload.index }
                 implementationCallback = (response) => {
-                    commit('ADD_ROW', { list_pk : payload.list_pk, row_content: payload.row_content, 
+                    commit('ADD_ROW', { list_pk : payload.list_pk, row_content: payload.row_content,
                         index: payload.index })
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            editRow({ commit, state, dispatch}, payload) { 
-                url = "{% url 'edit_row' target=object.pk %}"    
-                params = { list_pk: payload.list_pk, row_content: payload.row_content, 
+            editRow({ commit, state, dispatch}, payload) {
+                url = "{% url 'edit_row' target=object.pk %}"
+                params = { list_pk: payload.list_pk, row_content: payload.row_content,
                     index: payload.index }
                 implementationCallback = (response) => {
-                    commit('EDIT_ROW', { list_pk : payload.list_pk, row_content: payload.row_content, 
+                    commit('EDIT_ROW', { list_pk : payload.list_pk, row_content: payload.row_content,
                         index: payload.index })
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            deleteRow({ commit, state, dispatch}, payload) { 
-                url = "{% url 'delete_row' target=object.pk %}"    
+            moveRow({ commit, state, dispatch}, payload) {
+                url = "{% url 'move_row' target=object.pk %}"
+                params = { list_pk: payload.list_pk, old_index: payload.old_index, new_index: payload.new_index,
+                    index: payload.index }
+                implementationCallback = (response) => {
+                    commit('MOVE_ROW', { list_pk : payload.list_pk, old_index: payload.old_index, new_index: payload.new_index })
+                }
+                return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+            },
+            deleteRow({ commit, state, dispatch}, payload) {
+                url = "{% url 'delete_row' target=object.pk %}"
                 params = { list_pk: payload.list_pk, index: payload.index }
                 implementationCallback = (response) => {
                     commit('DELETE_ROW', { list_pk: payload.list_pk, index: payload.index })

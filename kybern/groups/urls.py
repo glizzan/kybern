@@ -33,8 +33,8 @@ urlpatterns = [
     path('api/delete_permission/<int:target>/', views.delete_permission, name='delete_permission'),
     path('api/get_permission/', views.get_permission, name='get_permission'),
     path('api/get_permissions/', views.get_permissions, name='get_permissions'),
-    path('api/change_item_permission_override/', views.change_item_permission_override, 
-         name='change_item_permission_override'),    
+    path('api/change_item_permission_override/', views.change_item_permission_override,
+         name='change_item_permission_override'),
     path('api/toggle_anyone/<int:target>/', views.toggle_anyone, name='toggle_anyone'),
     path('api/check_permissions/<int:target>/', views.check_permissions, name='check_permissions'),
 
@@ -71,10 +71,10 @@ urlpatterns = [
     path('api/get_comment_data/', views.get_comment_data, name='get_comment_data'),
     path('api/add_comment/', views.add_comment, name='add_comment'),
     path('api/edit_comment/', views.edit_comment, name='edit_comment'),
-    path('api/delete_comment/', views.delete_comment, name='delete_comment'),    
+    path('api/delete_comment/', views.delete_comment, name='delete_comment'),
 
     # template views
-    path('api/get_templates_for_scope/', views.get_templates_for_scope, name='get_templates_for_scope'),    
+    path('api/get_templates_for_scope/', views.get_templates_for_scope, name='get_templates_for_scope'),
     path('api/apply_template/', views.apply_template, name='apply_template'),
 
     # list views
@@ -84,5 +84,6 @@ urlpatterns = [
     path('api/<int:target>/delete_list/', views.delete_list, name='delete_list'),
     path('api/<int:target>/add_row/', views.add_row, name='add_row'),
     path('api/<int:target>/edit_row/', views.edit_row, name='edit_row'),
+    path('api/<int:target>/move_row/', views.move_row, name='move_row'),
     path('api/<int:target>/delete_row/', views.delete_row, name='delete_row'),
 ]

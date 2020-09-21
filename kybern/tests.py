@@ -12,7 +12,7 @@ from concord.actions.models import TemplateModel
 
 settings.DEBUG = True
 chrome_options = webdriver.ChromeOptions()
-run_headless = False
+run_headless = True
 
 if os.environ.get("GITHUB_ACTIONS") or run_headless:
     chrome_options.add_argument('--no-sandbox')
@@ -602,14 +602,15 @@ class ForumsTestCase(BaseTestCase):
         # Edit post
         self.browser.find_by_css(".post-content").first.click()
         self.browser.find_by_id('edit_post_button').first.click()
-        time.sleep(.25)
+        time.sleep(.5)
         self.browser.fill('post_title', 'I have a great idea')
         self.browser.find_by_id('edit_post_save_button').first.click()
+        time.sleep(.25)
         self.assertTrue(self.browser.is_text_present('I have a great idea'))
 
         # Delete post
         self.browser.find_by_id('delete_post_button').first.click()
-        time.sleep(.25)
+        time.sleep(.5)
         self.assertFalse(self.browser.is_text_present('I have a great idea'))
 
     def test_add_permission_to_forum(self):
@@ -1011,7 +1012,7 @@ class ListTestCase(BaseTestCase):
         self.browser.find_by_id('add_row_save_button').first.click()
         time.sleep(.5)
         teams = [team.text for team in self.browser.find_by_xpath("//td")]
-        teams = list(filter(lambda x: x not in ["edit delete", "0", "1", "2", "3"], teams))
+        teams = list(filter(lambda x: x not in ["edit\ndelete\nmove", "0", "1", "2", "3"], teams))
         self.assertEquals(teams, ["Washington Spirit", "Chicago Red Stars", "NJ Sky Blue"])
 
         # edit a row
@@ -1019,14 +1020,14 @@ class ListTestCase(BaseTestCase):
         self.browser.fill('content', 'Sky Blue FC')
         self.browser.find_by_id('edit_row_save_button').first.click()
         teams = [team.text for team in self.browser.find_by_xpath("//td")]
-        teams = list(filter(lambda x: x not in ["edit delete", "0", "1", "2", "3"], teams))
+        teams = list(filter(lambda x: x not in ["edit\ndelete\nmove", "0", "1", "2", "3"], teams))
         self.assertEquals(teams, ["Washington Spirit", "Chicago Red Stars", "Sky Blue FC"])
 
         # delete a row
         self.browser.find_by_id('delete_row_2').first.click()
         time.sleep(.5)
         teams = [team.text for team in self.browser.find_by_xpath("//td")]
-        teams = list(filter(lambda x: x not in ["edit delete", "0", "1", "2", "3"], teams))
+        teams = list(filter(lambda x: x not in ["edit\ndelete\nmove", "0", "1", "2", "3"], teams))
         self.assertEquals(teams, ["Washington Spirit", "Chicago Red Stars"])
 
         # delete list
@@ -1136,7 +1137,7 @@ class ListTestCase(BaseTestCase):
         # upated list missing removed field, has new field
         time.sleep(.5)
         teams = [team.text for team in self.browser.find_by_xpath("//td")]
-        teams = list(filter(lambda x: x not in ["edit delete", "0", "1", "2", "3"], teams))
+        teams = list(filter(lambda x: x not in ["edit\ndelete\nmove", "0", "1", "2", "3"], teams))
         self.assertEquals(teams, ['Spirit', 'Washington', 'DC', 'No', 'Sky Blue', '', 'NJ', 'No'])
 
         # new add row has different prompts
