@@ -113,3 +113,46 @@ class ForumModeratorTemplate(TemplateLibraryObject):
             permission_type=Changes().Resources.DeleteComment, permission_roles=["moderators"])
 
         return [action_1, action_2, action_3, action_4]
+
+
+class BasicMemberRoleTemplate(TemplateLibraryObject):
+    """Gives a wide variety of permissions to members, including: (a) the ability to add comments and edit and delete
+    their own comments, (b) the ability to create new lists and forums and apply templates to them, and (c) the ability
+    to add posts to forums."""
+    name = "Basic Member Permissions"
+    description = """Gives a wide variety of permissions to members, including: (a) the ability to add comments and
+                     edit and delete their own comments, (b) the ability to create new lists and forums and apply
+                    templates to them, and (c) the ability to add posts to forums."""
+    scopes = ["role"]
+    default_action_target = "{{context.group}}"
+
+    def get_action_list(self):
+
+        client = self.get_client()
+
+        # Step 1: template permissions
+        action_1 = client.PermissionResource.add_permission(
+            permission_type=Changes().Actions.ApplyTemplate, permission_roles=["members"],
+            permission_configuration={"original_creator_only": True})
+
+        # Step 2: comment permissions
+        action_2 = client.PermissionResource.add_permission(
+            permission_type=Changes().Resources.AddComment, permission_roles=["members"])
+        action_3 = client.PermissionResource.add_permission(
+            permission_type=Changes().Resources.EditComment, permission_roles=["members"],
+            permission_configuration={"commenter_only": True})
+        action_4 = client.PermissionResource.add_permission(
+            permission_type=Changes().Resources.DeleteComment, permission_roles=["members"],
+            permission_configuration={"commenter_only": True})
+
+        # Step 3: list permissions
+        action_5 = client.PermissionResource.add_permission(
+            permission_type=Changes().Resources.AddList, permission_roles=["members"])
+
+        # Step 4: forum & post permissions
+        action_6 = client.PermissionResource.add_permission(
+            permission_type=Changes().Groups.AddForum, permission_roles=["members"])
+        action_7 = client.PermissionResource.add_permission(
+            permission_type=Changes().Groups.AddPost, permission_roles=["members"])
+
+        return [action_1, action_2, action_3, action_4, action_5, action_6, action_7]
