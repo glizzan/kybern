@@ -1,0 +1,255 @@
+<script type="text/x-template" id="dependent_field_component_template">
+
+    <span>
+
+        <b-button v-if="is_dependent_field" class="btn-sm btn-info">
+            <small><b>set as: [[model_selected]]<span v-if="field_selected">'s [[field_selected]]</span></b></small>
+            <!-- Edit goes to router-link for 'edit dependent field' -->
+            <span class="badge badge-info ml-1 edit-dependent-field" v-b-modal="modal_id">🖉</span>
+            <!-- Delete is called below, just removes the provided string. -->
+            <span class="badge badge-info ml-1 delete-dependent-field" @click="remove_dependent_field()">🗑</span>
+        </b-button>
+
+        <span v-else>
+            <span class="badge badge-info my-4 add-dependent-field" v-b-modal="modal_id">add dependency</span>
+        </span>
+
+        <b-modal size="lg" title="Configure your dependent field" hide-footer :id=modal_id>
+
+            Instead of providing a value now, you can make the value of this field depend on something related,
+            for instance the action which is being evaluated by the permission/condition.
+            <hr />
+
+            Choose object to depend on:
+            <span id="model_options" class="my-3">
+                <b-button v-for="model in model_options" v-bind:key=model @click="select_model(model)" class="mr-2"
+                    :id="'depend_on_model_' + model" :variant="button_variant(model)">[[ model ]]</b-button>
+            </span>
+
+            <div class="block my-2" v-if="model_selected" id="model_config">
+                Select field on [[ model_selected ]] (leave blank to use [[ model_selected ]] itself):<br />
+                <b-form-select v-model="field_selected" :options="field_options" class="dependent-field-select"
+                    name="dependent-field-select"></b-form-select>
+            </div>
+
+            <error-component :message=error_message></error-component>
+            <hr />
+
+            <div class="block mt-3">
+                <b-button @click="change_dependent_field()" id='save-dependent-field'>save
+                    <span v-if="model_selected"> '[[model_selected]]<span v-if="field_selected"> [[field_selected]]</span>'</span>
+                </b-button> 
+                <b-button @click="remove_dependent_field()">remove dependent field</b-button>
+                <b-button @click="$emit('close')">close without changing</b-button>
+            </div>
+
+        </b-modal>
+
+    </span>
+
+</script>
+
+<script type="application/javascript">
+
+    dependentFieldComponent = Vue.component('dependent-field', {
+        delimiters: ['[[', ']]'],
+        template: '#dependent_field_component_template',
+        props: ['permission', 'provided_string', 'is_dependent_field', 'field_name', 'field_type'],
+        store,
+        data: function() {
+            return {
+                model_selected: null,
+                field_selected: null,
+                async_field_selected: null,  // used to fix sync issue in translate_provided_string
+                field_options: [],
+                current_data_string: null,
+                error_message: null
+            }
+        },
+        created () {
+            if (this.is_dependent_field && this.provided_string) {
+                this.current_data_string = this.provided_string
+                this.translate_provided_string(this.provided_string)
+            }
+        },
+        watch: {
+            computed_data_string: function (val) { this.current_data_string = val; },   
+            provided_string: function(val) {
+                if (val && typeof(val) == "string") { this.translate_provided_string(this.provided_string) }
+            },
+            model_selected: function (val) { 
+                this.field_options = this.model_and_field_options[val]
+                this.field_selected = null  // always wipe field when model changes
+            },
+            field_options: function (val) {
+                // field_options takes a sec to process so sometimes we need to store a value and set when it's ready
+                if (val && this.async_field_selected) {
+                    this.field_selected = this.async_field_selected
+                    this.async_field_selected = null
+                }
+            }
+        },
+        computed: {
+            ...Vuex.mapState({model_and_field_options_unprocessed: state => state.permissions.dependent_field_options }),
+            modal_id: function() {
+                id = "configure_dependent_field_" + Math.random()
+                return id.replace(".", "")
+            },
+            model_and_field_options: function () {
+                // we process our options to filter out non-matching fields & add the action change fields
+                old_options = this.model_and_field_options_unprocessed
+                new_options = {}
+                for (model in old_options) {
+                    new_options[model] = []
+                    for (index in old_options[model]) {
+                        field_option = old_options[model][index]  // field_option is a dict {'text': fieldname, 'value': fieldname, 'type': BooleanField etc}
+                        if (this.match_field_types(this.field_type, field_option.type)) {
+                            new_options[model].push(field_option)  // if type matches, replace dict with name
+                        }                       
+                    }
+                }
+                if ("action" in old_options) {
+                    for (index in this.permission.change_field_options) {
+                        field_option = this.permission.change_field_options[index]
+                        if (this.match_field_types(this.field_type, field_option.type)) {
+                            new_options["action"].push(field_option)
+                        }
+                    }
+                }
+                return new_options
+            },
+            model_options: function () {
+                options = []
+                for (index in this.permission.dependent_field_options) {
+                    model = this.replace_generic_models(this.permission.dependent_field_options[index])
+                    options.push(model)
+                }
+                return options
+            },
+            computed_data_string: function() {
+                if (this.model_selected) {
+                    model_name = this.replace_generic_models(this.model_selected)
+                    transform_string = ""
+                    base_str = "{{context." + model_name.toLowerCase()
+                    if (this.field_selected && this.field_options.length > 0) { 
+                        if (typeof(this.field_selected) == "string") {
+                            selected_field = this.select_field_given_field_name(this.field_selected)
+                        } else { selected_field = this.field_selected }
+                        if (this.permission.change_field_options.indexOf(selected_field) > -1) {
+                            base_str = base_str + ".change." + selected_field.value.toLowerCase()
+                        } else {
+                            base_str = base_str + "." + selected_field.value.toLowerCase()
+                        }
+                        transform_string = this.get_transform_string(this.field_type, selected_field.type, false)
+                    } else {
+                        transform_string = this.get_transform_string(this.field_type, this.model_selected, true)
+                    }
+                    base_str = base_str + "}}"
+                    return base_str
+                }
+                return null
+            }
+        },
+        methods: { 
+            select_field_given_field_name: function (field_name) {
+                for (index in this.field_options) {
+                    if (this.field_options[index].text == field_name) {
+                        return this.field_options[index]
+                    }
+                }
+            },
+            match_field_types: function (source_field_type, field_option_type) {
+                actor_field_names = ["ActorListField", "ActorPKField", "ActorField"]
+                role_field_names = ["RoleListField", "RoleField"]
+                if (actor_field_names.indexOf(source_field_type) > -1 && actor_field_names.indexOf(field_option_type) > -1) {
+                        return true }
+                if (role_field_names.indexOf(source_field_type) > -1 && role_field_names.indexOf(field_option_type) > -1) {
+                        return true }
+                if (source_field_type ==  field_option_type) { return true }
+                return false 
+            },
+            get_transform_string: function (source_field, field_selected, is_model_only) {
+                if (is_model_only) { if (source_field == "ObjectField") { return "" } else { console.log("Must select field"); return } }
+
+                if (source_field == "ActorListField") {
+                    if (field_selected == "ActorPKField") { return "||to_list" }
+                    if (field_selected == "ActorField") { return "||to_pk_in_list" }
+                }
+                if (source_field == "ActorPKField") {
+                    if (field_selected == "ActorListField") { return "||from_list" }
+                    if (field_selected == "ActorField") { return "||to_pk" }
+                }
+                if (source_field == "RoleListField") {
+                    if (field_selected == "RoleField") { return "||to_list" }
+                }
+                if (source_field == "RoleField") {
+                    if (field_selected == "RoleListField") { return "||from_list"}
+                }
+            },
+            replace_generic_models: function (model) {
+                swaps = {forum : {commented_object: 'post', post: 'commented_object' }}
+                // brittle! will break if dependent field is not within permission condition within item_permission
+                if (this.$parent.$parent.item_model in swaps) {
+                    if (model in swaps[this.$parent.$parent.item_model]) {
+                        return swaps[this.$parent.$parent.item_model][model]
+                    } 
+                }
+                return model
+            },
+            translate_provided_string: function(provided_string) {
+                
+                // process string into tokens
+                chopped_string = this.provided_string.substring(2, this.provided_string.length-2)
+                chopped_string = chopped_string.split("||")[0]
+                tokens = chopped_string.split(".")
+
+                // if this isn't a string starting with {{context.}} flag for developer
+                if (tokens[0] != "context") {
+                    console.log("Warning: provided string is a replacer string but not one for context.")
+                    return
+                }
+
+                // Select model
+                this.model_selected = tokens[1]
+
+                // If no field is selected, stop here
+                if (tokens.length < 3) { return }
+
+                // Get field
+                if (tokens[1] == "action" && tokens[2] == "change") { 
+                    field_to_use = tokens[3] 
+                } else { 
+                    field_to_use = tokens[2]
+                }
+
+                if (this.field_options.length == 0) {
+                    // if field_options hasn't been loaded yet, store field data and try again later
+                    this.async_field_selected = field_to_use
+                } else {
+                    this.field_selected = field_to_use
+                }
+
+            },
+            button_variant(model) {
+                if (model == this.model_selected) { return "info" } else { return "secondary" }
+            },
+            select_model(model) {
+                this.model_selected = model
+            },
+            change_dependent_field() {
+                if (this.model_selected && !this.field_selected) {
+                    // If user has selected a model object, check that that fits in the field.  For now, there is no ObjectField.
+                    this.error_message = this.field_type + " does not accept a model, please select a valid field type."
+                    return
+                }
+                this.$emit('change-dependent-field', {'field_name': this.field_name, 'new_string': this.computed_data_string})
+                this.$bvModal.hide(this.modal_id)
+            },
+            remove_dependent_field() {
+                this.$emit('change-dependent-field', {'field_name': this.field_name, 'new_string': null})
+                this.$bvModal.hide(this.modal_id)
+            }
+        }
+    });
+
+</script>

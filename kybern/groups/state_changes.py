@@ -1,4 +1,4 @@
-from concord.actions.state_changes import BaseStateChange
+from concord.actions.state_changes import BaseStateChange, InputField
 from concord.permission_resources.utils import delete_permissions_on_target
 
 from .models import Group, Forum, Post
@@ -12,7 +12,7 @@ from .models import Group, Forum, Post
 class ChangeGroupDescriptionStateChange(BaseStateChange):
     description = "Change group description"
     preposition = "for"
-    input_fields = ["group_description"]
+    input_fields = [InputField(name="group_description", type="CharField", required=True, validate=True)]
 
     def __init__(self, group_description):
         self.group_description = group_description
@@ -45,7 +45,8 @@ class ChangeGroupDescriptionStateChange(BaseStateChange):
 class AddForumStateChange(BaseStateChange):
     description = "Create a forum"
     preposition = "on"
-    input_fields = ["name", "description"]
+    input_fields = [InputField(name="name", type="CharField", required=True, validate=True),
+                    InputField(name="description", type="CharField", required=True, validate=True)]
     input_target = Forum
 
     def __init__(self, *, name, description):
@@ -73,10 +74,10 @@ class AddForumStateChange(BaseStateChange):
 class EditForumStateChange(BaseStateChange):
     description = "Edit a forum"
     preposition = "in"
-    input_fields = ["name", "description"]
-    optional_input_fields = ["name", "description"]
+    input_fields = [InputField(name="name", type="CharField", required=False, validate=True),
+                    InputField(name="description", type="CharField", required=False, validate=True)]
 
-    def __init__(self, *, name, description):
+    def __init__(self, *, name=None, description=None):
         self.name = name
         self.description = description
 
@@ -149,7 +150,8 @@ class DeleteForumStateChange(BaseStateChange):
 
 class AddPostStateChange(BaseStateChange):
     description = "Add a post"
-    input_fields = ["title", "content"]
+    input_fields = [InputField(name="title", type="CharField", required=True, validate=True),
+                    InputField(name="content", type="CharField", required=True, validate=True)]
     input_target = Post
 
     def __init__(self, *, title, content):
@@ -179,12 +181,15 @@ class AddPostStateChange(BaseStateChange):
 class EditPostStateChange(BaseStateChange):
     description = "Edit a post"
     preposition = "in"
-    input_fields = ["title", "content"]
-    optional_input_fields = ["title", "content"]
+    context_keys = ["forum", "post"]
+    input_fields = [InputField(name="title", type="CharField", required=False, validate=True),
+                    InputField(name="content", type="CharField", required=False, validate=True),
+                    InputField(name="author_only", type="BooleanField", required=False, validate=False)]
 
-    def __init__(self, *, title, content):
+    def __init__(self, *, title=None, content=None, author_only=False):
         self.title = title
         self.content = content
+        self.author_only = author_only
 
     @classmethod
     def get_allowable_targets(cls):
@@ -193,6 +198,36 @@ class EditPostStateChange(BaseStateChange):
     @classmethod
     def get_settable_classes(cls):
         return cls.get_community_models() + [Forum, Post]
+
+    @classmethod
+    def get_configurable_fields(cls):
+        return {"author_only": {"display": "Only allow author to edit post", "type": "BooleanField"}}
+
+    @classmethod
+    def get_configured_field_text(cls, configuration):
+        if "author_only" in configuration and configuration['author_only']:
+            return ", but only if the user is the post's author"
+        return ""
+
+    @classmethod
+    def check_configuration_is_valid(cls, configuration):
+        """Used primarily when setting permissions, this method checks that the supplied configuration is a valid one.
+        By contrast, check_configuration checks a specific action against an already-validated configuration."""
+        if "author_only" in configuration and configuration["author_only"] is not None:
+            if configuration["author_only"] not in [True, False, "True", "False", "true", "false"]:
+                return False, f"author_only must be set to True or False, not {configuration['author_only']}"
+        return True, ""
+
+    def check_configuration(self, action, permission):
+        configuration = permission.get_configuration()
+        if "author_only" in configuration and configuration['author_only']:
+            if action.actor.pk != action.target.author.pk:
+                return False, "author_only is set to true, so the actor must be the same as the author of the target post"
+        return True, None
+
+    def get_context_instances(self, action):
+        """Returns the forum and the post object."""
+        return {"post": action.target, "forum": action.target.forum}
 
     def description_present_tense(self):
         return "edit post"  
@@ -218,6 +253,11 @@ class EditPostStateChange(BaseStateChange):
 class DeletePostStateChange(BaseStateChange):
     description = "Delete a post"
     preposition = "from"
+    context_keys = ["forum", "post"]
+    input_fields = [InputField(name="author_only", type="BooleanField", required=False, validate=False)]
+
+    def __init__(self, *, author_only=False):
+        self.author_only = author_only
 
     @classmethod
     def get_allowable_targets(cls):
@@ -226,6 +266,36 @@ class DeletePostStateChange(BaseStateChange):
     @classmethod
     def get_settable_classes(cls):
         return cls.get_community_models() + [Forum, Post]
+
+    @classmethod
+    def get_configurable_fields(cls):
+        return {"author_only": {"display": "Only allow author to edit post", "type": "BooleanField"}}
+
+    @classmethod
+    def get_configured_field_text(cls, configuration):
+        if "author_only" in configuration and configuration['author_only']:
+            return ", but only if the user is the post's author"
+        return ""
+
+    @classmethod
+    def check_configuration_is_valid(cls, configuration):
+        """Used primarily when setting permissions, this method checks that the supplied configuration is a valid one.
+        By contrast, check_configuration checks a specific action against an already-validated configuration."""
+        if "author_only" in configuration and configuration["author_only"] is not None:
+            if configuration["author_only"] not in [True, False, "True", "False", "true", "false"]:
+                return False, f"author_only must be set to True or False, not {configuration['author_only']}"
+        return True, ""
+
+    def check_configuration(self, action, permission):
+        configuration = permission.get_configuration()
+        if "author_only" in configuration and configuration['author_only']:
+            if action.actor.pk != action.target.author.pk:
+                return False, "author_only is true, so the actor must be the same as the author of the target post"
+        return True, None
+
+    def get_context_instances(self, action):
+        """Returns the forum and the post object."""
+        return {"post": action.target, "forum": action.target.forum}
 
     def description_present_tense(self):
         return "remove post"

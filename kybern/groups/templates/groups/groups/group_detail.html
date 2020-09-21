@@ -35,6 +35,15 @@
                 }
             },
             {
+                name: 'item-permissions',
+                path: '/permissions/:item_id/:item_model/:item_name',
+                props: { sidebar: false, main: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: permissionedItemComponent
+                }
+            },
+            {
                 name: 'edit-group',
                 path: '/edit group',
                 components: {
@@ -58,15 +67,6 @@
                     sidebar: groupConfigComponent,
                     main: governanceComponent,
                     modal: actionHistoryComponent
-                }
-            },
-            {
-                name: 'group-permissions',
-                path: '/permissions',
-                components: {
-                    sidebar: groupConfigComponent,
-                    main: governanceComponent,
-                    modal: permissionedItemComponent
                 }
             },
             {
@@ -104,16 +104,6 @@
                     sidebar: groupConfigComponent,
                     main: forumComponent,
                     modal: forumFormComponent
-                }
-            },
-            {
-                name: 'forum-permissions',
-                path: '/forums/:forum_id/permissions/:item_id/:item_model/:item_name',
-                props: { sidebar: false, main: true, modal: true },
-                components: {
-                    sidebar: groupConfigComponent,
-                    main: forumComponent,
-                    modal: permissionedItemComponent
                 }
             },
             {
@@ -156,16 +146,6 @@
                 }
             },
             {
-                name: 'post-permissions',
-                path: '/forums/:forum_id/posts/:post_id/permissions/:item_id/:item_model/:item_name',
-                props: { sidebar: false, main: true, modal: true },
-                components: {
-                    sidebar: groupConfigComponent,
-                    main: postComponent,
-                    modal: permissionedItemComponent
-                }
-            },
-            {
                 name: 'post-action-history',
                 path: '/forums/:forum_id/posts/:post_id/history/:item_id/:item_model/:item_name',
                 props: { sidebar: false, main: true, modal: true },
@@ -173,19 +153,6 @@
                     sidebar: groupConfigComponent,
                     main: postComponent,
                     modal: actionHistoryComponent
-                }
-            },
-            // the navigation on these two comment options is terrible, we'll need to nest them on
-            // anything that has comment options and just resign ourselves to having multiple routes
-            // eg post-comment-permissions, action-comment-permissions etc
-            {
-                name: 'comment-permissions',
-                path: '/comments/:comment_id/permissions/:item_id/:item_model/:item_name',
-                props: { sidebar: false, main: true, modal: true },
-                components: {
-                    sidebar: groupConfigComponent,
-                    main: resourcesComponent,
-                    modal: permissionedItemComponent
                 }
             },
             {
@@ -269,16 +236,33 @@
                 }
             },
             {
-                name: 'list-permissions',
-                path: '/lists/detail/:list_id/permissions/:item_id/:item_model/:item_name',
-                props: { sidebar: false, main: true, modal: true },
+                name: 'templates',
+                path: '/templates/:scope/',
+                props: { sidebar: false, main: true },
                 components: {
                     sidebar: groupConfigComponent,
-                    main: listComponent,
-                    modal: permissionedItemComponent
+                    main: templateComponent
                 }
             },
-    
+            {
+                name: 'item-templates',
+                path: '/templates/:scope/:target_id/:target_model',
+                props: { sidebar: false, main: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: templateComponent
+                }
+            },
+            {
+                name: 'advanced-permissions',
+                path: '/advanced-permissions/:item_id/:item_model',
+                props: { sidebar: false, main: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: advancedPermissionsComponent
+                }
+            }
+
         ]
         })
 

@@ -31,7 +31,7 @@
         Roles who have this permission
     
         <vue-multiselect v-model=permission_roles_selected :multiple=true :options=rolesAsOptions :allow-empty="true"
-            :close-on-select="true" placeholder="Select roles" label="name" track-by="name" 
+            :close-on-select="true" placeholder="Select roles" label="name" track-by="name" name="permission_role_select"
             :disabled="permission_exists && !(user_permissions.add_role_to_permission || user_permissions.remove_role_from_permission)">
             <template slot="selection" slot-scope="{ values, search, isOpen }">
                 <span v-if="!isOpen">
@@ -48,7 +48,7 @@
         Actors who have this permission
     
         <vue-multiselect v-model=permission_actors_selected :multiple=true :options=groupMembersAsOptions :allow-empty="true"
-            :close-on-select="true" placeholder="Select actors" label="name" track-by="pk"
+            :close-on-select="true" placeholder="Select actors" label="name" track-by="pk" name="permission_actor_select"
             :disabled="permission_exists && !(user_permissions.add_actor_to_permission || user_permissions.remove_actor_from_permission)">
             <template slot="selection" slot-scope="{ values, search, isOpen }">
                 <span v-if="!isOpen">

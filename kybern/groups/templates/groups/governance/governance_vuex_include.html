@@ -211,9 +211,8 @@
                 return state.roles.find(role => role.name == role_name).current_members
             },
             role_to_options: (state, getters) => (role_list) => {
-                if (!Array.isArray(role_list)) {
-                    role_list = [ role_list ]
-                }
+                if (!role_list) { return [] }
+                if (!Array.isArray(role_list)) { role_list = [ role_list ]}
                 return role_list.map(role => { return  { name: role } })
             },
             user_pk_to_options: (state, getters) => (pk_list) => {

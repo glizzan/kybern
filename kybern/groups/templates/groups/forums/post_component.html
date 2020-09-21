@@ -22,11 +22,10 @@
             
             <router-link :to="{ name: 'post-action-history', params: {forum_id: forum_id,
                 post_id: post_id, item_id: post_id, item_model: 'post', item_name: post.title }}">
-                <b-button variant="outline-secondary" class="btn-sm"">post history</b-button>
+                <b-button variant="outline-secondary" id="post_history_button" class="btn-sm"">post history</b-button>
             </router-link>
 
-            <router-link :to="{ name: 'post-permissions', params: {forum_id: forum_id,
-                post_id: post_id, item_id: post_id, item_model: 'post', item_name: post.title }}">
+            <router-link :to="{ name: 'item-permissions', params: {item_id: post_id, item_model: 'post', item_name: post.title }}">
                 <b-button variant="outline-secondary" class="btn-sm"">post permissions</b-button>
             </router-link>
 

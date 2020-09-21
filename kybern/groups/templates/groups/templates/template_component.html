@@ -1,42 +1,36 @@
 <script type="text/x-template" id="template_template">
 
-    <span v-if="user_permissions.apply_template">
+    <span>
 
         <p class="pt-4 pb-1 font-weight-bold">Templates</p>
 
-        <span v-if="!browse_templates">
-            <b-button :id=browse_button_id size="sm" v-on:click="browse_templates=true" 
-                variant="outline-dark" class="my-2">Browse templates</b-button>
-        </span>
-
-        <span v-else>
+            <error-component :message=error_message></error-component>
         
-            <span v-if="fill_configuration_fields">
+            <span v-if="selected_template">
 
-                <p>Configure fields for template: [[ this.selected_template.name ]].</p>
+                <template-info :template=selected_template :create_group=create_group :display_select=false></template-info>
 
-                <p>([[ this.selected_template.description ]])</p>
+                <span v-if="configuration_fields.length > 0">
+                    <h5 class="mt-3 font-weight-bold">Configure fields for template: [[ this.selected_template.name ]].</h5>
 
-                {% include 'groups/permissions/configuration_fields_include.html' %}
+                    {% include 'groups/permissions/configuration_fields_include.html' %}
+                </span>
+                <span v-else>
+                    <b>There are no fields to configure.</b>
+                </span>
 
-                <b-button size="sm" id="submit_apply_template" 
-                    v-on:click="apply_template(selected_template)" variant="outline-dark"
-                    class="my-2">Apply template with these values</b-button>
+                <b-button size="sm" id="submit_apply_template" v-if="!create_group"
+                v-on:click="apply_template(selected_template)" variant="outline-dark"
+                class="my-2">Apply template</b-button>
 
-                <error-component :message=error_message></error-component>
             </span>
 
             <span v-else>
-                    <b-card v-for="template in scope_templates" :title=template.name v-bind:key=template.pk 
-                        class="w-50" style="display:inline-block" :id="slugify_name(template.name)">
-                        <b-card-text>[[ template.description ]]</b-card-text>
-                        <b-button size="sm" :id="'apply_template_' + slugify_name(template.name)" 
-                            v-on:click="prep_apply_template(template)" variant="outline-dark" class="my-2">
-                            Apply template</b-button>
-                    </b-card>
+                <b-card-group deck>
+                    <template-info v-for="template in scope_templates" v-bind:key=template.pk :template=template :create_group=create_group
+                        :display_select=true v-on:template-selected="select_template"></template-info>
+                </b-card-group>
             </span>
-
-        </span>
 
     </span>
 
@@ -48,31 +42,24 @@
         delimiters: ['[[', ']]'],
         template: '#template_template',
         store, 
-        props: ['scope'],
+        props: ['scope', 'create_group', 'target_id', 'target_model'],
         data: function() {
             return {
                 selected_template: null,
                 browse_templates: false,
-                fill_configuration_fields: false,
                 configuration_fields: [],
                 error_message : null
             }
         },
         created (){ 
-            this.getTemplatesForScope({ scope: this.scope }) 
-            this.checkPermissions({permissions: {"apply_template": null}})
-                .catch(error => {  this.error_message = error; console.log(error) })
+            this.getTemplatesForScope({ scope: this.scope })
         },
         computed: {
-            ...Vuex.mapState({user_permissions: state => state.permissions.current_user_permissions}),
             ...Vuex.mapGetters(['scopeTemplates', 'select_field_is_multiple', 'rolesAsOptions', 'groupMembersAsOptions']),
-            scope_templates: function() {  return this.scopeTemplates(this.scope)  },
-            browse_button_id: function() {
-                return "browse_" + this.scope + "_templates_button"
-            }
+            scope_templates: function() { return this.scopeTemplates(this.scope) }
         },
         methods: {
-            ...Vuex.mapActions(['checkPermissions', 'getTemplatesForScope', 'applyTemplate']),
+            ...Vuex.mapActions(['getTemplatesForScope', 'applyTemplate']),
             clearState() { 
                 this.selected_template = null
                 this.configuration_fields = []
@@ -80,29 +67,30 @@
                 this.browse_templates = false
                 this.error_message = ''
             },
-            slugify_name(name) {
-                return name.toLowerCase().replace(/ /g, "_")
-            },
-            prep_apply_template(template) {
+            select_template(template) {
                 if (template.supplied_fields) {
                     this.selected_template = template
                     this.configuration_fields = template.supplied_fields
-                    this.fill_configuration_fields = true
                 } else {
                     this.selected_template = template
-                    this.apply_template()   // If no fields, just apply right away
                 }
             },
-            apply_template() {
-                this.applyTemplate({ template_model_pk: this.selected_template.pk, 
-                            supplied_fields: this.configuration_fields })
-                .then(response => { 
-                    // check status, if waiting link to condition, otherwise say accepted or rejected
-                    console.log("Success applying template!") 
-            
-                })
-                    .catch(error => {  console.log("Error applying template!"); this.error_message = error })
+            validate_template() {
+                for (field in this.configuration_fields) {
+                    if (this.configuration_fields[field]["required"] && !this.configuration_fields[field]["value"]){
+                        this.error_message = "Required field " + this.configuration_fields[field]["field_name"] + " needs a value"
+                        return false
+                    }
                 }
+                return true
+            },
+            apply_template() {
+                if (!this.validate_template()) { return }
+                this.applyTemplate({ target_model: this.target_model, target_pk: this.target_id, 
+                                     supplied_fields: this.configuration_fields, template_model_pk: this.selected_template.pk })
+                .then(response => { this.$router.go(-1) })
+                .catch(error => {  console.log(error); this.error_message = error })
+            }
         }
     })
 

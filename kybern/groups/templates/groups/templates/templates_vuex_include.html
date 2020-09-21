@@ -29,13 +29,15 @@
                 return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
             applyTemplate({ commit, state, dispatch}, payload) {
-                url = "{% url 'apply_template' target=object.pk %}"
-                params = { template_model_pk : payload.template_model_pk, 
-                        supplied_fields: payload.supplied_fields}
-                implementationCallback = (response) => { 
-                    console.log("Apply template called, response is: ", response.data)
-                    // Not sure what else to do here
+                if (payload.target_model && payload.target_pk) {
+                    target_model = payload.target_model; target_pk = payload.target_pk;
+                } else {
+                    target_model = 'group'; target_pk = '{{object.pk}}';
                 }
+                url = "{% url 'apply_template' %}"
+                params = { supplied_fields: payload.supplied_fields, target_pk: target_pk, target_model: target_model,
+                           template_model_pk : payload.template_model_pk }
+                implementationCallback = (response) => { }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             }
         }

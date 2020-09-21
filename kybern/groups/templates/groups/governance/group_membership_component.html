@@ -48,7 +48,11 @@
                     :item_model=item_model></add-permission>
             </span>
 
-            <template-manager :scope=template_scope></template-manager>
+            <router-link v-if="user_permissions.apply_template" :to="{ name: 'templates', params: {scope: 'membership'}}">
+                <b-card title="Membership Templates" class="bg-light text-info border-secondary my-4">
+                    <p id="membership_templates_link" class="mb-1 text-secondary">Browse pre-existing membership setups and 
+                        apply them to your community.</p></b-card>
+            </router-link>
 
         </b-modal>
 
@@ -136,7 +140,7 @@
         },
         created () {
             this.checkPermissions({permissions: 
-                {"add_members": null, "remove_members": null, "join_group": null, "leave_group": null}})
+                {"add_members": null, "remove_members": null, "join_group": null, "leave_group": null, "apply_template": null}})
                 .catch(error => {  this.error_message = error; console.log(error) })
             this.getPermissionsForItem({ item_id: this.item_id, item_model: this.item_model })
                 .catch(error => {  this.error_message = error; console.log(error) })
