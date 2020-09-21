@@ -46,12 +46,12 @@ class AddForumStateChange(BaseStateChange):
     description = "Create a forum"
     preposition = "on"
     input_fields = [InputField(name="name", type="CharField", required=True, validate=True),
-                    InputField(name="description", type="CharField", required=True, validate=True)]
+                    InputField(name="description", type="CharField", required=False, validate=True)]
     input_target = Forum
 
-    def __init__(self, *, name, description):
+    def __init__(self, *, name, description=None):
         self.name = name
-        self.description = description
+        self.description = description if description else ""
 
     @classmethod
     def get_allowable_targets(cls):
@@ -90,7 +90,7 @@ class EditForumStateChange(BaseStateChange):
         return cls.get_community_models() + [Forum]
 
     def description_present_tense(self):
-        return "edit forum"   
+        return "edit forum"
 
     def description_past_tense(self):
         return "edited forum"
@@ -230,7 +230,7 @@ class EditPostStateChange(BaseStateChange):
         return {"post": action.target, "forum": action.target.forum}
 
     def description_present_tense(self):
-        return "edit post"  
+        return "edit post"
 
     def description_past_tense(self):
         return "edited post"
@@ -248,7 +248,7 @@ class EditPostStateChange(BaseStateChange):
         target.content = self.content if self.content else target.content
         target.save()
         return target
-        
+
 
 class DeletePostStateChange(BaseStateChange):
     description = "Delete a post"
