@@ -14,8 +14,7 @@
         <b-button v-if="user_permissions.delete_list" variant="outline-secondary" class="btn-sm"
             id="delete_list_button" @click="delete_list(list_id)">delete list</b-button>
 
-        <router-link :to="{ name: 'list-action-history',
-            params: {list_id: list_id, item_id: list_id, item_model: 'simplelist', item_name: list_name }}">
+        <router-link :to="{ name: 'action-history', params: {item_id: list_id, item_model: 'simplelist', item_name: list_name }}">
                 <b-button variant="outline-secondary" class="btn-sm"" id="list_history_button">
                     list history</b-button>
         </router-link>

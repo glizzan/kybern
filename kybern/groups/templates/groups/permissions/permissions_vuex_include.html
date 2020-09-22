@@ -2,13 +2,13 @@
 on actions are in the actions module. -->
 
 
-<script type="application/javascript"> 
+<script type="application/javascript">
 
-    const PermissionsVuexModule = { 
+    const PermissionsVuexModule = {
 
-        state: { 
+        state: {
 
-            // Permission & condition options   
+            // Permission & condition options
             permission_options: {{ permission_options|safe }},
                 // [ { value: x , text: x } ]
             permission_configuration_options: {{ permission_configuration_options|safe }},
@@ -17,18 +17,18 @@ on actions are in the actions module. -->
                 // [ { value: x , text: x } ]
             condition_configuration_options: {{ condition_configuration_options|safe }},
                 // { condition_type: { fieldname: { display: x, type: x, required: x, value: x, field_name: x } }
-            dependent_field_options: {{ dependent_field_options|safe }},       
+            dependent_field_options: {{ dependent_field_options|safe }},
 
             // Permission data (loaded opportunistically)
             permissions: {},                // { int(pk) : { name: x, display: x, change_type: x } }
-            permission_overrides: {},       // { item_pk + "_" + item_model: { foundational: enabled, governing: disabled } } 
+            permission_overrides: {},       // { item_pk + "_" + item_model: { foundational: enabled, governing: disabled } }
 
             // Logged in user permissions
             current_user_permissions: {},    // { 'permission_shortname': boolean, 'permission_shortname': boolean }
 
             // Permissions associated with roles and items
             role_permissions: {},           // { role_name: [pk, pk, pk], role_name: [pk, pk, pk] }
-            item_permissions: {},           // { item_pk + "_" + item_model: [pk, pk, pk] }   
+            item_permissions: {},           // { item_pk + "_" + item_model: [pk, pk, pk] }
 
             // Governance conditions
             owner_condition: {{ owner_condition|safe }},         // None or ???
@@ -36,7 +36,7 @@ on actions are in the actions module. -->
 
         },
 
-        getters: { 
+        getters: {
             get_permission_given_pk: (state, getters) => (pk, as_dict) => {
                 permission = state.permissions[pk];
                 if (!permission) { console.log("No permission found for ", pk); return }
@@ -54,19 +54,19 @@ on actions are in the actions module. -->
                 }
                 return matching_permissions
             },
-            permissionsForRole: (state, getters) => (role_name) => { 
+            permissionsForRole: (state, getters) => (role_name) => {
                 permission_pks = state.role_permissions[role_name]
                 return getters.get_list_of_permissions_given_pks(permission_pks)
             },
-            permissionsForItem: (state, getters) => (item_key) => { 
+            permissionsForItem: (state, getters) => (item_key) => {
                 permission_pks = state.item_permissions[item_key]
-                return getters.get_list_of_permissions_given_pks(permission_pks)               
+                return getters.get_list_of_permissions_given_pks(permission_pks)
             },
             getPermissionConfigurationFields: (state, getters) => (permission_type) => {
                 // JSON stringify + parse create a new copy of the fields so we don't accidentally mutate state by reference
                 return JSON.parse( JSON.stringify( state.permission_configuration_options[permission_type] ))
             },
-            getConditionConfigurationFields: (state, getters) => (condition_type) => { 
+            getConditionConfigurationFields: (state, getters) => (condition_type) => {
                 for (key in state.condition_configuration_options) {
                     if (key.toLowerCase() == condition_type.toLowerCase()) {
                         configuration = state.condition_configuration_options[key]
@@ -99,7 +99,7 @@ on actions are in the actions module. -->
                 });
                 return new_fields
             },
-            getPermissionConditionConfigurationFieldsWithData: (state, getters) => (permission_id) => { 
+            getPermissionConditionConfigurationFieldsWithData: (state, getters) => (permission_id) => {
                 fields = state.permissions[permission_id]["condition"]["fields"]
                 for (field_index in fields) {
                     fields[field_index] = getters.fix_permission_field_values(fields[field_index])
@@ -114,7 +114,7 @@ on actions are in the actions module. -->
                 }
                 return fields
             },
-            getPermissionConfigurationFieldsWithData: (state, getters) => (permission_id) => { 
+            getPermissionConfigurationFieldsWithData: (state, getters) => (permission_id) => {
                 permission = state.permissions[permission_id]
                 field_options = getters.getPermissionConfigurationFields(permission.change_type)
                 return getters.mapPermissionDataToFields(field_options, permission["fields"])
@@ -129,7 +129,7 @@ on actions are in the actions module. -->
                     return state.permission_overrides[item_key].governing
                 }
             },
-            select_field_is_multiple: (state, getters) => (field) => { 
+            select_field_is_multiple: (state, getters) => (field) => {
                 if (field.hasOwnProperty("other_data") && field["other_data"].hasOwnProperty("multiple")) {
                     return field["other_data"]["multiple"]
                 } else {
@@ -138,7 +138,7 @@ on actions are in the actions module. -->
             }
         },
 
-        mutations: { 
+        mutations: {
 
             ADD_OR_UPDATE_PERMISSION (state, data) {
                 Vue.set(state.permissions, data.pk, data.data) // { name: x, display: x, change_type: x } }
@@ -150,8 +150,8 @@ on actions are in the actions module. -->
             REMOVE_PERMISSION_FROM_ROLES (state, data ) {
                 for (role in state.role_permissions) {
                     permission_index = state.role_permissions[role].indexOf(data.pk)
-                    if (permission_index > -1) { 
-                        state.role_permissions[role].splice(permission_index, 1) 
+                    if (permission_index > -1) {
+                        state.role_permissions[role].splice(permission_index, 1)
                     }
                 }
             },
@@ -189,20 +189,20 @@ on actions are in the actions module. -->
 
             // Condition Mutations
 
-            ADD_CONDITION_TO_PERMISSION (state, data) { 
+            ADD_CONDITION_TO_PERMISSION (state, data) {
                 Vue.set(state.permissions[data.pk], "condition", data.condition_data)
             },
-            REMOVE_CONDITION_FROM_PERMISSION (state, data) { 
+            REMOVE_CONDITION_FROM_PERMISSION (state, data) {
                 Vue.set(state.permissions[data.pk], "condition", null)
             },
-            ADD_LEADERSHIP_CONDITION (state, data) { 
+            ADD_LEADERSHIP_CONDITION (state, data) {
                 if (data.leadership_type == "owner") {
                     Vue.set(state, "owner_condition", data.condition_data)
                 } else if (data.leadership_type == "governor") {
                     Vue.set(state, "governor_condition", data.condition_data)
                 }
             },
-            REMOVE_LEADERSHIP_CONDITION (state, data) { 
+            REMOVE_LEADERSHIP_CONDITION (state, data) {
                 if (data.leadership_type == "owner") {
                     Vue.set(state, "owner_condition", null)
                 } else if (data.leadership_type == "governor") {
@@ -212,48 +212,47 @@ on actions are in the actions module. -->
 
         },
 
-        actions: { 
+        actions: {
 
             // Permission Actions
-          
-            addPermission ({ commit, state, dispatch }, payload) { 
 
-                url = "{% url 'add_permission' target=object.pk %}"                
-                params = { item_or_role: payload.item_or_role, item_id: payload.item_id, 
-                    item_model: payload.item_model, permission_type : payload.permission_selected, 
-                    permission_roles : payload.roles, permission_actors : payload.actors, 
+            addPermission ({ commit, state, dispatch }, payload) {
+
+                url = "{% url 'add_permission' target=object.pk %}"
+                params = { item_or_role: payload.item_or_role, item_id: payload.item_id,
+                    item_model: payload.item_model, permission_type : payload.permission_selected,
+                    permission_roles : payload.roles, permission_actors : payload.actors,
                     permission_configuration : payload.configuration }
-                    
-                implementationCallback = (response) => { 
+
+                implementationCallback = (response) => {
                     pk = response.data.permission.pk
                     permission_data = response.data.permission.permission_data[0]
                     commit('ADD_OR_UPDATE_PERMISSION', { pk : pk, data : permission_data })
-
                     if (payload.item_or_role == "role") {
                         commit('ADD_PERMISSION_TO_ROLE', { pk : pk, role: payload.roles })
                     } else {
-                        commit('ADD_PERMISSION_TO_ITEM', { permission_pk: pk, item_id: payload.item_id, 
+                        commit('ADD_PERMISSION_TO_ITEM', { permission_pk: pk, item_id: payload.item_id,
                             item_model: payload.item_model })
-                    }                    
+                    }
                 }
 
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
 
-            updatePermission ({ commit, state, dispatch }, payload) {    
+            updatePermission ({ commit, state, dispatch }, payload) {
 
-                url = "{% url 'update_permission' target=object.pk %}"    
-                params = { permission_id : payload.permission_id, permission_roles : payload.roles, 
+                url = "{% url 'update_permission' target=object.pk %}"
+                params = { permission_id : payload.permission_id, permission_roles : payload.roles,
                     permission_actors : payload.actors, permission_configuration : payload.configuration }
-                implementationCallback = (response) => { 
+                implementationCallback = (response) => {
                     pk = response.data.permission.pk
                     permission_data = response.data.permission.permission_data[0]
                     commit('ADD_OR_UPDATE_PERMISSION', { pk : pk, data : permission_data })
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            
-            removePermission ({ commit, getters, dispatch }, payload) {  
+
+            removePermission ({ commit, getters, dispatch }, payload) {
                 url = "{% url 'delete_permission' target=object.pk %}"
                 params = { permission_id : payload.permission_id }
                 implementationCallback = (response) => {
@@ -261,13 +260,13 @@ on actions are in the actions module. -->
                     commit('REMOVE_PERMISSION_FROM_ROLES', { pk: response.data.removed_permission_pk } )
 
                     if (payload.item_or_role == "item") {
-                        commit('REMOVE_PERMISSION_FROM_ITEM', { pk: response.data.removed_permission_pk, 
+                        commit('REMOVE_PERMISSION_FROM_ITEM', { pk: response.data.removed_permission_pk,
                         item_id : payload.item_id, item_model: payload.item_model })
                     } else {
                         // TODO: if removed from role interface, may still be set on item - check for
                         // permission pk in group
                     }
-                    
+
                     commit('DELETE_PERMISSION', { pk: response.data.removed_permission_pk })
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
@@ -275,29 +274,29 @@ on actions are in the actions module. -->
 
             // Condition Actions
 
-            addCondition ({ commit, state, dispatch }, payload) {  
-                url = "{% url 'add_condition' target=object.pk %}"    
+            addCondition ({ commit, state, dispatch }, payload) {
+                url = "{% url 'add_condition' target=object.pk %}"
                 params = { condition_type: payload.condition_type, permission_or_leadership: payload.permission_or_leadership,
                     target_permission_id: payload.permission_id, leadership_type: payload.leadership_type,
                     combined_condition_data : payload.combined_condition_data }
-                    
-                implementationCallback = (response) => { 
+
+                implementationCallback = (response) => {
                     if (response.data.permission_or_leadership == "permission") {
-                        commit('ADD_CONDITION_TO_PERMISSION', { pk: response.data.target_permission_id, 
+                        commit('ADD_CONDITION_TO_PERMISSION', { pk: response.data.target_permission_id,
                             condition_data: response.data.condition_info })
                     } else {
-                        commit('ADD_LEADERSHIP_CONDITION', { 'leadership_type': response.data.leadership_type, 
+                        commit('ADD_LEADERSHIP_CONDITION', { 'leadership_type': response.data.leadership_type,
                             condition_data: response.data.condition_info })
                     }
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback })
             },
 
-            removeCondition ({ commit, state, dispatch }, payload) {  
-                url = "{% url 'remove_condition' target=object.pk %}"    
-                params = { permission_or_leadership: payload.permission_or_leadership, 
+            removeCondition ({ commit, state, dispatch }, payload) {
+                url = "{% url 'remove_condition' target=object.pk %}"
+                params = { permission_or_leadership: payload.permission_or_leadership,
                     target_permission_id : payload.permission_id, leadership_type: payload.leadership_type }
-                implementationCallback = (response) => { 
+                implementationCallback = (response) => {
                     if (response.data.permission_or_leadership == "permission") {
                         commit('REMOVE_CONDITION_FROM_PERMISSION', { pk: response.data.target_permission_id })
                     } else {
@@ -308,52 +307,52 @@ on actions are in the actions module. -->
             },
 
             // Misc other actions
-            getPermission({ commit, state, dispatch}, payload) { 
-                url = "{% url 'get_permission' %}" 
+            getPermission({ commit, state, dispatch}, payload) {
+                url = "{% url 'get_permission' %}"
                 var params = { permission_pk: payload.permission_pk }
-                var implementationCallback = (response) => { 
+                var implementationCallback = (response) => {
                     commit('ADD_OR_UPDATE_PERMISSION', { pk : payload.permission_pk, data : response.data.permission_data })
                 }
                 return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            getPermissionsForItem({ commit, state, dispatch}, payload) { 
-                url = "{% url 'get_permissions' %}"    
+            getPermissionsForItem({ commit, state, dispatch}, payload) {
+                url = "{% url 'get_permissions' %}"
                 var params = { item_id: payload.item_id, item_model: payload.item_model }
-                var implementationCallback = (response) => { 
-                    commit('REPLACE_ITEM_PERMISSIONS', { item_id: response.data.item_id, 
-                                                         item_model: response.data.item_model, 
+                var implementationCallback = (response) => {
+                    commit('REPLACE_ITEM_PERMISSIONS', { item_id: response.data.item_id,
+                                                         item_model: response.data.item_model,
                                                          pks: response.data.permission_pks })
-                    for (key in response.data.permissions) { 
-                        commit('ADD_OR_UPDATE_PERMISSION', { pk : key, data : response.data.permissions[key] })                    
+                    for (key in response.data.permissions) {
+                        commit('ADD_OR_UPDATE_PERMISSION', { pk : key, data : response.data.permissions[key] })
                     }
-                    commit('ADD_OR_UPDATE_PERMISSION_OVERRIDE_DATA', { 
-                        item_id: response.data.item_id, 
+                    commit('ADD_OR_UPDATE_PERMISSION_OVERRIDE_DATA', {
+                        item_id: response.data.item_id,
                         item_model: response.data.item_model,
                         foundational: response.data.foundational,
-                        governing: response.data.governing 
+                        governing: response.data.governing
                     })
                 }
                 return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
 
-            changePermissionOverride ({ commit, state, dispatch }, payload) { 
-                url = "{% url 'change_item_permission_override' %}"    
+            changePermissionOverride ({ commit, state, dispatch }, payload) {
+                url = "{% url 'change_item_permission_override' %}"
                 params = { item_id: payload.item_id, item_model: payload.item_model,
                     enable_or_disable: payload.enable_or_disable, governing_or_foundational: payload.governing_or_foundational }
-                implementationCallback = (response) => { 
-                    commit('ADD_OR_UPDATE_PERMISSION_OVERRIDE_DATA', { 
-                        item_id: response.data.item_id, 
+                implementationCallback = (response) => {
+                    commit('ADD_OR_UPDATE_PERMISSION_OVERRIDE_DATA', {
+                        item_id: response.data.item_id,
                         item_model: response.data.item_model,
                         foundational: response.data.foundational,
-                        governing: response.data.governing 
+                        governing: response.data.governing
                     })
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
 
-            toggleAnyone ({ commit, getters, dispatch }, payload) { 
-                url = "{% url 'toggle_anyone' target=object.pk %}"    
-                params = { permission_id : payload.permission_id, enable_or_disable: payload.enable_or_disable } 
+            toggleAnyone ({ commit, getters, dispatch }, payload) {
+                url = "{% url 'toggle_anyone' target=object.pk %}"
+                params = { permission_id : payload.permission_id, enable_or_disable: payload.enable_or_disable }
                 implementationCallback = (response) => {
                     pk = response.data.permission.pk
                     permission_data = response.data.permission.permission_data[0]
@@ -362,22 +361,22 @@ on actions are in the actions module. -->
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
 
-            checkPermissions ({ commit, state, dispatch }, payload) { 
+            checkPermissions ({ commit, state, dispatch }, payload) {
                 var url = "{% url 'check_permissions' target=object.pk %}"
                 params = { permissions: payload.permissions }
-                var implementationCallback = (response) => { 
+                var implementationCallback = (response) => {
                     commit('ADD_OR_UPDATE_CURRENT_USER_PERMISSIONS', { user_permissions: response.data.user_permissions })
                 }
                 return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
 
-            refreshRoleData ({ commit, state, dispatch }, payload) { 
-                url = "{% url 'get_data_for_role' target=object.pk %}"    
+            refreshRoleData ({ commit, state, dispatch }, payload) {
+                url = "{% url 'get_data_for_role' target=object.pk %}"
                 params = { role_name : payload.role }
-                implementationCallback = (response) => { 
+                implementationCallback = (response) => {
                     commit('REPLACE_ROLE_PERMISSIONS', { role: payload.role, pks: response.data.role_permissions })
-                    for (key in response.data.permissions) { 
-                        commit('ADD_OR_UPDATE_PERMISSION', { pk : key, data : response.data.permissions[key] })                    
+                    for (key in response.data.permissions) {
+                        commit('ADD_OR_UPDATE_PERMISSION', { pk : key, data : response.data.permissions[key] })
                     }
                 }
                 return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})

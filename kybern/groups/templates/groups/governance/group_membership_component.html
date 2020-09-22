@@ -1,68 +1,44 @@
 <script type="text/x-template" id="group_membership_template">
 
     <span>
-        <b-card header="Members" class="my-3">
 
-            <div class="text-center d-flex">
+        <b-card no-body class="my-3">
 
-            <b-button class="mx-2 flex-fill" v-b-modal.group_membership_settings_modal id="group_membership_settings_button">
-                how membership works</b-button>
+            <b-card-header>
 
-            <b-button class="mx-2 flex-fill" v-b-modal.group_membership_display id="group_membership_display_button">
-                view & change members</b-button>
+                <span class="float-left">Members</span>
 
-            <b-button class="mx-2 flex-fill" v-if="user_permissions.join_group" id="join_group_button"
-                @click="join_group()">join group</b-button>
-                
-            <b-button class="mx-2 flex-fill" v-if="user_permissions.leave_group" id="leave_group_button"
-                @click="leave_group()">leave group</b-button> 
-                
-            </div>
-                                      
+                <span class="float-right">
+
+                    <router-link :to="{ name: 'membership-settings' }">
+                        <b-button class="btn-sm btn-seconday" id="group_membership_settings_button">
+                            membership settings</b-button>
+                    </router-link>
+
+                    <b-button class="btn-sm btn-secondary" v-b-modal.group_membership_display id="group_membership_display_button">
+                        change members</b-button>
+
+                </span>
+
+            </b-card-header>
+
+            <b-card-text class="p-3">
+
+                <div id="current_member_list">
+                    <b-badge v-for="member in groupMembersAsOptions" v-bind:key="member.pk" pill variant="info" class="mx-2 my-2">
+                    [[ member.name ]]</b-badge>
+                </div>
+
+            </b-card-text>
+
         </b-card>
-
-        <b-modal id="group_membership_settings_modal" title="Group Membership Settings" class="modal fade"
-                size="lg" hide-footer>
-
-            <error-component :message=error_message></error-component>
-
-            <span id="add_member_permissions">
-                <p class="pb-1 font-weight-bold">Permissions for Adding Members</p>
-                <edit-permission v-for="permission in addmember_permissions" v-bind:key="permission.pk"
-                    :permission=permission :item_id=item_id :item_model=item_model> </edit-permission>            
-                <p v-if="!addmember_permissions.length">No permissions for adding members have been 
-                    set yet. This means only people with foundational or governing permission can 
-                    add members.</p>
-                <add-permission :default_selection=add_member_state_change :item_id=item_id 
-                    :item_model=item_model> </add-permission>
-            </span> 
-
-            <span id="remove_member_permissions">
-                <p class="pt-4 pb-1 font-weight-bold">Permissions for Removing Members</p>
-                <edit-permission v-for="permission in removemember_permissions" v-bind:key="permission.pk" 
-                    :permission=permission :item_id=item_id :item_model=item_model> </edit-permission>
-                <p v-if="!removemember_permissions.length">No permissions for removing members have 
-                    been set yet. This means only people with foundational or governing permission can 
-                    remove members.</p>
-                <add-permission :default_selection=remove_member_state_change :item_id=item_id 
-                    :item_model=item_model></add-permission>
-            </span>
-
-            <router-link v-if="user_permissions.apply_template" :to="{ name: 'templates', params: {scope: 'membership'}}">
-                <b-card title="Membership Templates" class="bg-light text-info border-secondary my-4">
-                    <p id="membership_templates_link" class="mb-1 text-secondary">Browse pre-existing membership setups and 
-                        apply them to your community.</p></b-card>
-            </router-link>
-
-        </b-modal>
-
 
         <b-modal id="group_membership_display" title="Group Membership" class="modal fade" size="lg" hide-footer>
 
             <error-component :message=error_message></error-component>
 
             <b>Current Members:</b>
-                <span id="current_member_list"> <b-badge v-for="member in groupMembersAsOptions" v-bind:key="member.pk" 
+                <span id="current_member_list"> <b-badge v-for="member in groupMembersAsOptions" v-bind:key="member.pk"
                 pill variant="info" class="mx-1">[[ member.name ]]</b-badge></span>
 
             <hr >
@@ -70,8 +46,8 @@
             <span v-if="user_permissions.add_members">
 
                 <span v-if="add_member_button_selected">
-                    <vue-multiselect v-model="members_to_add_selected" :options="nonmembersAsOptions" :multiple="true" 
-                        :close-on-select="true" :clear-on-select="false" placeholder="No one selected" 
+                    <vue-multiselect v-model="members_to_add_selected" :options="nonmembersAsOptions" :multiple="true"
+                        :close-on-select="true" :clear-on-select="false" placeholder="No one selected"
                         label="name" track-by="name">
                         <template slot="selection" slot-scope="{ values, search, isOpen }">
                             <span v-if="!isOpen"> Selected: [[ values ]] </span>
@@ -92,8 +68,8 @@
             <span v-if="user_permissions.remove_members">
 
                 <span v-if="remove_member_button_selected">
-                    <vue-multiselect v-model="members_to_remove_selected" :options="groupMembersAsOptions" :multiple="true" 
-                        :close-on-select="true" :clear-on-select="false" placeholder="No one selected" 
+                    <vue-multiselect v-model="members_to_remove_selected" :options="groupMembersAsOptions" :multiple="true"
+                        :close-on-select="true" :clear-on-select="false" placeholder="No one selected"
                         label="name" track-by="name">
                         <template slot="selection" slot-scope="{ values, search, isOpen }">
                             <span v-if="!isOpen"> Selected: [[ values ]] </span>
@@ -105,7 +81,7 @@
                 <span v-else>
                     <span v-if="!add_member_button_selected">
                         <b-button class="btn-sm mb-3" id="remove_member_button"
-                            @click="remove_member_button_selected = true">Remove Members</b-button> 
+                            @click="remove_member_button_selected = true">Remove Members</b-button>
                     </span>
                 </span>
 
@@ -114,7 +90,7 @@
         </b-modal>
 
     </span>
-    
+
 </script>
 
 <script type="application/javascript">
@@ -124,13 +100,9 @@
         template: '#group_membership_template',
         store,
         data: function() {
-            return {   
-                template_scope: 'membership',
-                user_pk: {{ request.user.pk }},
+            return {
                 item_id: {{ object.pk }},  // Group id,
                 item_model: 'group',  // group model
-                add_member_state_change: 'concord.communities.state_changes.AddMembersStateChange',
-                remove_member_state_change: 'concord.communities.state_changes.RemoveMembersStateChange',
                 add_member_button_selected: false,
                 remove_member_button_selected: false,
                 members_to_add_selected: [],
@@ -139,37 +111,20 @@
             }
         },
         created () {
-            this.checkPermissions({permissions: 
-                {"add_members": null, "remove_members": null, "join_group": null, "leave_group": null, "apply_template": null}})
+            this.checkPermissions({permissions: {"add_members": null, "remove_members": null }})
                 .catch(error => {  this.error_message = error; console.log(error) })
             this.getPermissionsForItem({ item_id: this.item_id, item_model: this.item_model })
                 .catch(error => {  this.error_message = error; console.log(error) })
         },
         computed: {
-            ...Vuex.mapState({ 
+            ...Vuex.mapState({
                 permissions: state => state.permissions.permissions,
                 user_permissions: state => state.permissions.current_user_permissions
             }),
-            ...Vuex.mapGetters(['groupMembersAsOptions', 'nonmembersAsOptions']),
-            addmember_permissions() {
-                return Object.values(this.permissions).filter(permission => 
-                    permission.change_type == this.add_member_state_change)
-            },
-            removemember_permissions() {
-                return Object.values(this.permissions).filter(permission => 
-                    permission.change_type == this.remove_member_state_change)
-            }
+            ...Vuex.mapGetters(['groupMembersAsOptions', 'nonmembersAsOptions'])
         },
         methods: {
             ...Vuex.mapActions(['getPermissionsForItem', 'checkPermissions', 'addMembers', 'removeMembers']),
-            join_group() {
-                this.addMembers({ user_pks: [this.user_pk] }).then(response => window.location.reload())
-                    .catch(error => console.log(error))
-            },
-            leave_group() {
-                this.removeMembers({ user_pks: [this.user_pk] }).then(response => window.location.reload())
-                    .catch(error => console.log(error))
-            },
             add_members() {
                 members_to_add = this.members_to_add_selected.map(actor => actor.pk)
                 this.addMembers({ user_pks: members_to_add }).catch(error => this.error_message = error)

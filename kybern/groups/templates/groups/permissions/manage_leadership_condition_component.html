@@ -1,6 +1,6 @@
 <script type="text/x-template" id="leadership_condition_template">
 
-    <div class="border m-2 p-2 text-center"> 
+    <div class="border m-2 p-2 text-center">
 
         <error-component :message=error_message></error-component>
 
@@ -16,7 +16,7 @@
                     variant="outline-secondary" size="sm" class="ml-2">Remove</b-button>
             </span>
             <span v-else>
-                There is no condition currently set. 
+                There is no condition currently set.
                 <b-button v-if="user_permissions.add_leadership_condition" @click="mode = 'create'"
                     variant="outline-secondary" size="sm" class="ml-2">Add one?</b-button>
             </span>
@@ -26,12 +26,12 @@
 
         <!-- If we're creating a new condition -->
         <span v-if="mode == 'create' && !condition_selected ">
-            <b>Select condition to add</b> 
+            <b>Select condition to add</b>
                 <template><div>
                     <b-form-select v-model="condition_selected" :options="condition_options" :select-size="4"
                         name="condition_select">
                     </b-form-select>
-                </div></template> 
+                </div></template>
             </span>
         </span>
 
@@ -58,7 +58,7 @@
     conditionComponent = Vue.component('manage-leadership-condition', {
         delimiters: ['[[', ']]'],
         template: '#leadership_condition_template',
-        store, 
+        store,
         props: ['mode_from_parent', 'called_for'],
         data: function() {
             return {
@@ -77,24 +77,24 @@
         },
         watch: {
             // The parent of the condition include can change the mode - overrides current mode (on change, not permanently)
-            mode_from_parent: function (val) { this.mode = val; },                           
+            mode_from_parent: function (val) { this.mode = val; },
             condition_selected: function (val) {  this.update_configuration_fields() }
         },
         computed: {
-            ...Vuex.mapState({ 
+            ...Vuex.mapState({
                 condition_options: state => state.permissions.condition_options,
                 owner_condition: state => state.permissions.owner_condition,
                 governor_condition: state => state.permissions.governor_condition,
                 user_permissions: state => state.permissions.current_user_permissions
             }),
-            ...Vuex.mapGetters(['getConditionConfigurationFields', 'getLeadershipConditionConfigurationFieldsWithData', 
+            ...Vuex.mapGetters(['getConditionConfigurationFields', 'getLeadershipConditionConfigurationFieldsWithData',
                 'select_field_is_multiple', 'rolesAsOptions', 'groupMembersAsOptions']),
             existing_condition: function() {
                 if (this.called_for == "owner" && this.owner_condition) {
                     return this.owner_condition
                 } else if (this.called_for == "governor" && this.governor_condition) {
                     return this.governor_condition
-                } 
+                }
                 return null
             },
             condition_display_helper: function() {
@@ -106,6 +106,7 @@
         created (){ this.update_configuration_fields() },
         methods: {
             ...Vuex.mapActions(['checkPermissions', 'addCondition', 'updateCondition', 'removeCondition']),
+            is_dependency_field() { return false },
             update_configuration_fields(){
                 // Note that only one of condition_selected or condition_to_edit should be defined
                 if (this.condition_selected) {
@@ -120,22 +121,22 @@
             add_condition(){
                 if (this.condition_selected) { condition_type = this.condition_selected }
                 else { condition_type = this.existing_condition["type"] }
-                this.addCondition({ 
-                    condition_type : condition_type, 
+                this.addCondition({
+                    condition_type : condition_type,
                     permission_or_leadership : "leadership",
                     leadership_type: this.called_for,
-                    combined_condition_data: this.configuration_fields 
-                }).then(response => { 
-                    this.$emit("clearState"); 
-                    this.condition_selected = ''; 
+                    combined_condition_data: this.configuration_fields
+                }).then(response => {
+                    this.$emit("clearState");
+                    this.condition_selected = '';
                     this.mode = 'start';
                 }).catch(error => {  this.error_message = error })
             },
             remove_condition() {
                 this.removeCondition({ permission_or_leadership: "leadership", leadership_type: this.called_for
-                }).then(response => { 
-                    this.$emit("clearState"); 
-                    this.mode = 'start'; 
+                }).then(response => {
+                    this.$emit("clearState");
+                    this.mode = 'start';
                 }).catch(error => { this.error_message = error })
             }
         }

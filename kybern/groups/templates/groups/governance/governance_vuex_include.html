@@ -1,10 +1,10 @@
 
 
-<script type="application/javascript"> 
+<script type="application/javascript">
 
-    const GovernanceVuexModule = { 
-        
-        state: { 
+    const GovernanceVuexModule = {
+
+        state: {
 
             // Roles & members
             members: {{ current_members|safe }},    // [ pk, pk, pk, pk ]
@@ -20,7 +20,7 @@
 
         },
 
-        mutations: { 
+        mutations: {
             ADD_ROLE (state, data) {
                 role_exists = state.roles.find(role => role.name == data.role_name)
                 if (!role_exists) {
@@ -29,7 +29,7 @@
             },
             REMOVE_ROLE (state, data) {
                 index = state.roles.findIndex(role => role.name == data.role_name)
-                if (index) { state.roles.splice(index, 1)}
+                if (index > -1) { state.roles.splice(index, 1)}
             },
             ADD_MEMBERS (state, data ) {
                 for (index in data.user_pks) {
@@ -51,7 +51,7 @@
                     user_pk = data.user_pks[index]
                     index_of_pk = role.current_members.indexOf(user_pk)
                     if (index_of_pk == -1) { role.current_members.push(user_pk) }
-                }                
+                }
             },
             REMOVE_USERS_FROM_ROLE (state, data) {
                 role = state.roles.find(role => role.name == data.role_name)
@@ -59,7 +59,7 @@
                     user_pk = data.user_pks[index]
                     index_of_pk = role.current_members.indexOf(user_pk)
                     if (index_of_pk > -1) { role.current_members.splice(index_of_pk, 1) }
-                }                 
+                }
             },
             REMOVE_USERS_FROM_ALL_ROLES (state, data) {
                 state.roles.forEach( function(role){
@@ -71,12 +71,12 @@
             },
             ADD_OWNERS (state, data) {
                 data.roles_to_add.forEach(function(role){
-                    if (!state.owners.roles.includes(role)) { 
+                    if (!state.owners.roles.includes(role)) {
                         state.owners.roles.push(role) }
                 })
                 data.actors_to_add.forEach(function(actor){
-                    if (!state.owners.actors.includes(actor)) { 
-                        state.owners.actors.push(actor) } 
+                    if (!state.owners.actors.includes(actor)) {
+                        state.owners.actors.push(actor) }
                 })
             },
             REMOVE_OWNERS (state, data) {
@@ -118,51 +118,51 @@
         },
 
         actions: {
-            addMembers ({ commit, state, dispatch }, payload) { 
-                url = "{% url 'add_members' target=object.pk %}"    
+            addMembers ({ commit, state, dispatch }, payload) {
+                url = "{% url 'add_members' target=object.pk %}"
                 params = { user_pks : payload.user_pks }
                 implementationCallback = () => { commit('ADD_MEMBERS', { user_pks: payload.user_pks }) }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            removeMembers ({ commit, state, dispatch }, payload) { 
-                url = "{% url 'remove_members' target=object.pk %}"    
+            removeMembers ({ commit, state, dispatch }, payload) {
+                url = "{% url 'remove_members' target=object.pk %}"
                 params = { user_pks : payload.user_pks }
-                implementationCallback = () => { 
+                implementationCallback = () => {
                     commit('REMOVE_USERS_FROM_ALL_ROLES', { user_pks: payload.user_pks })
-                    commit('REMOVE_MEMBERS', { user_pks: payload.user_pks }) 
+                    commit('REMOVE_MEMBERS', { user_pks: payload.user_pks })
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            addUsersToRole ({ commit, state, dispatch }, payload) { 
-                url = "{% url 'add_people_to_role' target=object.pk %}"    
+            addUsersToRole ({ commit, state, dispatch }, payload) {
+                url = "{% url 'add_people_to_role' target=object.pk %}"
                 params = { role_name : payload.role_name, user_pks: payload.user_pks }
-                implementationCallback = () => { commit('ADD_USERS_TO_ROLE', 
+                implementationCallback = () => { commit('ADD_USERS_TO_ROLE',
                     { role_name : payload.role_name, user_pks: payload.user_pks }) }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
             removeUsersFromRole ({ commit, state, dispatch }, payload) {
-                url = "{% url 'remove_people_from_role' target=object.pk %}"    
+                url = "{% url 'remove_people_from_role' target=object.pk %}"
                 params = { role_name : payload.role_name, user_pks: payload.user_pks }
-                implementationCallback = () => { commit('REMOVE_USERS_FROM_ROLE', 
+                implementationCallback = () => { commit('REMOVE_USERS_FROM_ROLE',
                     { role_name : payload.role_name, user_pks: payload.user_pks }) }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
             addRole ({ commit, state, dispatch }, payload) {
-                url = "{% url 'add_role_to_group' target=object.pk %}"    
+                url = "{% url 'add_role_to_group' target=object.pk %}"
                 params = { role_name: payload.role_name }
                 implementationCallback = () => { commit('ADD_ROLE', { role_name: payload.role_name }) }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
             removeRole ({ commit, state, dispatch }, payload) {
-                url = "{% url 'remove_role_from_group' target=object.pk %}"    
+                url = "{% url 'remove_role_from_group' target=object.pk %}"
                 params = { role_name: payload.role_name }
                 implementationCallback = () => { commit('REMOVE_ROLE', { role_name: payload.role_name }) }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
             updateOwners({ commit, state, dispatch}, payload) {
-                url = "{% url 'update_owners' target=object.pk %}"    
+                url = "{% url 'update_owners' target=object.pk %}"
                 params = { owner_roles: payload.roles, owner_actors: payload.actors }
-                implementationCallback = () => { 
+                implementationCallback = () => {
                     roles_to_add = payload.roles.filter(x => !state.owners.roles.includes(x))
                     actors_to_add = payload.actors.filter(x => !state.owners.actors.includes(x))
                     roles_to_remove = state.owners.roles.filter(x => !payload.roles.includes(x))
@@ -173,9 +173,9 @@
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
             updateGovernors({ commit, state, dispatch}, payload) {
-                url = "{% url 'update_governors' target=object.pk %}"    
+                url = "{% url 'update_governors' target=object.pk %}"
                 params = { governor_roles: payload.roles, governor_actors: payload.actors }
-                implementationCallback = () => { 
+                implementationCallback = () => {
                     roles_to_add = payload.roles.filter(x => !state.governors.roles.includes(x))
                     actors_to_add = payload.actors.filter(x => !state.governors.actors.includes(x))
                     roles_to_remove = state.governors.roles.filter(x => !payload.roles.includes(x))
@@ -186,7 +186,7 @@
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             }
          },
-        getters: { 
+        getters: {
             memberNames: (state, getters) => {
                 return state.members.map(member => { return getters.getUserName(member) })
             },
@@ -222,18 +222,18 @@
                     return []
                 }
             },
-            groupMembersAsOptions: (state, getters) => { 
+            groupMembersAsOptions: (state, getters) => {
                 return getters.user_pk_to_options(state.members)
             },
-            roleMembersAsOptions: (state, getters) => (role_name) => { 
-                role_members = getters.membersInRole(role_name) 
+            roleMembersAsOptions: (state, getters) => (role_name) => {
+                role_members = getters.membersInRole(role_name)
                 return getters.user_pk_to_options(role_members)
             },
-            membersAsOptions: (state, getters) => (role_name) => { 
-                if (role_name == 'members') {  return getters.groupMembersAsOptions  } 
+            membersAsOptions: (state, getters) => (role_name) => {
+                if (role_name == 'members') {  return getters.groupMembersAsOptions  }
                 else {  return getters.roleMembersAsOptions(role_name)  }
             },
-            nonmembersAsOptions: (state, getters) => { 
+            nonmembersAsOptions: (state, getters) => {
                 return state.users.filter(user => state.members.indexOf(user.pk) == -1 )
             },
             leadershipAsOptions: (state, getters) => {

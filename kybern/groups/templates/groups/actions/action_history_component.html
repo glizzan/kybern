@@ -1,18 +1,16 @@
 <script type="text/x-template" id="action_history_template">
-  
-  <!-- Modal with more detailed info on all actions -->
-  <b-modal :id=modal_id size="xl" :visible=true hide-footer @hide="$router.go(-1)">
 
-    <template v-slot:modal-header><h5>[[ title_string ]]</h5>
-    </template>
-    
-    <b-container fluid id="action_history_table">   
+  <span>
+
+    <h5>[[ title_string ]]</h5>
+
+    <b-container fluid id="action_history_table">
 
           <b-col lg="6" class="my-1">
               <b-form-group label="Filter" label-cols-sm="3" label-align-sm="right" label-size="sm"
                                                               label-for="filterInput" class="mb-0">
                 <b-input-group size="sm">
-                  <b-form-input v-model="filter" type="search" id="filterInput" 
+                  <b-form-input v-model="filter" type="search" id="filterInput"
                                         placeholder="Type to Search"></b-form-input>
                   <b-input-group-append>
                     <b-button :disabled="!filter" @click="filter = ''">Clear</b-button>
@@ -21,17 +19,17 @@
               </b-form-group>
             </b-col>
 
-          <b-table striped hover fixed :items="item_actions" :fields="action_fields" 
+          <b-table striped hover fixed :items="item_actions" :fields="action_fields"
               :sort-by.sync="sortBy" :sort-desc.sync="sortDesc" :filter="filter"
               :filterIncludedFields="filterOn" id="action_history_table_element">
 
           <!-- Custom formatting for see more column -->
           <template v-slot:cell(action_target_content_type)="data">
-        
+
               <router-link :to="{ name: 'action-detail', params: { action_id: data.item.action_pk }}">
                 <b-button variant="outline-secondary" class="btn-sm action-link-button">link</b-button>
               </router-link>
-        
+
             </template>
 
           <!-- Custom formatting for the status column -->
@@ -55,8 +53,8 @@
         </b-table>
 
     </b-container>
-      
-  </b-modal>
+
+  </span>
 
 </script>
 
@@ -86,7 +84,7 @@ actionHistoryComponent = Vue.component('action-history', {
               { key: 'has_condition', label: 'Has Condition', sortable: true }
             ],
             sortBy: 'created',
-            sortDesc: true,  
+            sortDesc: true,
             filter: null,
             filterOn: []
           }
@@ -97,11 +95,11 @@ actionHistoryComponent = Vue.component('action-history', {
     },
     computed: {
       ...Vuex.mapState({ actions: state => state.concord_actions.actions }),
-      final_item_id: function() { 
+      final_item_id: function() {
         return (typeof this.item_id === "undefined") ? {{ object.pk }} : this.item_id },
-      final_item_model: function() { 
+      final_item_model: function() {
         return (typeof this.item_model === "undefined") ? 'group' : this.item_model },
-      final_item_name: function() { 
+      final_item_name: function() {
         return (typeof this.item_name === "undefined") ? '{{ object.get_name }}' : this.item_name },
       item_actions: function() {
         item_key = this.final_item_id + "_" + this.final_item_model

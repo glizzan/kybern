@@ -1,4 +1,4 @@
-<div class="input-group my-1" v-for="field in configuration_fields" v-bind:key=field.label>   
+<div class="input-group my-1" v-for="field in configuration_fields" v-bind:key=field.label>
 
     <span v-if="$options.name != 'permission-condition' || !is_dependency_field(field.value)">
         <div v-if="field.type=='CharField'" class="input-group my-2">
@@ -26,11 +26,11 @@
                     <span v-if="field.label">[[ field.label ]]</span>
                 </span>
             </div>
-            <input type="number" class="form-control" aria-label=field.name aria-describedby="field.name label" 
+            <input type="number" class="form-control" aria-label=field.name aria-describedby="field.name label"
                 v-model=field.value
                 :required=field.required>
         </div>
-        
+
         <!-- Should be a choice field populated by current roles -->
         <div v-if="field.type=='RoleField' || field.type=='RoleListField'" class="input-group my-2 permissionrolefield">
 
@@ -38,7 +38,7 @@
             <span v-if="field.label">[[ field.label ]]</span>
 
             <vue-multiselect v-model=field.value :options=rolesAsOptions :allow-empty="true"
-                :multiple="select_field_is_multiple(field)" :close-on-select="true" placeholder="Select roles" 
+                :multiple="select_field_is_multiple(field)" :close-on-select="true" placeholder="Select roles"
                 label="name" track-by="name">
                 <template slot="selection" slot-scope="{ values, search, isOpen }">
                     <span v-if="!isOpen">
@@ -56,7 +56,7 @@
             <span v-if="field.label">[[ field.label ]]</span>
 
             <vue-multiselect v-model=field.value :options=groupMembersAsOptions :allow-empty="true"
-                :multiple="select_field_is_multiple(field)" :close-on-select="true" placeholder="Select actors" 
+                :multiple="select_field_is_multiple(field)" :close-on-select="true" placeholder="Select actors"
                 label="name" track-by="pk">
                 <template slot="selection" slot-scope="{ values, search, isOpen }">
                     <span v-if="!isOpen">
@@ -68,13 +68,13 @@
         </div>
     </span>
 
-    <div class="my-2" v-if="field.can_depend">
-        <span v-if="$options.name == 'permission-condition' && is_dependency_field(field.value)">
+    <div class="my-2" v-if="$options.name == 'permission-condition' && field.can_depend">
+        <span v-if="is_dependency_field(field.value)">
             <span v-if="field.display">[[ field.display ]]</span>
             <span v-if="field.label">[[ field.label ]]</span>
         </span>
         <dependent-field class="my-2 ml-3" :permission=permission :provided_string=field.value :field_name=field.field_name
-            :field_type=field.type :is_dependent_field="is_dependency_field(field.value)" 
+            :field_type=field.type :is_dependent_field="is_dependency_field(field.value)"
             v-on:change-dependent-field=change_dependent_field></dependent-field>
     </div>
 

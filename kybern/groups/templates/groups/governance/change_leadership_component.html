@@ -1,0 +1,200 @@
+<script type="text/x-template" id="change_leadership_template">
+
+    <span>
+
+        <h3>Change leadership of {{ object.name }}</h3>
+
+        <p class="font-weight-bold">Owners</p>
+
+        <p>Groups can be owned by a combination of individuals and people with specific roles.  There must
+            always be at least one person who is an owner. Here are the current individuals and roles who
+            are owners:</p>
+
+            <b-form inline id="owner_actors_and_roles" class="mx-auto">
+
+                <div class="w-50 p-2">
+                    <p class="text-center font-italic">Roles</p>
+                    <vue-multiselect v-model="owner_roles_selected" :options="rolesAsOptions" :multiple="true"
+                    :close-on-select="true" :clear-on-select="false" placeholder="No roles selected"
+                    :disabled="!(user_permissions.update_owners)" label="name" track-by="name">
+                        <template slot="selection" slot-scope="{ values, search, isOpen }">
+                            <span v-if="!isOpen"> Selected: [[ values ]] </span>
+                        </template>
+                    </vue-multiselect>
+                </div>
+                <div class="w-50 p-2">
+                    <p class="text-center font-italic">Individuals</p>
+                    <vue-multiselect v-model="owner_actors_selected" :options="groupMembersAsOptions" :multiple="true"
+                    :close-on-select="true" :clear-on-select="true" placeholder="No individuals selected"
+                    :disabled="!(user_permissions.update_owners)" label="name" track-by="pk" prepend="Individuals">
+                        <template slot="selection" slot-scope="{ values, search, isOpen }">
+                            <span v-if="!isOpen"> Selected: [[ values ]] </span>
+                        </template>
+                        </vue-multiselect>
+                    </div>
+                </div>
+
+                <b-button v-if="user_permissions.update_owners" variant="outline-secondary"
+                    class="mx-auto btn-sm mt-3" @click="update_leadership('owners')">
+                    Update owners</b-button>
+
+            </b-form>
+
+            <div class="mb-3 text-danger" v-if="owner_error_message">
+                    [[ owner_error_message ]]
+            </div>
+
+        <p class="mt-3">If owners have "unconditional" power this means any one owner - whether matched as an individual,
+            or matched through roles - can make arbitrary changes to the community, including deleting it.
+            Unless you have a small, new group, you probably don't want this, so we recommend setting a
+            condition.  Here's the condition currently set:</p>
+
+        <manage-leadership-condition :called_for="'owner'" :mode_from_parent=owner_condition_mode_from_parent>
+        </manage-leadership-condition>
+
+        <p class="font-weight-bold">Governors</p>
+
+        <p>Often we want to give people power in a community without granting it to them completely or
+            permanently.  For instance, if our owners are a large collective of people who take action by
+            voting, we may want to give a small number of people the ability to "manage" the community so they
+            can take action quickly.  But if they abuse that power, we want the ability to remove them.</p>
+        <p>We call these people "governors".  By default, they can do most things in the community, although
+            the group can always override their power to do specific things.  If the owners are unhappy with
+            the governors, they can remove or change them.</p>
+        <p>Governors are optional. Here are the current individuals and roles who are governors:</p>
+
+        <b-form inline id="governor_actors_and_roles" class="mx-auto">
+
+            <div class="w-50 p-2">
+                <p class="text-center font-italic">Roles</p>
+                <vue-multiselect v-model="governor_roles_selected" :options="rolesAsOptions" :multiple="true"
+                :close-on-select="true" :clear-on-select="false" placeholder="No roles selected"
+                :disabled="!(user_permissions.update_governors)" label="name" track-by="name">
+                    <template slot="selection" slot-scope="{ values, search, isOpen }">
+                        <span v-if="!isOpen"> Selected: [[ values ]] </span>
+                    </template>
+                </vue-multiselect>
+            </div>
+            <div class="w-50 p-2">
+                <p class="text-center font-italic">Individuals</p>
+                <vue-multiselect v-model="governor_actors_selected" :options="groupMembersAsOptions" :multiple="true"
+                :close-on-select="true" :clear-on-select="true" placeholder="No individuals selected"
+                :disabled="!(user_permissions.update_governors)" label="name" track-by="pk" prepend="Individuals">
+                    <template slot="selection" slot-scope="{ values, search, isOpen }">
+                        <span v-if="!isOpen"> Selected: [[ values ]] </span>
+                    </template>
+                    </vue-multiselect>
+                </div>
+            </div>
+
+            <b-button v-if="user_permissions.update_governors"  variant="outline-secondary" class="mx-auto btn-sm mt-3" @click="update_leadership('governors')">
+                Update governors</b-button>
+
+        </b-form>
+
+        <div class="mb-3 text-danger" v-if="governor_error_message">
+                [[ governor_error_message ]]
+        </div>
+
+        <p class="mt-3">Just as with owners, you can set a condition on governors.  This is less common, as the main point
+            of appointing governors is so they can act efficiently, but can still be useful.  Here's the condition
+            currently set:</p>
+
+        <manage-leadership-condition :called_for="'governor'":mode_from_parent=governor_condition_mode_from_parent>
+        </manage-leadership-condition>
+
+        <p class="font-weight-bold">Just so you know</p>
+
+        <p>There are some actions that owners can't delegate to governors - in order to make these changes,
+            the owners will have to take the action.  These changes are:</p>
+
+        <ul>
+            <li>adding and removing owners, both individuals and roles</li>
+            <li>adding and removing governors, both individuals and roles</li>
+            <li>making it so only owners can change a specific resource, or removing that restriction from a
+                specific resource</li> <!-- aka enabling or disabling the foundational permission on an object -->
+            <li>making it so governors cannot change a specific resource, or removing that restriction from a
+                specific resource</li> <!-- aka enabling or disabling the governing permission on an object -->
+        </ul>
+
+        <!-- I *think* we want to put enabling/disabling foundational/governing permission for the group
+        as a whole elsewhere, since it's more about access restrictions for the group (so it can go
+        in the same place where we're putting change name etc) but maybe it goes better here. -->
+
+    </span>
+
+</script>
+
+
+<script type="application/javascript">
+
+
+    Vue.component('vue-multiselect', window.VueMultiselect.default)
+
+    changeLeadershipComponent = Vue.component('change-leadership-component', {
+        delimiters: ['[[', ']]'],
+        template: '#change_leadership_template',
+        store,
+        data: function() {
+            return {
+                // Get from vuex: governance_info, condition options & configuration options,
+                // owner_condition_id and governor condition id for this community
+                owner_error_message : null,
+                governor_error_message : null,
+
+                // For multiselects - reformatting done on created and before sending updated to server
+                owner_roles_selected: [],
+                owner_actors_selected: [],
+                governor_roles_selected: [],
+                governor_actors_selected: [],
+
+                // To pass into leadership conditions
+                owner_condition_mode_from_parent: 'start',
+                governor_condition_mode_from_parent: 'start'
+            }
+        },
+        computed: {
+            ...Vuex.mapState({
+                roles: state => state.governance.roles,
+                governance_info: state => state.governance.governance_info,
+                owner_condition_pk: state => state.governance.owner_condition_pk,
+                governor_condition_pk: state => state.governance.governor_condition_pk,
+                user_permissions: state => state.permissions.current_user_permissions
+            }),
+            ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'leadershipAsOptions'])
+        },
+        created (){
+            this.populate_from_store()
+            this.checkPermissions({permissions:
+                {"update_owners": null, "update_governors": null}})
+                .catch(error => {  this.error_message = error; console.log(error) })
+        },
+        methods: {
+            ...Vuex.mapActions(['checkPermissions', 'updateOwners', 'updateGovernors']),
+            populate_from_store() {
+                this.owner_roles_selected = this.leadershipAsOptions.owner_role_options
+                this.owner_actors_selected = this.leadershipAsOptions.owner_actor_options
+                this.governor_roles_selected = this.leadershipAsOptions.governor_role_options
+                this.governor_actors_selected = this.leadershipAsOptions.governor_actor_options
+            },
+            update_leadership(leadership_type) {
+                if (leadership_type == "owners") {
+                    roles = this.owner_roles_selected.map(role => role.name)
+                    actors = this.owner_actors_selected.map(actor => actor.pk)
+                    this.updateOwners({ roles: roles, actors: actors}).catch(error => {
+                        this.owner_error_message = error.message
+                        this.populate_from_store()  // sync selected data with existing data
+                    })
+                } else if (leadership_type == "governors") {
+                    roles = this.governor_roles_selected.map(role => role.name)
+                    actors = this.governor_actors_selected.map(actor => actor.pk)
+                    this.updateGovernors({ roles: roles, actors: actors}).catch(error => {
+                        this.governor_error_message = error.message
+                        this.populate_from_store()  // sync selected data with existing data
+                    })
+                }
+            }
+        }
+    });
+
+</script>

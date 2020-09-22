@@ -2,10 +2,10 @@
 
     <span>
 
-        <p class="pt-4 pb-1 font-weight-bold">Templates</p>
+        <h4 class="mb-5">[[ capitalize(scope) ]] Templates</h4>
 
             <error-component :message=error_message></error-component>
-        
+
             <span v-if="selected_template">
 
                 <template-info :template=selected_template :create_group=create_group :display_select=false></template-info>
@@ -41,7 +41,7 @@
     templateComponent = Vue.component('template-manager', {
         delimiters: ['[[', ']]'],
         template: '#template_template',
-        store, 
+        store,
         props: ['scope', 'create_group', 'target_id', 'target_model'],
         data: function() {
             return {
@@ -51,7 +51,7 @@
                 error_message : null
             }
         },
-        created (){ 
+        created (){
             this.getTemplatesForScope({ scope: this.scope })
         },
         computed: {
@@ -60,7 +60,10 @@
         },
         methods: {
             ...Vuex.mapActions(['getTemplatesForScope', 'applyTemplate']),
-            clearState() { 
+            capitalize(text) {
+                return text[0].toUpperCase() + text.substring(1)
+            },
+            clearState() {
                 this.selected_template = null
                 this.configuration_fields = []
                 this.fill_configuration_fields = false
@@ -86,7 +89,7 @@
             },
             apply_template() {
                 if (!this.validate_template()) { return }
-                this.applyTemplate({ target_model: this.target_model, target_pk: this.target_id, 
+                this.applyTemplate({ target_model: this.target_model, target_pk: this.target_id,
                                      supplied_fields: this.configuration_fields, template_model_pk: this.selected_template.pk })
                 .then(response => { this.$router.go(-1) })
                 .catch(error => {  console.log(error); this.error_message = error })
