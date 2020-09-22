@@ -10,10 +10,10 @@
             [[ message ]]
         </span>
     </div>
-    
+
 </script>
 
-<script type="application/javascript"> 
+<script type="application/javascript">
 
     var errorComponent = Vue.component('error-component', {
         delimiters: ['[[', ']]'],
@@ -31,7 +31,7 @@
             this.render_html()
         },
         watch: {
-            message: function() { 
+            message: function() {
                 this.render_html();
                 this.show_dismissible_alert = true
             }
@@ -40,8 +40,8 @@
             render_html() {
                 if (this.message && this.message.indexOf("href") !== -1 ) {
                     var tag_id = document.getElementById(this.unique_identifier)
-                    if (tag_id) {  
-                        tag_id.innerHTML = this.message 
+                    if (tag_id) {
+                        tag_id.innerHTML = this.message
                         this.styleclass = "text-secondary"
                     }
                 }

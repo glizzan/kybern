@@ -3,7 +3,7 @@
 {% block content %}
 
     {% include 'groups/groups/html_templates_to_include.html' %}
-    
+
     <div id="kybernApp">
 
         <div class="row">
@@ -11,7 +11,7 @@
             <div class="col-3">
                 <router-view name="sidebar"></router-view>
             </div>
-            
+
             <div class="col-9">
                 <router-view name="main"></router-view>
             </div>
@@ -34,6 +34,7 @@
                     main: resourcesComponent
                 }
             },
+            // Permissions
             {
                 name: 'item-permissions',
                 path: '/permissions/:item_id/:item_model/:item_name',
@@ -43,6 +44,63 @@
                     main: permissionedItemComponent
                 }
             },
+            {
+                name: 'role-permissions',
+                path: '/permissions/:role_to_edit',
+                props: { sidebar: false, main: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: rolePermissionsComponent
+                }
+            },
+            {
+                name: 'advanced-permissions',
+                path: '/advanced-permissions/:item_id/:item_model',
+                props: { sidebar: false, main: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: advancedPermissionsComponent
+                }
+            },
+            // Action history
+            {
+                name: 'action-history',
+                path: '/actions/history/:item_id/:item_model/:item_name',
+                props: { sidebar: false, main: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: actionHistoryComponent
+                }
+            },
+            {
+                name: 'action-detail',
+                path: '/actions/detail/:action_id',
+                props: { sidebar: false, main: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: actionDetailComponent
+                }
+            },
+            // Templates
+                        {
+                name: 'templates',
+                path: '/templates/:scope/',
+                props: { sidebar: false, main: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: templateComponent
+                }
+            },
+            {
+                name: 'item-templates',
+                path: '/templates/:scope/:target_id/:target_model',
+                props: { sidebar: false, main: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: templateComponent
+                }
+            },
+            // Group
             {
                 name: 'edit-group',
                 path: '/edit group',
@@ -61,14 +119,23 @@
                 }
             },
             {
-                name: 'group-action-history',
-                path: '/history',
+                name: 'change-leadership',
+                path: '/governance/change-leadership',
                 components: {
                     sidebar: groupConfigComponent,
-                    main: governanceComponent,
-                    modal: actionHistoryComponent
+                    main: changeLeadershipComponent
                 }
             },
+            {
+                name: 'membership-settings',
+                path: '/membership-settings',
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: groupMembershipSettingsComponent
+                }
+            },
+
+            // Forums
             {
                 name: 'forum-detail',
                 path: '/forums/:forum_id',
@@ -107,16 +174,6 @@
                 }
             },
             {
-                name: 'forum-action-history',
-                path: '/forums/:forum_id/history/:item_id/:item_model/:item_name',
-                props: { sidebar: false, main: true, modal: true },
-                components: {
-                    sidebar: groupConfigComponent,
-                    main: forumComponent,
-                    modal: actionHistoryComponent
-                }
-            },
-            {
                 name: 'add-new-post',
                 path: '/forums/:forum_id/new_post',
                 props: { sidebar: false, main: true, modal: true },
@@ -145,38 +202,7 @@
                     main: postComponent
                 }
             },
-            {
-                name: 'post-action-history',
-                path: '/forums/:forum_id/posts/:post_id/history/:item_id/:item_model/:item_name',
-                props: { sidebar: false, main: true, modal: true },
-                components: {
-                    sidebar: groupConfigComponent,
-                    main: postComponent,
-                    modal: actionHistoryComponent
-                }
-            },
-            {
-                name: 'comment-action-history',
-                path: '/comments/:comment_id/history/:item_id/:item_model/:item_name',
-                props: { sidebar: false, main: true, modal: true },
-                components: {
-                    sidebar: groupConfigComponent,
-                    main: resourcesComponent,
-                    modal: actionHistoryComponent
-                }
-            },
-            {
-                // we're also going to have to nest action detail on everything that could want it
-                // too aren't we
-                name: 'action-detail',
-                path: '/actions/detail/:action_id',
-                props: { sidebar: false, main: false, modal: true },
-                components: {
-                    sidebar: groupConfigComponent,
-                    main: resourcesComponent,
-                    modal: actionDetailComponent
-                }
-            },
+            // Lists
             {
                 name: 'add-new-list',
                 path: '/lists/new',
@@ -224,45 +250,7 @@
                     main: listComponent,
                     modal: listRowFormComponent
                 }
-            },
-            {
-                name: 'list-action-history',
-                path: '/lists/detail/:list_id/history/:item_id/:item_model/:item_name',
-                props: { sidebar: false, main: true, modal: true},
-                components: {
-                    sidebar: groupConfigComponent,
-                    main: listComponent,
-                    modal: actionHistoryComponent
-                }
-            },
-            {
-                name: 'templates',
-                path: '/templates/:scope/',
-                props: { sidebar: false, main: true },
-                components: {
-                    sidebar: groupConfigComponent,
-                    main: templateComponent
-                }
-            },
-            {
-                name: 'item-templates',
-                path: '/templates/:scope/:target_id/:target_model',
-                props: { sidebar: false, main: true },
-                components: {
-                    sidebar: groupConfigComponent,
-                    main: templateComponent
-                }
-            },
-            {
-                name: 'advanced-permissions',
-                path: '/advanced-permissions/:item_id/:item_model',
-                props: { sidebar: false, main: true },
-                components: {
-                    sidebar: groupConfigComponent,
-                    main: advancedPermissionsComponent
-                }
             }
-
         ]
         })
 

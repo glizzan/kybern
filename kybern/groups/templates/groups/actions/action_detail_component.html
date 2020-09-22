@@ -1,54 +1,61 @@
 <script type="text/x-template" id="action_detail_component_template">
 
-    <b-modal size="m" :visible=true hide-footer v-if=ready_to_render @hide="$router.go(-1)">
+    <span v-if="ready_to_render">
 
-        <template v-slot:modal-header><h5>Details for action [[ action.action_pk ]]: 
-            [[ action.description ]]</h5></template>
+        <h5>Details for action [[ action.action_pk ]]: [[ action.description ]]</h5>
 
-        <p>Action [[ action.action_pk ]] ([[ action.description ]]) was taken by [[ action.actor ]]
-        on [[ action.display_date ]].</p>
+        <b-card border-variant="secondary" class="my-3">
+                Action [[ action.action_pk ]] ([[ action.description ]]) was taken by [[ action.actor ]]
+                on [[ action.display_date ]].
+        </b-card>
 
-        <span v-if=action.is_template>
-            <hr />
+        <b-card v-if=action.is_template bg-variant="light" header="This is a template action" class="my-3">
+                <b-card-text>
+                    <p>When a template action is implemented, it applies a series of other actions.
+                    Here are the actions implemented by
+                    <span v-if="action.template_description.name">the [[action.template_description.name]]</span>
+                    <span v-else>this</span>
+                    template:</p>
 
-            <p><b>This is a template action</b></p>
+                        <ul class="my-2">
+                            <li v-for="action in action.template_description.actions">[[ action ]]</li>
+                        </ul>
 
-            <p>When a template action is implemented, it applies a series of other actions.
-            Here are the actions that will be implemented if the condition passes:</p>
-            <ul>
-                <li v-for="action in action.template_description.actions">[[ action ]]</li>
-            </ul>
+                    <p>The user has added the following information:</p>
+                        <ul class="my-2">
+                            <li v-for="field in action.template_description.supplied_fields.fields">[[ field ]]</li>
+                            <li v-if="action.template_description.supplied_fields.fields.length == 0">
+                                    There are no user-supplied fields for this template.</li>
+                        </ul>
+                    <p>[[action.template_description.foundational]]</p>
+                </b-card-text>
+        </b-card>
 
-            <p>The user has added the following information:</p>
-            <ul>
-                <li v-for="field in action.template_description.supplied_fields.fields">[[ field ]]</li>
-            </ul>
+        <b-card border-variant="secondary" class="my-3" v-if="condition_type">
 
-            <p>[[action.template_description.foundational]]</p>
-        </span>
+                This action has a condition on it.  To pass the condition, [[ condition_pass ]].
 
-        <hr />
+                <approve-condition-ui v-if="condition_type=='ApprovalCondition'" :condition_pk=condition_pk
+                    :condition_type=condition_type :action_details=action></approve-condition-ui>
 
-        <p v-if="condition_type" class="my-3">This action has a condition on it.  To pass the condition,
-            [[ condition_pass ]].</p>
-        
-        <approve-condition-ui v-if="condition_type=='ApprovalCondition'" :condition_pk=condition_pk
-            :condition_type=condition_type :action_details=action></approve-condition-ui>
-        
-        <vote-condition-ui v-if="condition_type=='VoteCondition'" :condition_pk=condition_pk
-            :condition_type=condition_type :action_details=action></vote-condition-ui>
+                <vote-condition-ui v-if="condition_type=='VoteCondition'" :condition_pk=condition_pk
+                    :condition_type=condition_type :action_details=action></vote-condition-ui>
 
-        <hr />
+        </b-card>
 
-        <comment-list :item_id=action_id :item_model="'action'" class="mt-3"> </comment-list>
+        <b-card border-variant="secondary" class="my-3">
+                <comment-list :item_id=action_id :item_model="'action'" class="my-3"> </comment-list>
+        </b-card>
 
-    </b-modal>
+
+
+    </span>
 
 </script>
 
 
 
-<script type="application/javascript"> 
+<script type="application/javascript">
 
     actionDetailComponent = Vue.component('action-detail-component', {
         delimiters: ['[[', ']]'],
@@ -74,7 +81,7 @@
             }
         },
         watch: {
-            actions: function(val) { 
+            actions: function(val) {
                 this.action = this.getActionData(this.action_id)
                 if (typeof this.action !== "undefined") {
                     this.ready_to_render = true

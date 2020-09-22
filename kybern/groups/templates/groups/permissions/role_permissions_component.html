@@ -1,36 +1,39 @@
-<script type="text/x-template" id="edit_role_modal_template">
+<script type="text/x-template" id="edit_role_template">
 
-    <b-modal id="edit_role_modal" :title="title_string" size="md" hide-footer>
+    <span id="edit_role_section">
+
+        <h3>[[ title_string ]]</h3>
 
         <b>People with this role can...</b>
 
-        <p v-if="!role_permissions.length">This role has no permissions yet.</p>
+        <p class="mx-2 my-2" v-if="!role_permissions.length">This role has no permissions yet.</p>
 
         <edit-permission v-for="permission in role_permissions" v-bind:key="permission.pk"
             :permission=permission :role_to_edit=role_to_edit> </edit-permission>
-        <add-permission :role_to_edit=role_to_edit :item_model="'group'" :item_id=group_id> </add-permission>     
+        <add-permission :role_to_edit=role_to_edit :item_model="'group'" :item_id=group_id> </add-permission>
 
         <error-component :message=error_message></error-component>
 
-    </b-modal>
+    </span>
 
 </script>
 
 <script type="application/javascript">
 
-    addRoleComponent = Vue.component('edit-role-modal', {
+    rolePermissionsComponent = Vue.component('edit-role', {
         delimiters: ['[[', ']]'],
-        template: '#edit_role_modal_template',
+        template: '#edit_role_template',
         props: ['role_to_edit'],
         store,
         data: function() {
-            return {  
-                group_id: {{ object.pk }},              
-                error_message: ''
+            return {
+                group_id: {{ object.pk }},
+                error_message: ""
             }
         },
+        created () { if (this.role_to_edit) { this.prepEditRole() } },
         computed: {
-            ...Vuex.mapGetters(['permissionsForRole']),           
+            ...Vuex.mapGetters(['permissionsForRole']),
             title_string: function () {
                 return "Edit role '" + this.role_to_edit + "'"
             },
@@ -43,16 +46,16 @@
             }
         },
         watch: {
-            role_to_edit: function() { 
+            role_to_edit: function() {
                 // When role to edit has been set, trigger vuex to load/update permission & condition data related to the role
-                this.prepEditRole() 
+                this.prepEditRole()
             }
         },
         methods: {
             ...Vuex.mapActions(['refreshRoleData']),
             prepEditRole() {
-                this.refreshRoleData({ role: this.role_to_edit }).catch(error => { 
-                    this.error_message = error.message
+                this.refreshRoleData({ role: this.role_to_edit }).catch(error => {
+                    this.error_message = error
                 })
             }
         }

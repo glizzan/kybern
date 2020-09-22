@@ -11,16 +11,16 @@
                     edit</b-button>
                 <b-button v-if="user_permissions.delete_comment" variant="outline-secondary" class="btn-sm"
                     @click="delete_comment(comment.pk)">delete</b-button>
-                <router-link :to="{ name: 'comment-action-history', params: {comment_id: comment.pk, 
-                    item_id: comment.pk, item_model: 'comment', item_name: comment_name(comment.text) }}">
+                <router-link :to="{ name: 'action-history', params: {item_id: comment.pk, item_model: 'comment',
+                        item_name: comment_name(comment.text) }}">
                     <b-button variant="outline-secondary" class="btn-sm"">comment history</b-button>
                 </router-link>
-                <router-link :to="{ name: 'item-permissions', params: { item_id: comment.pk, item_model: 'comment', 
+                <router-link :to="{ name: 'item-permissions', params: { item_id: comment.pk, item_model: 'comment',
                         item_name: comment_name(comment.text)}}">
                     <b-button variant="outline-secondary" class="btn-sm"">comment permissions</b-button>
                 </router-link>
                 <br />
-                <small class="text-muted">Posted [[ display_date(comment.created_at) ]] 
+                <small class="text-muted">Posted [[ display_date(comment.created_at) ]]
                     by [[ getUserName(comment.commentor_pk) ]]</small>
             </template>
 
@@ -29,7 +29,7 @@
         <b-modal :id="comment_modal_id" :title="title_string" hide-footer>
 
             <b-form-group id="comment_text_group">
-                <b-form-textarea id="comment_text" name="comment_text" v-model="comment_text" 
+                <b-form-textarea id="comment_text" name="comment_text" v-model="comment_text"
                     placeholder="Write your comment here"></b-form-textarea>
             </b-form-group>
 
@@ -44,7 +44,7 @@
 </script>
 
 
-<script type="application/javascript"> 
+<script type="application/javascript">
 
 
     commentComponent = Vue.component('comment', {
@@ -60,7 +60,7 @@
         },
         created () {
             alt_target = this.item_model + "_" + this.item_id
-            this.checkPermissions({permissions: {"edit_comment": {alt_target: alt_target}, 
+            this.checkPermissions({permissions: {"edit_comment": {alt_target: alt_target},
                 "delete_comment": {alt_target: alt_target}}})
                 .catch(error => {  this.error_message = error; console.log(error) })
             this.comment_text = this.comment.text

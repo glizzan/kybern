@@ -211,7 +211,7 @@ class PermissionsTestCase(BaseTestCase):
         self.browser.select("permission_select",
                             "concord.communities.state_changes.RemoveMembersStateChange")
         self.browser.find_by_id('save_permission_button').first.click()
-        time.sleep(.5)
+        time.sleep(.25)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(permissions, ["those with role forwards have permission to remove members from community"])
 
@@ -314,8 +314,6 @@ class ActionConditionsTestCase(BaseTestCase):
         element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
         self.browser.find_by_id('save_condition_button').first.click()
-        time.sleep(.25)
-        self.browser.find_by_css(".close").first.click()  # close modal
 
         # Someone with the permission tries to take action (use asserts to check for condition error text)
         self.login_user("christenpress", "badlands2020")
@@ -727,7 +725,7 @@ class TemplatesTestCase(BaseTestCase):
         self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
         self.browser.find_by_id('save_condition_button').first.click()
         time.sleep(1)
-        self.browser.find_by_css(".close").first.click()  # close modal
+        self.browser.back()
 
         # new user tries to apply a template
         self.login_user("christenpress", "badlands2020")
@@ -735,7 +733,7 @@ class TemplatesTestCase(BaseTestCase):
         self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('group_membership_settings_button')[0].scroll_to()
         self.browser.find_by_id('group_membership_settings_button').first.click()
-        time.sleep(.5)
+        time.sleep(1)
         self.browser.find_by_id('membership_templates_link')[0].scroll_to()
         self.browser.find_by_id('membership_templates_link').first.click()
         self.browser.find_by_id('select_template_invite_only').first.click()
@@ -748,8 +746,7 @@ class TemplatesTestCase(BaseTestCase):
 
         # check that the template has not been applied
         self.browser.reload()
-        self.browser.find_by_id('group_membership_settings_button').first.click()
-        time.sleep(.2)
+        time.sleep(.25)
         permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
         self.assertEquals(permissions, [])
 
@@ -810,7 +807,6 @@ class MembershipTestCase(BaseTestCase):
 
         # check template was applied
         self.browser.reload()
-        self.browser.find_by_id('group_membership_settings_button').first.click()
         time.sleep(.2)
         permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
         self.assertEquals(permissions, ["anyone has permission to add members to community, but a user can only add themselves"])
@@ -848,8 +844,6 @@ class MembershipTestCase(BaseTestCase):
         # check that the template has been applied
         self.browser.reload()
         time.sleep(.5)
-        self.browser.find_by_id('group_membership_settings_button').first.click()
-        time.sleep(1)
         permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
         self.assertEquals(permissions, ["those with role forwards have permission to add members to community"])
 
@@ -916,12 +910,11 @@ class MembershipTestCase(BaseTestCase):
         roles_that_can_approve_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=roles_that_can_approve_dropdown)
         self.browser.find_by_id('submit_apply_template').first.click()
-        time.sleep(1)
+        time.sleep(.5)
 
         # check template was applied
         self.browser.reload()
-        self.browser.find_by_id('group_membership_settings_button').first.click()
-        time.sleep(.5)
+        time.sleep(.25)
         permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
         self.assertEquals(permissions, ["anyone has permission to add members to community, but a user can only add themselves"])
         condition = self.browser.find_by_text("on the condition that one person needs to approve this action")

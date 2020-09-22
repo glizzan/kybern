@@ -10,11 +10,10 @@
                 edit forum info</b-button>
         </router-link>
 
-        <b-button variant="outline-secondary" class="btn-sm" id="delete_forum_button" v-if="user_permissions.delete_forum" 
+        <b-button variant="outline-secondary" class="btn-sm" id="delete_forum_button" v-if="user_permissions.delete_forum"
             @click="delete_forum(forum_id)">delete forum</b-button>
-        
-        <router-link :to="{ name: 'forum-action-history', 
-            params: {forum_id: forum_id, item_id: forum_id, item_model: 'forum', item_name: forum_name }}">
+
+        <router-link :to="{ name: 'action-history', params: {item_id: forum_id, item_model: 'forum', item_name: forum_name }}">
             <b-button variant="outline-secondary" class="btn-sm"" id="forum_history_button">forum history</b-button>
         </router-link>
 
@@ -39,14 +38,14 @@
                     <p class="mb-1 text-secondary post-content">  [[ shorten_text(content, 100) ]]  </p>
                 </b-card>
             </router-link>
-    
+
             <span v-if="Object.keys(posts).length === 0">There are no posts yet in this forum.</span>
 
     </span>
 
 </script>
 
-<script type="application/javascript"> 
+<script type="application/javascript">
 
 forumComponent = Vue.component('forum-component', {
     delimiters: ['[[', ']]'],
@@ -61,14 +60,14 @@ forumComponent = Vue.component('forum-component', {
                 list_post_error_message: null
             }
         },
-    created (){ 
+    created (){
         this.getPosts({ forum_pk: parseInt(this.forum_id) })
         .catch(error => { this.list_post_error_message = "Error getting post data from server " })
         alt_target = "forum_" + this.forum_id
         this.checkPermissions({
-            permissions: 
-                {edit_forum: {alt_target : alt_target}, 
-                delete_forum: {alt_target : alt_target}, 
+            permissions:
+                {edit_forum: {alt_target : alt_target},
+                delete_forum: {alt_target : alt_target},
                 add_post: {alt_target : alt_target}}
         }).catch(error => {  this.error_message = error; console.log(error) })
     },
@@ -79,10 +78,10 @@ forumComponent = Vue.component('forum-component', {
             if (this.forum_id) { return this.getPostsDataForForum(this.forum_id) }
         },
         forum_name: function() {
-            if (this.forum_id) { return this.getForumData(this.forum_id).name }          
+            if (this.forum_id) { return this.getForumData(this.forum_id).name }
         },
         forum_description: function() {
-            if (this.forum_id) { return this.getForumData(this.forum_id).description } 
+            if (this.forum_id) { return this.getForumData(this.forum_id).description }
         }
     },
     methods: {
