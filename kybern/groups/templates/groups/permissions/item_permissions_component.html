@@ -1,4 +1,4 @@
-<script type="text/x-template" id="permissioned_item_template"> 
+<script type="text/x-template" id="permissioned_item_template">
 
     <span>
 
@@ -10,28 +10,28 @@
             <b-button class="mb-1 btn-sm">View Advanced Permissions</b-button>
         </router-link>
 
-        <router-link v-if="user_permissions.apply_template" 
+        <router-link v-if="user_permissions.apply_template"
                 :to="{ name: 'item-templates', params: {scope: final_item_model, target_id: final_item_id, target_model: final_item_model} }">
             <b-button class="mb-1 btn-sm" id="apply_templates">Apply Templates</b-button>
         </router-link>
 
-        <!-- Specific permissions -->
-        <div class="mt-3">
-            <edit-permission v-for="permission in item_permission_objects" v-bind:key="permission.pk"
-                :permission=permission :item_id=final_item_id :item_model=final_item_model> 
-            </edit-permission>
-            <p v-if="!item_permission_objects.length">No permissions have been set yet.</p>
-        </div>
-
         <add-permission :item_id=final_item_id :item_model=final_item_model> </add-permission>
 
+        <!-- Specific permissions -->
+
+        <p v-if="!item_permission_objects.length" class="mt-3">No permissions have been set yet.</p>
+
+        <edit-permission v-for="permission in item_permission_objects" v-bind:key="permission.pk"
+            :permission=permission :item_id=final_item_id :item_model=final_item_model class="mt-3">
+        </edit-permission>
+
         <error-component :message=error_message></error-component>
-    
+
     </span>
 
 </script>
 
-<script type="application/javascript"> 
+<script type="application/javascript">
 
     permissionedItemComponent = Vue.component('permissioned_item', {
         delimiters: ['[[', ']]'],
@@ -50,14 +50,14 @@
             this.getPermissionsForItem({ item_id: this.final_item_id, item_model: this.final_item_model })
                 .catch(error => {  this.error_message = error })
         },
-        computed: { 
+        computed: {
             ...Vuex.mapState({ user_permissions: state => state.permissions.current_user_permissions }),
             ...Vuex.mapGetters(['permissionsForItem']),
-            final_item_id: function() { 
+            final_item_id: function() {
                 return (typeof this.item_id === "undefined") ? {{ object.pk }} : this.item_id },
-            final_item_model: function() { 
+            final_item_model: function() {
                 return (typeof this.item_model === "undefined") ? 'group' : this.item_model },
-            final_item_name: function() { 
+            final_item_name: function() {
                 return (typeof this.item_name === "undefined") ? '{{ object.get_name }}' : this.item_name },
             title_string: function() {
                 return "Permissions for " + this.final_item_name
@@ -72,7 +72,7 @@
                 return this.permissionsForItem(this.item_key)
             },
         },
-        methods: { 
+        methods: {
             ...Vuex.mapActions(['checkPermissions', 'getPermissionsForItem']),
         }
     })

@@ -5,8 +5,8 @@
         <error-component :message=error_message></error-component>
 
         <!-- Display existing permission -->
-        <b-button-group :id=pair_element_id class="my-4">
-            <b-button class="rounded-left w-50" variant="light">
+        <b-button-group :id=pair_element_id class="my-2">
+            <b-button class="rounded-left btn-sm" variant="light">
                 <span class="permission-display" :id="'display_' + pair_element_id">[[ permission.display ]]</span>
                 <span v-if="can_edit_permission" v-on:click="edit_permission=true"
                     class="badge badge-light ml-1 edit-permission"  >🖉</span>
@@ -14,19 +14,19 @@
                     class="badge badge-light ml-1 delete-permission"  >🗑</span>
             </b-button>
 
-            <b-button class="rounded-right">
+            <b-button class="rounded-right btn-sm">
                 <span v-if="permission.condition" :id="'condition_' + pair_element_id">
                     <span>on the condition that [[ permission.condition.how_to_pass ]]</span>
                     <span v-if=user_permissions.remove_condition_from_permission
-                        v-on:click="edit_condition=true" class="badge badge-light ml-1 edit-condition"
+                        v-on:click="edit_condition=true" class="badge badge-secondary ml-1 edit-condition"
                         :class="css_name(permission.name)">🖉</span>
                     <span v-if=user_permissions.remove_condition_from_permission
-                        v-on:click="delete_condition()" class="badge badge-light ml-1 delete-condition"
+                        v-on:click="delete_condition()" class="badge badge-secondary ml-1 delete-condition"
                         :class="css_name(permission.name)">🗑</span>
                 </span>
                 <span v-else :id="'condition_' + pair_element_id">
                     <span v-if="user_permissions.add_condition_to_permission">
-                        <b-button class="add-condition" v-on:click="edit_condition=true">
+                        <b-button class="add-condition btn-sm" v-on:click="edit_condition=true">
                             add condition</b-button></span>
                     <span v-else>no condition</span>
                 </span>
