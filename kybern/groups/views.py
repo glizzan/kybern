@@ -288,7 +288,8 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
             for permission in settable_permissions:
                 context["permission_options"][model_string].append({
                     "value": permission.get_change_type(),
-                    "text": permission.description
+                    "text": permission.description,
+                    "group": permission.section
                 })
 
             # get permission configuration options & save, it's ok if things overwrite because they're the same
@@ -1394,7 +1395,8 @@ def check_individual_permission(client, actor, permission_name, params):
     # Permissions & Conditions
     if permission_name == "add_permission":
         return client.PermissionResource.has_permission(
-            client.PermissionResource, "add_permission", {"permission_type": "faketype", "anyone": True})
+            client.PermissionResource, "add_permission",
+            {"permission_type": 'concord.communities.state_changes.AddMembersStateChange', "anyone": True})
     if permission_name == "remove_permission":
         return client.PermissionResource.has_permission(
             client.PermissionResource, "remove_permission", {})

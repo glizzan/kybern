@@ -38,6 +38,7 @@
             {
                 name: 'item-permissions',
                 path: '/permissions/:item_id/:item_model/:item_name',
+                meta: { highlight: 'permissions'},
                 props: { sidebar: false, main: true },
                 components: {
                     sidebar: groupConfigComponent,
@@ -47,6 +48,7 @@
             {
                 name: 'role-permissions',
                 path: '/permissions/:role_to_edit',
+                meta: { highlight: 'permissions'},
                 props: { sidebar: false, main: true },
                 components: {
                     sidebar: groupConfigComponent,
@@ -54,8 +56,19 @@
                 }
             },
             {
+                name: 'user-permissions',
+                path: '/permissions/user/:user_pk',
+                meta: { highlight: 'permissions'},
+                props: { sidebar: false, main: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: personPermissionsComponent
+                }
+            },
+            {
                 name: 'advanced-permissions',
                 path: '/advanced-permissions/:item_id/:item_model',
+                meta: { highlight: 'permissions'},
                 props: { sidebar: false, main: true },
                 components: {
                     sidebar: groupConfigComponent,
@@ -66,6 +79,7 @@
             {
                 name: 'action-history',
                 path: '/actions/history/:item_id/:item_model/:item_name',
+                meta: { highlight: 'history'},
                 props: { sidebar: false, main: true },
                 components: {
                     sidebar: groupConfigComponent,
@@ -75,6 +89,7 @@
             {
                 name: 'action-detail',
                 path: '/actions/detail/:action_id',
+                meta: { highlight: 'history'},
                 props: { sidebar: false, main: true },
                 components: {
                     sidebar: groupConfigComponent,
@@ -85,6 +100,7 @@
                         {
                 name: 'templates',
                 path: '/templates/:scope/',
+                meta: { highlight: 'governance'},
                 props: { sidebar: false, main: true },
                 components: {
                     sidebar: groupConfigComponent,
@@ -94,6 +110,7 @@
             {
                 name: 'item-templates',
                 path: '/templates/:scope/:target_id/:target_model',
+                meta: { highlight: 'governance'},
                 props: { sidebar: false, main: true },
                 components: {
                     sidebar: groupConfigComponent,
@@ -104,6 +121,7 @@
             {
                 name: 'edit-group',
                 path: '/edit group',
+                meta: { highlight: 'edit-group'},
                 components: {
                     sidebar: groupConfigComponent,
                     main: resourcesComponent,
@@ -113,6 +131,7 @@
             {
                 name: 'governance',
                 path: '/governance',
+                meta: { highlight: 'governance'},
                 components: {
                     sidebar: groupConfigComponent,
                     main: governanceComponent
@@ -121,6 +140,7 @@
             {
                 name: 'change-leadership',
                 path: '/governance/change-leadership',
+                meta: { highlight: 'governance'},
                 components: {
                     sidebar: groupConfigComponent,
                     main: changeLeadershipComponent
@@ -129,6 +149,7 @@
             {
                 name: 'membership-settings',
                 path: '/membership-settings',
+                meta: { highlight: 'governance'},
                 components: {
                     sidebar: groupConfigComponent,
                     main: groupMembershipSettingsComponent

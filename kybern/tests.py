@@ -208,8 +208,7 @@ class PermissionsTestCase(BaseTestCase):
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(permissions, [])
         self.browser.find_by_id('add_permission_button').first.click()
-        self.browser.select("permission_select",
-                            "concord.communities.state_changes.RemoveMembersStateChange")
+        self.select_from_multiselect("Remove members")
         self.browser.find_by_id('save_permission_button').first.click()
         time.sleep(.25)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
@@ -629,7 +628,7 @@ class ForumsTestCase(BaseTestCase):
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(permissions, [])
         self.browser.find_by_id('add_permission_button').first.click()
-        self.browser.select("permission_select", "groups.state_changes.EditForumStateChange")
+        self.select_from_multiselect("Edit a forum")
         time.sleep(.25)
         element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
@@ -709,9 +708,7 @@ class TemplatesTestCase(BaseTestCase):
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(permissions, [])
         self.browser.find_by_id('add_permission_button').first.click()
-        self.browser.select(
-            "permission_select", "concord.actions.state_changes.ApplyTemplateStateChange"
-        )
+        self.select_from_multiselect("Apply template")
         self.browser.find_by_id('save_permission_button').first.click()
         time.sleep(1)
 
@@ -731,6 +728,7 @@ class TemplatesTestCase(BaseTestCase):
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button').first.click()
+        time.sleep(.25)
         self.browser.find_by_id('group_membership_settings_button')[0].scroll_to()
         self.browser.find_by_id('group_membership_settings_button').first.click()
         time.sleep(1)
@@ -766,6 +764,7 @@ class TemplatesTestCase(BaseTestCase):
         self.browser.back()
         self.browser.back()
         self.browser.find_by_id('governance_button').first.click()
+        time.sleep(.25)
         self.browser.find_by_id('group_membership_settings_button').first.click()
         time.sleep(.25)
         permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
@@ -914,7 +913,7 @@ class MembershipTestCase(BaseTestCase):
 
         # check template was applied
         self.browser.reload()
-        time.sleep(.25)
+        time.sleep(.75)
         permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
         self.assertEquals(permissions, ["anyone has permission to add members to community, but a user can only add themselves"])
         condition = self.browser.find_by_text("on the condition that one person needs to approve this action")
@@ -1215,6 +1214,7 @@ class DependentFieldTestCase(BaseTestCase):
         time.sleep(.25)
         self.browser.find_by_css(".post-content").first.click()
         self.browser.find_by_id("post_history_button").first.click()
+        time.sleep(.25)
         self.browser.find_by_css(".action-link-button")[0].click()
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.'))
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span").first.click()

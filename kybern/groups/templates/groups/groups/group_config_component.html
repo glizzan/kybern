@@ -21,33 +21,33 @@ and history -->
 
         <router-link :to="{ name: 'edit-group'}">
             <b-button id="edit_group_button" block class="mt-3"
-                :variant="$route.name === 'edit-group' ? 'secondary' : 'outline-secondary'">
+                :variant="$route.meta.highlight === 'edit-group' ? 'secondary' : 'outline-secondary'">
                 edit group</b-button>
         </router-link>
 
         <router-link :to="{ name: 'home'}">
             <b-button id="resources_button" block class="mt-3"
-                :variant="['edit-group', 'action-history', 'item-permissions', 'governance'].indexOf($route.name) === -1 ? 'secondary' : 'outline-secondary'">
+                :variant="($route.meta.highlight) ? 'outline-secondary' : 'secondary'">
                 resources</b-button>
         </router-link>
 
         <router-link id="group_history_button" :to="{ name: 'action-history', params: { item_id: {{ object.pk }},
         item_model: 'group', item_name: group_name }}">
             <b-button block class="mt-3"
-                :variant="$route.name === 'action-history' ? 'secondary' : 'outline-secondary'">
+                :variant="$route.meta.highlight == 'history' ? 'secondary' : 'outline-secondary'">
                 history</b-button>
         </router-link>
 
         <router-link :to="{ name: 'governance'}">
             <b-button id="governance_button" block class="mt-3"
-                :variant="$route.name === 'governance' ? 'secondary' : 'outline-secondary'">
+                :variant="$route.meta.highlight == 'governance' ? 'secondary' : 'outline-secondary'">
                 governance</b-button>
         </router-link>
 
         <router-link class="button" :to="{ name: 'item-permissions', params: { item_id: {{ object.pk }},
         item_model: 'group', item_name: group_name }}">
             <b-button id="group_permissions_button" block class="mt-3"
-                :variant="$route.name === 'item-permissions' ? 'secondary' : 'outline-secondary'">
+                :variant="$route.meta.highlight == 'permissions' ? 'secondary' : 'outline-secondary'">
                 permissions</b-button>
         </router-link>
 

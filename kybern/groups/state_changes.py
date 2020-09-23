@@ -12,6 +12,7 @@ from .models import Group, Forum, Post
 class ChangeGroupDescriptionStateChange(BaseStateChange):
     description = "Change group description"
     preposition = "for"
+    section = "Community"
     input_fields = [InputField(name="group_description", type="CharField", required=True, validate=True)]
 
     def __init__(self, group_description):
@@ -45,6 +46,7 @@ class ChangeGroupDescriptionStateChange(BaseStateChange):
 class AddForumStateChange(BaseStateChange):
     description = "Create a forum"
     preposition = "on"
+    section = "Forum"
     input_fields = [InputField(name="name", type="CharField", required=True, validate=True),
                     InputField(name="description", type="CharField", required=False, validate=True)]
     input_target = Forum
@@ -74,6 +76,7 @@ class AddForumStateChange(BaseStateChange):
 class EditForumStateChange(BaseStateChange):
     description = "Edit a forum"
     preposition = "in"
+    section = "Forum"
     input_fields = [InputField(name="name", type="CharField", required=False, validate=True),
                     InputField(name="description", type="CharField", required=False, validate=True)]
 
@@ -113,6 +116,7 @@ class EditForumStateChange(BaseStateChange):
 class DeleteForumStateChange(BaseStateChange):
     description = "Delete a forum"
     preposition = "in"
+    section = "Forum"
 
     @classmethod
     def get_allowable_targets(cls):
@@ -150,6 +154,7 @@ class DeleteForumStateChange(BaseStateChange):
 
 class AddPostStateChange(BaseStateChange):
     description = "Add a post"
+    section = "Forum"
     input_fields = [InputField(name="title", type="CharField", required=True, validate=True),
                     InputField(name="content", type="CharField", required=True, validate=True)]
     input_target = Post
@@ -180,6 +185,7 @@ class AddPostStateChange(BaseStateChange):
 
 class EditPostStateChange(BaseStateChange):
     description = "Edit a post"
+    section = "Forum"
     preposition = "in"
     context_keys = ["forum", "post"]
     input_fields = [InputField(name="title", type="CharField", required=False, validate=True),
@@ -253,6 +259,7 @@ class EditPostStateChange(BaseStateChange):
 class DeletePostStateChange(BaseStateChange):
     description = "Delete a post"
     preposition = "from"
+    section = "Forum"
     context_keys = ["forum", "post"]
     input_fields = [InputField(name="author_only", type="BooleanField", required=False, validate=False)]
 

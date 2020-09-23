@@ -24,10 +24,15 @@
 
             <b-card-text class="p-3">
 
-                <div id="current_member_list">
-                    <b-badge v-for="member in groupMembersAsOptions" v-bind:key="member.pk" pill variant="info" class="mx-2 my-2">
-                    [[ member.name ]]</b-badge>
-                </div>
+                <b-container id="current_member_list">
+                    <b-row cols="4">
+                        <b-col v-for="member in groupMembersAsOptions" v-bind:key="member.pk">
+                            <router-link :to="{ name: 'user-permissions', params: { 'user_pk': member.pk } }" class="text-info">
+                                [[ member.name ]]
+                            </router-link>
+                    </b-row>
+                </b-container>
+
 
             </b-card-text>
 

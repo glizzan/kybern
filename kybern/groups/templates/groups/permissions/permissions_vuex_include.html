@@ -155,6 +155,17 @@ on actions are in the actions module. -->
                     }
                 }
             },
+            UPDATE_ROLE_WITH_PERMISSION (state, data) {
+                for (index in data.permission.roles) {
+                    role = data.permission.roles[index]
+                    if (!state.role_permissions[role]) {
+                        Vue.set(state.role_permissions, role, [data.permission.pk])
+                    } else {
+                        permission_index = state.role_permissions[role].indexOf(data.permission.pk)
+                        if (permission_index < 0) { state.role_permissions[role].push(data.permission.pk) }
+                    }
+                }
+            },
             REPLACE_ROLE_PERMISSIONS (state, data) {
                 Vue.set(state.role_permissions, data.role, data.pks)
             },
@@ -324,6 +335,7 @@ on actions are in the actions module. -->
                                                          pks: response.data.permission_pks })
                     for (key in response.data.permissions) {
                         commit('ADD_OR_UPDATE_PERMISSION', { pk : key, data : response.data.permissions[key] })
+                        commit('UPDATE_ROLE_WITH_PERMISSION', { permission: response.data.permissions[key] })
                     }
                     commit('ADD_OR_UPDATE_PERMISSION_OVERRIDE_DATA', {
                         item_id: response.data.item_id,
