@@ -1,4 +1,10 @@
-# kybern
+# Kybern
+
+Kybern is a prototype website built using [Concord](https://github.com/glizzan/glizzan-concord), a framework for implementing user-controlled permissions and governance structures. It showcases the functionality of Concord (and also allows developers to test that they've successfully built mechanisms for extensbility into Concord). The alpha prototype is live at [Kybern.org](https://www.kybern.org/). The site is currently neither secure or reliable, so please do not store important or private information on it.
+
+This project is maintained by the [Glizzan organization](https://www.glizzan.com/) and surrounding community. To join, please email glizzanplatform@gmail.com to ask for an invite to [our Zulip discussion space](https://glizzan.zulipchat.com/). Please note: this project uses the [Contributor Covenant](https://www.contributor-covenant.org/version/2/0/code_of_conduct/) as our Code of Conduct, and by participating you agree to abide by its terms.
+
+Kybern has been released under a custom license, the [Concord Cooperative License](https://github.com/glizzan/kybern/blob/master/license.md). This license is more restrictive than a free software / open source software license. If you believe that your intended use might not fall under the terms of that license, please contact us to discuss alternatives
 
 ## Installation
 
