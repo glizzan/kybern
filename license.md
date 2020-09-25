@@ -1,4 +1,4 @@
-Concord Cooperative License Version 1.0
+# Concord Cooperative License Version 1.0
 ### Copyright 2020 Shauna Gordon-McKeon
 
 Permission is hereby granted, free of charge, to any person or organization obtaining a copy of this software and associated documentation files (the "Software"), to use, copy, modify, merge, publish, and/or distribute copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
