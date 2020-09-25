@@ -4,6 +4,7 @@ import dj_database_url
 
 
 DEBUG = os.environ.get("DEBUG_MODE", False)
+
 SECRET_KEY = os.environ['SECRET_KEY']
 
 
@@ -23,7 +24,7 @@ DATABASES['default'] = db_from_env
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# STATICFILE_DIRS are where we collect static files *from*, can list multiple (for instance, if we're keeping 
+# STATICFILE_DIRS are where we collect static files *from*, can list multiple (for instance, if we're keeping
 # static files in individual apps)
 STATICFILES_DIRS = (
 )

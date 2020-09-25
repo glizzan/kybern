@@ -1,3 +1,5 @@
 *.pyc
 venv/
 .vscode/
+
+kybern/mysite/local_vars.py

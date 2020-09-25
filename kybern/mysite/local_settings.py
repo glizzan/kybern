@@ -1,6 +1,10 @@
 import os
 DEBUG = True
-SECRET_KEY = '_1ds_$#sknsg7rvr4jqv@re7os*$g-!%5+!jjkkqwqdw61d+=d'
+
+
+SECRET_KEY = os.environ.get('SECRET_KEY', None)
+if not SECRET_KEY:
+    SECRET_KEY = '_1ds_$#sknsg7rvr4jqv@re7os*$g-!%5+!jjkkqwqdw61d+=d'  # dummy secret key
 
 
 #########################
@@ -33,4 +37,3 @@ DATABASES = {
 
 EMAIL_HOST = "localhost"
 EMAIL_PORT = 1025
-
