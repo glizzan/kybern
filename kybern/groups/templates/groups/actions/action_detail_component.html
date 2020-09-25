@@ -41,6 +41,9 @@
                 <vote-condition-ui v-if="condition_type=='VoteCondition'" :condition_pk=condition_pk
                     :condition_type=condition_type :action_details=action></vote-condition-ui>
 
+                <consensus-condition-ui v-if="condition_type=='ConsensusCondition'" :condition_pk=condition_pk
+                    :condition_type=condition_type :action_details=action></consensus-condition-ui>
+
         </b-card>
 
         <b-card border-variant="secondary" class="my-3">

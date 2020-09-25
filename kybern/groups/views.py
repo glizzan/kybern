@@ -883,6 +883,25 @@ def update_vote_condition(request):
 
 
 @login_required
+def update_consensus_condition(request):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    condition_pk = request_data.get("condition_pk", None)
+    action_to_take = request_data.get("action_to_take", None)
+    response = request_data.get("response", None)
+
+    consensusClient = Client(actor=request.user).Conditional.\
+        get_condition_as_client(condition_type="ConsensusCondition", pk=condition_pk)
+
+    if action_to_take == "respond":
+        action, result = consensusClient.respond(response=response)
+    elif action_to_take == "resolve":
+        action, result = consensusClient.resolve()
+
+    return JsonResponse(get_action_dict(action))
+
+
+@login_required
 def get_conditional_data(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
