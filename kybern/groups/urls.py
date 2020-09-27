@@ -54,6 +54,7 @@ urlpatterns = [
     path('api/get_conditional_data/', views.get_conditional_data, name='get_conditional_data'),
     path('api/update_approval_condition/', views.update_approval_condition, name='update_approval_condition'),
     path('api/update_vote_condition/', views.update_vote_condition, name='update_vote_condition'),
+    path('api/update_consensus_condition/', views.update_consensus_condition, name='update_consensus_condition'),
 
     # forum views
     path('api/<int:target>/forums/', views.get_forums, name='get_forums'),

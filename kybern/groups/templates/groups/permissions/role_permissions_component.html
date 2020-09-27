@@ -35,7 +35,7 @@
         computed: {
             ...Vuex.mapGetters(['permissionsForRole']),
             title_string: function () {
-                return "Edit role '" + this.role_to_edit + "'"
+                return "Permissions for role '" + this.role_to_edit + "'"
             },
             role_permissions: function () {
                 if (this.role_to_edit) {

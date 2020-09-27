@@ -505,6 +505,206 @@ class VotingConditionTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present('You are not eligible to vote.'))
 
 
+class ConsensusConditionTestCase(BaseTestCase):
+
+    def setUp(self):
+        self.create_users()
+        self.create_templates()
+        self.actor = User.objects.first()
+        self.client = Client(actor=self.actor)
+        self.community = self.client.Community.create_community(name="USWNT")
+        self.client.update_target_on_all(target=self.community)
+        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.Community.add_role(role_name="forwards")
+        self.client.Community.add_role(role_name="defense")
+        self.client.Community.add_role(role_name="captains")
+        pinoe = User.objects.get(username="meganrapinoe")
+        press = User.objects.get(username="christenpress")
+        heath = User.objects.get(username="tobinheath")
+        sonny = User.objects.get(username="emilysonnett")
+        crystal = User.objects.get(username="crystaldunn")
+        self.client.Community.add_people_to_role(
+            role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk, crystal.pk])
+        self.client.Community.add_people_to_role(
+            role_name="defense", people_to_add=[sonny.pk, crystal.pk])
+        self.client.Community.add_people_to_role(
+            role_name="captains", people_to_add=[pinoe.pk, press.pk])
+
+    def test_minimum_duration(self):
+
+        # set up permission & condition
+        action, self.permission = self.client.PermissionResource.add_permission(
+            permission_type=Changes().Communities.AddRole, permission_roles=["defense"]
+        )
+        perm_data = [
+            {"permission_type": Changes().Conditionals.RespondConsensus,
+             "permission_roles": ["forwards"]},
+            {"permission_type": Changes().Conditionals.ResolveConsensus,
+             "permission_roles": ["captains"]}
+        ]
+        self.client.PermissionResource.set_target(self.permission)
+        self.client.PermissionResource.add_condition_to_permission(
+            condition_type="consensuscondition", permission_data=perm_data)
+
+        # player triggers condition, it cannot be resolved yet
+        self.login_user("emilysonnett", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button')[0].click()
+        self.browser.find_by_id('add_role_button')[0].scroll_to()
+        self.browser.find_by_id('add_role_button').first.click()
+        self.browser.fill('role_name', 'midfielders')
+        self.browser.find_by_id('save_role_button').first.click()
+        self.assertTrue(self.browser.is_text_present(
+            "There is a condition on your action which must be resolved before your action can be implemented."))
+
+        self.browser.back()
+        self.browser.find_by_id('group_history_button').first.click()
+        self.browser.find_by_text("link").first.click()
+        self.assertTrue(self.browser.is_text_present(
+            'The discussion cannot be resolved until the minimum duration of 2 days has passed.'))
+        self.assertTrue(self.browser.is_text_present('You are not a participant in this consensus decision.'))
+
+    def test_loose_consensus_condition(self):
+
+        # set up permission & condition
+        action, self.permission = self.client.PermissionResource.add_permission(
+            permission_type=Changes().Communities.AddRole, permission_roles=["defense"]
+        )
+        perm_data = [
+            {"permission_type": Changes().Conditionals.RespondConsensus,
+             "permission_roles": ["forwards"]},
+            {"permission_type": Changes().Conditionals.ResolveConsensus,
+             "permission_roles": ["captains"]}
+        ]
+        self.client.PermissionResource.set_target(self.permission)
+        self.client.PermissionResource.add_condition_to_permission(
+            condition_type="consensuscondition", permission_data=perm_data,
+            condition_data={"minimum_duration": 0})
+
+        # player triggers condition
+        self.login_user("crystaldunn", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button')[0].click()
+        self.browser.find_by_id('add_role_button')[0].scroll_to()
+        self.browser.find_by_id('add_role_button').first.click()
+        self.browser.fill('role_name', 'midfielders')
+        self.browser.find_by_id('save_role_button').first.click()
+        time.sleep(.5)
+        self.assertTrue(self.browser.is_text_present(
+            "There is a condition on your action which must be resolved before your action can be implemented."))
+        self.browser.back()
+        self.browser.find_by_id('group_history_button').first.click()
+        self.browser.find_by_text("link").first.click()
+        self.assertTrue(self.browser.is_text_present(
+            'The minimum duration of has passed. If the discussion was resolved right now, the result would be: rejected.'))
+
+        # Crystal adds support, it is now passing
+        self.assertEquals(self.browser.find_by_id('support_names').first.value, "")
+        self.browser.find_by_id('user_response_radio_buttons')[0].scroll_to()
+        self.browser.find_by_css("#user_response_radio_buttons > label:first-child").first.click()
+        self.browser.find_by_id('submit_response').first.click()
+        time.sleep(.5)
+        self.assertEquals(self.browser.find_by_id('support_names').first.value, "crystaldunn")
+        self.assertTrue(self.browser.is_text_present(
+            'The minimum duration of has passed. If the discussion was resolved right now, the result would be: approved.'))
+
+        # another player adds block, is no longer passing
+        self.login_user("tobinheath", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('group_history_button').first.click()
+        self.browser.find_by_text("link").first.click()
+        self.browser.find_by_id('user_response_radio_buttons')[0].scroll_to()
+        self.browser.find_by_css("#user_response_radio_buttons > label:nth-child(4)").first.click()
+        self.browser.find_by_id('submit_response').first.click()
+        time.sleep(.5)
+        self.assertEquals(self.browser.find_by_id('block_names').first.value, "tobinheath")
+        self.assertTrue(self.browser.is_text_present(
+            'The minimum duration of has passed. If the discussion was resolved right now, the result would be: rejected.'))
+
+        # player removes block
+        self.browser.find_by_css("#user_response_radio_buttons > label:nth-child(3)").first.click()
+        self.browser.find_by_id('submit_response').first.click()
+        self.assertTrue(self.browser.is_text_present(
+            'The minimum duration of has passed. If the discussion was resolved right now, the result would be: approved.'))
+
+        # player tries to resolve, can't because they're not a captain so they don't even get the link
+        self.assertFalse(self.browser.is_text_present('Resolve this discussion?'))
+
+        # captain resolves (christen)
+        self.login_user("christenpress", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('group_history_button').first.click()
+        self.browser.find_by_text("link").first.click()
+        self.browser.find_by_id('resolve_button').first.click()
+        self.assertTrue(self.browser.is_text_present('The condition was resolved with resolution approved. Your response was no response.'))
+
+        # change is implemented
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button').first.click()
+        roles = [item.text for item in self.browser.find_by_css(".role_name_display")]
+        self.assertEquals(roles, ["members", "forwards", "defense", "captains", "midfielders"])
+
+    def test_strict_consensus_condition(self):
+
+        # set up permission & condition
+        action, self.permission = self.client.PermissionResource.add_permission(
+            permission_type=Changes().Communities.AddRole, permission_roles=["defense"]
+        )
+        perm_data = [
+            {"permission_type": Changes().Conditionals.RespondConsensus,
+             "permission_roles": ["forwards"]},
+            {"permission_type": Changes().Conditionals.ResolveConsensus,
+             "permission_roles": ["captains"]}
+        ]
+        self.client.PermissionResource.set_target(self.permission)
+        self.client.PermissionResource.add_condition_to_permission(
+            condition_type="consensuscondition", permission_data=perm_data,
+            condition_data={"minimum_duration": 0, "is_strict": True})
+
+        # player triggers condition
+        self.login_user("crystaldunn", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button')[0].click()
+        self.browser.find_by_id('add_role_button')[0].scroll_to()
+        self.browser.find_by_id('add_role_button').first.click()
+        self.browser.fill('role_name', 'midfielders')
+        self.browser.find_by_id('save_role_button').first.click()
+        self.assertTrue(self.browser.is_text_present(
+            "There is a condition on your action which must be resolved before your action can be implemented."))
+        self.browser.back()
+        self.browser.find_by_id('group_history_button').first.click()
+        self.browser.find_by_text("link").first.click()
+        self.assertTrue(self.browser.is_text_present(
+            'The minimum duration of has passed. If the discussion was resolved right now, the result would be: rejected.'))
+
+        # players respond, but it won't pass until all have responded so it keeps saying it would be rejected
+
+        self.assertEquals(self.browser.find_by_id('support_names').first.value, "")
+        self.browser.find_by_id('user_response_radio_buttons')[0].scroll_to()
+        self.browser.find_by_css("#user_response_radio_buttons > label:first-child").first.click()
+        self.browser.find_by_id('submit_response').first.click()
+        time.sleep(.5)
+        self.assertEquals(self.browser.find_by_id('support_names').first.value, "crystaldunn")
+        self.assertTrue(self.browser.is_text_present(
+            'The minimum duration of has passed. If the discussion was resolved right now, the result would be: rejected.'))
+
+        self.login_user("christenpress", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('group_history_button').first.click()
+        self.browser.find_by_text("link").first.click()
+        self.browser.find_by_id('user_response_radio_buttons')[0].scroll_to()
+        self.browser.find_by_css("#user_response_radio_buttons > label:first-child").first.click()
+        self.browser.find_by_id('submit_response').first.click()
+        time.sleep(.5)
+        self.assertEquals(self.browser.find_by_id('support_names').first.value, "christenpress, crystaldunn")
+        self.assertTrue(self.browser.is_text_present(
+            'The minimum duration of has passed. If the discussion was resolved right now, the result would be: rejected.'))
+
+        # resolves with not enough people responding so rejected
+        self.browser.find_by_id('resolve_button').first.click()
+        self.assertTrue(self.browser.is_text_present('The condition was resolved with resolution rejected. Your response was support.'))
+
+
 class ForumsTestCase(BaseTestCase):
 
     def setUp(self):
@@ -903,17 +1103,17 @@ class MembershipTestCase(BaseTestCase):
 
         # apply anyone can join template
         self.browser.find_by_id('group_membership_settings_button').first.click()
-        time.sleep(.2)
+        time.sleep(.5)
         self.browser.find_by_id('membership_templates_link').first.click()
         self.browser.find_by_id('select_template_anyone_can_request_to_join').first.click()
         roles_that_can_approve_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=roles_that_can_approve_dropdown)
         self.browser.find_by_id('submit_apply_template').first.click()
-        time.sleep(.5)
+        time.sleep(1)
 
         # check template was applied
         self.browser.reload()
-        time.sleep(.75)
+        time.sleep(1)
         permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
         self.assertEquals(permissions, ["anyone has permission to add members to community, but a user can only add themselves"])
         condition = self.browser.find_by_text("on the condition that one person needs to approve this action")
@@ -1195,6 +1395,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.fill('post_content', "It's a good one")
         self.browser.find_by_id('add_post_save_button').first.click()
         self.assertTrue(self.browser.is_text_present('I have an idea'))
+        time.sleep(.4)
 
         # Another user makes a comment on the post
         self.login_user("christenpress", "badlands2020")
@@ -1204,7 +1405,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.find_by_css(".add-comment").first.click()
         self.browser.fill('comment_text', "it's ok I guess")
         self.browser.find_by_id('submit_comment_button').first.click()
-        time.sleep(.25)
+        time.sleep(.5)
         self.assertFalse(self.browser.is_text_present("it's ok I guess"))
 
         # User approves it
