@@ -8,6 +8,8 @@
 
             <span v-if="selected_template">
 
+                <span v-if="user_permissions.apply_template">
+
                 <template-info :template=selected_template :create_group=create_group :display_select=false></template-info>
 
                 <span v-if="configuration_fields.length > 0">
@@ -19,9 +21,11 @@
                     <b>There are no fields to configure.</b>
                 </span>
 
-                <b-button size="sm" id="submit_apply_template" v-if="!create_group"
-                v-on:click="apply_template(selected_template)" variant="outline-dark"
-                class="my-2">Apply template</b-button>
+                <b-button v-if="!create_group" id="submit_apply_template"
+                    v-on:click="apply_template(selected_template)" variant="outline-dark" size="sm" class="my-2">
+                    Apply template</b-button>
+                </span>
+                <span v-else>You do not have permisson to apply templates to this [[ scope ]].</span>
 
             </span>
 
@@ -53,13 +57,19 @@
         },
         created (){
             this.getTemplatesForScope({ scope: this.scope })
+            if (this.target_model) { target_model = this.target_model } else { target_model = "group" }
+            if (this.target_id) { target_id = this.target_id } else { target_id = {{ object.pk }} }
+            alt_target = target_model + "_" + target_id
+            this.checkPermissions({permissions: {"apply_template": {alt_target:alt_target}}})
+            .catch(error => {  this.error_message = error; console.log(error) })
         },
         computed: {
             ...Vuex.mapGetters(['scopeTemplates', 'select_field_is_multiple', 'rolesAsOptions', 'groupMembersAsOptions']),
+            ...Vuex.mapState({ user_permissions: state => state.permissions.current_user_permissions }),
             scope_templates: function() { return this.scopeTemplates(this.scope) }
         },
         methods: {
-            ...Vuex.mapActions(['getTemplatesForScope', 'applyTemplate']),
+            ...Vuex.mapActions(['getTemplatesForScope', 'applyTemplate', 'checkPermissions']),
             capitalize(text) {
                 return text[0].toUpperCase() + text.substring(1)
             },

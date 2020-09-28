@@ -17,8 +17,7 @@
 
             <b-card class="bg-light border-secondary" no-body>
                 <b-card-header>
-                    <router-link v-if="user_permissions.apply_template" class="text-info"
-                            :to="{ name: 'templates', params: {scope: 'community'}}">
+                    <router-link class="text-info" :to="{ name: 'templates', params: {scope: 'community'}}">
                         Community Templates </router-link>
                 </b-card-header>
                 <b-card-text id="community_templates_link" class="text-muted p-3">
@@ -50,23 +49,13 @@
                 error_message: null,
             }
         },
-        created () {
-            this.checkPermissions({permissions: {"apply_template": null}})
-            .catch(error => {  this.error_message = error; console.log(error) })
-        },
         computed: {
-            ...Vuex.mapState({
-                user_permissions: state => state.permissions.current_user_permissions,
-                forums: state => state.forums.forums
-            }),
+            ...Vuex.mapState({ forums: state => state.forums.forums }),
             governance_forum: function() {
                 gov_forum = null
                 this.forums.forEach((forum) => { if (forum.special == "Gov") { gov_forum = forum } })
                 return gov_forum
             }
-        },
-        methods: {
-            ...Vuex.mapActions(['checkPermissions']),
         }
     });
 
