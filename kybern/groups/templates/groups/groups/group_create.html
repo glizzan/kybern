@@ -7,7 +7,7 @@
         Vue.component('vue-multiselect', window.VueMultiselect.default)
 
         // Hack, allows us to use template component alone
-        const store = new Vuex.Store({ 
+        const store = new Vuex.Store({
             state: {
                 templates: {}
             },
@@ -15,7 +15,7 @@
                 scopeTemplates: (state, getters) => (scope) => {
                     return state.templates[scope]
                 },
-                select_field_is_multiple: (state, getters) => (field) => { 
+                select_field_is_multiple: (state, getters) => (field) => {
                     if (field.hasOwnProperty("other_data") && field["other_data"].hasOwnProperty("multiple")) {
                         return field["other_data"]["multiple"]
                     } else {
@@ -23,21 +23,21 @@
                     }
                 },
                 rolesAsOptions: (state, getters) => { return [] },
-                groupMembersAsOptions: (state, getters) => { 
+                groupMembersAsOptions: (state, getters) => {
                     return [{ pk: {{ request.user.pk }}, name: '{{ request.user.username }}' }] },
             },
-            mutations: { 
-                REPLACE_SCOPE_TEMPLATES (state, data) { 
+            mutations: {
+                REPLACE_SCOPE_TEMPLATES (state, data) {
                     Vue.set(state.templates, data.scope, data.templates)
                 }
             },
             actions: {
-                getTemplatesForScope({ commit, state, dispatch}, payload) { 
+                getTemplatesForScope({ commit, state, dispatch}, payload) {
                     url = "{% url 'get_templates_for_scope' %}"
                     params = { scope: 'community' }
-                    return axios.post(url, params).then(response => { 
-                        commit('REPLACE_SCOPE_TEMPLATES', { scope: response.data.scope, 
-                            templates: response.data.templates }) 
+                    return axios.post(url, params).then(response => {
+                        commit('REPLACE_SCOPE_TEMPLATES', { scope: response.data.scope,
+                            templates: response.data.templates })
                     }).catch(error => { console.log(error); throw error })
                 },
                 applyTemplate({ commit, state, dispatch}, payload) {
@@ -56,13 +56,13 @@
 
             <span v-if="!group_pk">
                 <h5>Create your group</h5>
-                
+
                 <b-form-group label="Group name:" label-for="group_name">
                     <b-form-input id="group_name" name="group_name" v-model="group_name" required>
                     </b-form-input>
                     <small class="form-text text-muted">Please limit yourself to letters, numbers and spaces. 200 characters or fewer.</small>
                 </b-form-group>
-            
+
                 <b-form-group label="Group description:" label-for="group_description">
                     <b-form-textarea id="group_description" name="group_description" v-model="group_description" required>
                     </b-form-textarea>
@@ -78,8 +78,10 @@
             <h5 class="text-info">Please select a template for your group</h5>
 
             <span v-if="!start_from_scratch">
-                <small>Don't want a template? <span class="text-info" id="start_from_scratch" @click="start_from_scratch = true">
-                    Start from scratch</span>. By default, you will be the only one able to do anything in your group.</small>
+                <div class="mb-2"><small>
+                Don't want a template? <span class="text-info" id="start_from_scratch" @click="start_from_scratch = true">
+                       Start from scratch</span>. By default, you will be the only one able to do anything in your group.
+                </small></div>
                 <template-manager :scope="'community'" :create_group="true" ref="createCommunityTemplate"></template-manager>
                 <error-component :message=template_error_message></error-component>
             </span>
@@ -89,7 +91,7 @@
 
             <button display=block class="btn btn-info btn-block my-5" id="create_group_button" @click="create_group()">
                 Create Your Group</button>
-        
+
         </form>
 
     </div>
@@ -122,7 +124,7 @@
                         // create group and get pk
                         url = "{% url 'create_group' %}"
                         params = { group_name: this.group_name, group_description: this.group_description }
-                        axios.post(url, params).then(response => { 
+                        axios.post(url, params).then(response => {
                             this.group_pk = response.data.group_pk
                             this.create_template()
                         }).catch(error => { this.group_error_message = error.message })
@@ -137,9 +139,9 @@
                 },
                 create_template() {
                     if (this.group_pk) {
-                        
+
                         if (!this.start_from_scratch) {
-                            
+
                             selected_template = this.$refs.createCommunityTemplate.selected_template
                             supplied_fields = this.$refs.createCommunityTemplate.configuration_fields
 
@@ -161,12 +163,12 @@
                         } else {
                             this.go_to_group()
                         }
-                    } 
+                    }
                 }
             }
         })
-    
-    
+
+
     </script>
 
 {% endblock %}
