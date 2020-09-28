@@ -272,7 +272,7 @@ class ActionsTestCase(BaseTestCase):
 
         # Check for action in action history
         self.browser.find_by_id('group_history_button')[0].click()
-        self.assertTrue(self.browser.is_text_present('meganrapinoe added role forwards to USWNT'))
+        self.assertTrue(self.browser.is_text_present('meganrapinoe added role forwards'))
 
 
 class ActionConditionsTestCase(BaseTestCase):
@@ -367,7 +367,7 @@ class ApprovalConditionsTestCase(BaseTestCase):
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('group_history_button')[0].click()
-        self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders to USWNT'))
+        self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders'))
         self.browser.find_by_css(".action-link-button")[0].click()
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.'))
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span").first.click()
@@ -380,8 +380,8 @@ class ApprovalConditionsTestCase(BaseTestCase):
         # Check action is implemented
         self.browser.back()
         time.sleep(.25)
-        css_str = "#action_history_table_element > tbody > tr:nth-child(1) > td:nth-child(4)"
-        self.assertTrue(self.browser.find_by_css(css_str)[0].text, "implemented")
+        css_str = "#action_history_table_element > tbody > tr:nth-child(1)"
+        self.assertTrue("implemented" in self.browser.find_by_css(css_str)[0].text)
 
     def test_reject_rejects_action(self):
 
@@ -389,7 +389,7 @@ class ApprovalConditionsTestCase(BaseTestCase):
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('group_history_button')[0].click()
-        self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders to USWNT'))
+        self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders'))
         self.browser.find_by_css(".action-link-button")[0].click()
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.'))
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(2) > span").first.click()
@@ -401,14 +401,14 @@ class ApprovalConditionsTestCase(BaseTestCase):
         # Check action is rejected
         self.browser.back()
         time.sleep(.25)
-        css_str = "#action_history_table_element > tbody > tr:nth-child(1) > td:nth-child(4)"
-        self.assertTrue(self.browser.find_by_css(css_str)[0].text, "rejected")
+        css_str = "#action_history_table_element > tbody > tr:nth-child(1)"
+        self.assertTrue("rejected" in self.browser.find_by_css(css_str)[0].text)
 
     def test_person_without_permission_to_approve_cant_approve(self):
         self.login_user("emilysonnett", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('group_history_button')[0].click()
-        self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders to USWNT'))
+        self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders'))
         self.browser.find_by_css(".action-link-button")[0].click()
         self.assertTrue(self.browser.is_text_present('You do not have permission to approve or reject this action.'))
 
@@ -450,7 +450,7 @@ class VotingConditionTestCase(BaseTestCase):
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('group_history_button')[0].click()
-        self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders to USWNT'))
+        self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders'))
         self.browser.find_by_css(".action-link-button")[0].click()
         self.assertTrue(self.browser.is_text_present('The results so far are 0 yeas and 0 nays with 0 abstentions.'))
         self.assertTrue(self.browser.is_text_present('Please cast your vote'))
@@ -467,7 +467,7 @@ class VotingConditionTestCase(BaseTestCase):
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('group_history_button')[0].click()
-        self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders to USWNT'))
+        self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders'))
         self.browser.find_by_css(".action-link-button")[0].click()
         self.assertTrue(self.browser.is_text_present('The results so far are 0 yeas and 0 nays with 0 abstentions.'))
         self.assertTrue(self.browser.is_text_present('Please cast your vote'))
@@ -484,7 +484,7 @@ class VotingConditionTestCase(BaseTestCase):
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('group_history_button')[0].click()
-        self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders to USWNT'))
+        self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders'))
         self.browser.find_by_css(".action-link-button")[0].click()
         self.assertTrue(self.browser.is_text_present('The results so far are 0 yeas and 0 nays with 0 abstentions.'))
         self.assertTrue(self.browser.is_text_present('Please cast your vote'))
@@ -500,7 +500,7 @@ class VotingConditionTestCase(BaseTestCase):
         self.login_user("emilysonnett", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('group_history_button')[0].click()
-        self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders to USWNT'))
+        self.assertTrue(self.browser.is_text_present('tobinheath asked to add role midfielders'))
         self.browser.find_by_css(".action-link-button")[0].click()
         self.assertTrue(self.browser.is_text_present('You are not eligible to vote.'))
 

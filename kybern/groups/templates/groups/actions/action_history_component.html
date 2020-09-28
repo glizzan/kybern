@@ -5,49 +5,62 @@
     <h5>[[ title_string ]]</h5>
 
     <b-container fluid id="action_history_table">
+      <b-row>
 
-          <b-col lg="6" class="my-1">
-              <b-form-group label="Filter" label-cols-sm="3" label-align-sm="right" label-size="sm"
+          <b-col lg="6" class="my-4">
+              <b-form-group label="Filter" label-cols-sm="3" label-align-sm="left" label-size="sm"
                                                               label-for="filterInput" class="mb-0">
                 <b-input-group size="sm">
                   <b-form-input v-model="filter" type="search" id="filterInput"
                                         placeholder="Type to Search"></b-form-input>
-                  <b-input-group-append>
-                    <b-button :disabled="!filter" @click="filter = ''">Clear</b-button>
-                  </b-input-group-append>
                 </b-input-group>
               </b-form-group>
-            </b-col>
+          </b-col>
 
-          <b-table striped hover fixed :items="item_actions" :fields="action_fields"
+          <b-col lg="6" class="my-4">
+              <b-form-group label="Sort" label-cols-sm="3" label-align-sm="right" label-size="sm"
+                                                              label-for="sortBySelect" class="mb-0">
+                <b-input-group size="sm">
+                  <b-form-select v-model="sortBy" id="sortBySelect" :options="sortOptions" class="w-75">
+                    <template v-slot:first><option value=""></option></template>
+                  </b-form-select>
+                  <b-form-select v-model="sortDesc" size="sm" :disabled="!sortBy" class="w-25">
+                    <option :value="false">Asc</option>
+                    <option :value="true">Desc</option>
+                  </b-form-select>
+                </b-input-group>
+              </b-form-group>
+          </b-col>
+        </b-row>
+
+          <b-table hover fixed :items="item_actions" :fields="action_fields"
               :sort-by.sync="sortBy" :sort-desc.sync="sortDesc" :filter="filter"
               :filterIncludedFields="filterOn" id="action_history_table_element">
 
           <!-- Custom formatting for see more column -->
-          <template v-slot:cell(action_target_content_type)="data">
+          <template v-slot:cell(description)="data">
 
-              <router-link :to="{ name: 'action-detail', params: { action_id: data.item.action_pk }}">
-                <b-button variant="outline-secondary" class="btn-sm action-link-button">link</b-button>
-              </router-link>
+            <router-link :to="{ name: 'user-permissions', params: { user_pk: data.item.actor_pk }}" class="text-info">
+                [[ data.item.actor]]
+            </router-link>
+            [[ data.item.description]]
 
-            </template>
+            <router-link :to="{ name: 'action-detail', params: { action_id: data.item.action_pk }}">
+                <b-button variant="outline-secondary" class="btn-sm action-link-button float-right">link</b-button>
+            </router-link>
 
-          <!-- Custom formatting for the status column -->
-          <template v-slot:cell(status)="data">
-            <span v-if="data.item.is_template">template action (see details for status)</span>
-            <span v-else>[[data.item.status]]</span>
-          </template>
+            <br />
 
-          <!-- Custom formatting for the has_condition column -->
-          <template v-slot:cell(has_condition)="data">
-            <b-badge variant="light" v-if="data.item.has_condition && data.item.has_condition.exists">
-              yes</b-badge>
-          </template>
+            <small>
+                  <b>Status: [[ data.item.status ]]
+                    <span v-if="data.item.status == 'implemented'">
+                        (passed via [[ data.item.resolution_passed_by ]] permission)</span></b>
 
-          <!-- Custom formatting for discussion/comments column -->
-          <template v-slot:cell(action_pk)="data">
-              <b-badge variant="light" v-if="data.item.has_condition && data.item.has_condition.exists">
-                  unknown</b-badge>
+                  [[ data.item.display_date ]]
+            </small>
+            <b-badge v-if="data.item.has_condition.exists" variant="info">has condition</b-badge>
+            <b-badge v-if="data.item.is_template" variant="warning">template action</b-badge>
+
           </template>
 
         </b-table>
@@ -71,20 +84,18 @@ actionHistoryComponent = Vue.component('action-history', {
     data: function() {
           return {
             action_fields: [
-              { key: 'action_target_content_type', label: 'See More', sortable: false },
-              { key: 'description', sortable: false },
-              { key: 'actor', sortable: true },
-              { key: 'created', sortable: true, formatter: (value, key, item) => {
-                                                  return item.display_date
-                                                }
-              },
-              { key: 'status', sortable: true },
-              { key: 'resolution passed by', sortable: true },
-              { key: 'action_pk', label: 'Has Discussion', sortable: true },
-              { key: 'has_condition', label: 'Has Condition', sortable: true }
+              { key: 'description', label: "Actions", sortable: false },
             ],
             sortBy: 'created',
             sortDesc: true,
+            sortOptions: [
+              { text: "Date created", value: "created" },
+              { text: "Status", value: "status" },
+              { text: "Actor", value: "actor" },
+
+
+
+            ],
             filter: null,
             filterOn: []
           }
