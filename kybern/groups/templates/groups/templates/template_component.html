@@ -8,7 +8,7 @@
 
             <span v-if="selected_template">
 
-                <span v-if="user_permissions.apply_template">
+                <span v-if="create_group || user_permissions.apply_template">
 
                 <template-info :template=selected_template :create_group=create_group :display_select=false></template-info>
 
@@ -58,10 +58,12 @@
         created (){
             this.getTemplatesForScope({ scope: this.scope })
             if (this.target_model) { target_model = this.target_model } else { target_model = "group" }
-            if (this.target_id) { target_id = this.target_id } else { target_id = {{ object.pk }} }
+            if (this.target_id) { target_id = this.target_id } else { target_id = '{{ object.pk }}' }
             alt_target = target_model + "_" + target_id
-            this.checkPermissions({permissions: {"apply_template": {alt_target:alt_target}}})
-            .catch(error => {  this.error_message = error; console.log(error) })
+            if (!this.create_group) {
+                this.checkPermissions({permissions: {"apply_template": {alt_target:alt_target}}})
+                .catch(error => {  this.error_message = error; console.log(error) })
+            }
         },
         computed: {
             ...Vuex.mapGetters(['scopeTemplates', 'select_field_is_multiple', 'rolesAsOptions', 'groupMembersAsOptions']),

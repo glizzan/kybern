@@ -78,9 +78,9 @@ on actions are in the actions module. -->
             },
             fix_permission_field_values: (state, getters) => (field) => {
                 if (typeof(field.value) == "string" && field.value.indexOf("{{") > -1) { return field }  // leave replaced field as is
-                if (field.type == "RoleField") {
+                if (field.type == "RoleField" || field.type == "RoleListField") {
                     field.value = getters.role_to_options(field.value)
-                } else if (field.type == "ActorField") {
+                } else if (field.type == "ActorField" || field.type == "ActorListField") {
                     field.value = getters.user_pk_to_options(field.value)
                 }
                 return field

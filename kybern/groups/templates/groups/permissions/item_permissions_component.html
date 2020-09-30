@@ -45,7 +45,7 @@
         },
         created: function () {
             alt_target = this.final_item_model + "_" + this.final_item_id
-            this.checkPermissions({permissions: {"apply_template": null } })
+            this.checkPermissions({permissions: {"apply_template": {alt_target:alt_target} } })
                 .catch(error => {  this.error_message = error; console.log(error) })
             this.getPermissionsForItem({ item_id: this.final_item_id, item_model: this.final_item_model })
                 .catch(error => {  this.error_message = error })

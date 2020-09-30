@@ -72,7 +72,7 @@ def reformat_form_field_data(form_field_data):
     """
     Return format:
 
-    [{'field_name': 'role_name', 'display': 'Roles people can be added to', 'type': 'RoleField', 
+    [{'field_name': 'role_name', 'display': 'Roles people can be added to', 'type': 'RoleField',
     'required': False, 'value': [{'name': 'romans'}]}]
     """
     fields = {}
@@ -134,7 +134,7 @@ def reformat_combined_permission_and_condition_data(combined_data):
 
     permission_fields = []
     for field_name, field in permission_field_data.items():
-        if field["permission_roles"] or field["permission_actors"]:   
+        if field["permission_roles"] or field["permission_actors"]:
             permission_fields.append(field)
 
     return condition_fields, permission_fields
@@ -145,7 +145,7 @@ def reformat_combined_permission_and_condition_data(combined_data):
 
 def reformat_input_data(function=None, expect_target=True):
     """Vuex sends data to Django views as JSON.  Here we unpack that JSON data into variables that can
-    be passed directly to the Concord clients.  This also lets us do some re-formatting when, for 
+    be passed directly to the Concord clients.  This also lets us do some re-formatting when, for
     example, our form data has the wrong structure."""
 
     if not callable(function):  # handles the case where we invoke decorator without calling it (aka no arguments)
@@ -187,7 +187,7 @@ def reformat_input_data(function=None, expect_target=True):
                 if parameter_name not in request_data:
                     raise ValueError(f"Must supply parameter {parameter_name}")
                 if request_data[parameter_name] in [None, "", [], {}]:
-                    raise ValueError(f"Must give required parameter {parameter_name} a real value, " + 
+                    raise ValueError(f"Must give required parameter {parameter_name} a real value, " +
                                      f"not {request_data[parameter_name]}")
 
         return function(request, target, **request_data)
