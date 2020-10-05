@@ -1358,7 +1358,11 @@ def check_individual_permission(client, actor, permission_name, params):
     returns a lambda function to be executed by caller."""
 
     group_members = client.Community.target.roles.get_users_given_role("members")
-    test_user = User.objects.first() if User.objects.first().pk != actor.pk else User.objects.last()
+    test_user = User.objects.first()
+    if not test_user:
+        raise ValueError("WWWWWWWWWTTTTTTTTTTTTTTTFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+    if test_user.pk == actor.pk:
+        test_user = User.objects.last()
 
     # create new client with new target if target is not community
     alt_target = params.pop("alt_target", None) if params else None
