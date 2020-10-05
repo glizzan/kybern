@@ -729,6 +729,7 @@ class ForumsTestCase(BaseTestCase):
         self.browser.fill('forum_name', 'Strategy Sessions')
         self.browser.fill('forum_description', 'A place to discuss strategy')
         self.browser.find_by_id('add_forum_button').first.click()
+        time.sleep(1)
         self.browser.find_by_css(".close").first.click()  # close modal
         self.assertTrue(self.browser.is_text_present('Strategy Sessions'))
         self.assertTrue(self.browser.is_text_present('A place to discuss strategy'))
@@ -764,6 +765,7 @@ class ForumsTestCase(BaseTestCase):
         self.browser.fill('forum_name', 'Strategy Sessions')
         self.browser.fill('forum_description', 'A place to discuss strategy')
         self.browser.find_by_id('add_forum_button').first.click()
+        time.sleep(.5)
         self.browser.find_by_css(".close").first.click()  # close modal
 
         # can't delete first (governance) forum
@@ -773,8 +775,9 @@ class ForumsTestCase(BaseTestCase):
 
         # delete forum
         self.browser.find_by_css(".forum-description").last.click()
+        time.sleep(.5)
         self.browser.find_by_id('delete_forum_button').first.click()
-        time.sleep(.25)
+        time.sleep(.5)
         self.assertFalse(self.browser.is_text_present('A place to discuss strategy'))
 
     def test_add_edit_and_delete_post(self):
@@ -823,10 +826,11 @@ class ForumsTestCase(BaseTestCase):
         self.browser.find_by_css(".forum-description").first.click()
         time.sleep(.25)
 
-        # Add permissions
+        # Add permissions - we start with only default permissions, but then have one more
         self.browser.find_by_id("forum_permissions_button").first.click()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
-        self.assertEquals(permissions, [])
+        self.assertCountEqual(permissions, ['those with role members have permission to add comment',
+                                            'those with role members have permission to add a post'])
         self.browser.find_by_id('add_permission_button').first.click()
         self.select_from_multiselect("Edit a forum")
         time.sleep(.25)
@@ -835,7 +839,9 @@ class ForumsTestCase(BaseTestCase):
         self.browser.find_by_id('save_permission_button').first.click()
         time.sleep(.25)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
-        self.assertEquals(permissions, ["those with role forwards have permission to edit a forum"])
+        self.assertCountEqual(permissions, ['those with role forwards have permission to edit a forum',
+                                            'those with role members have permission to add comment',
+                                            'those with role members have permission to add a post'])
 
     # def test_add_condition_to_permission_on_forum(self):
     #     pass
@@ -1371,7 +1377,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.find_by_id("submit_apply_template").first.click()
         time.sleep(2)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
-        self.assertEquals(len(permissions), 8)
+        self.assertEquals(len(permissions), 10)
         self.assertTrue(self.browser.is_text_present(
             "anyone has permission to edit comment, but only if the user is the commenter"))
 
