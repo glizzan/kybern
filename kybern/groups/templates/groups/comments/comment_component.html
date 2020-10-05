@@ -59,7 +59,7 @@
             }
         },
         created () {
-            alt_target = this.item_model + "_" + this.item_id
+            alt_target = "comment_" + this.comment.pk
             this.checkPermissions({permissions: {"edit_comment": {alt_target: alt_target},
                 "delete_comment": {alt_target: alt_target}}})
                 .catch(error => {  this.error_message = error; console.log(error) })

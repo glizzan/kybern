@@ -70,7 +70,9 @@ class AddForumStateChange(BaseStateChange):
         return f"added forum {self.name}"
 
     def implement(self, actor, target):
-        return Forum.objects.create(name=self.name, description=self.description, owner=target.get_owner())
+        forum = Forum.objects.create(name=self.name, description=self.description, owner=target.get_owner())
+        self.set_default_permissions(actor, forum)
+        return forum
 
 
 class EditForumStateChange(BaseStateChange):
@@ -178,9 +180,11 @@ class AddPostStateChange(BaseStateChange):
         return f"added post with title {self.title}"
 
     def implement(self, actor, target):
-        return Post.objects.create(
+        post = Post.objects.create(
             title=self.title, content=self.content, author=actor, owner=target.get_owner(), forum=target
         )
+        self.set_default_permissions(actor, post)
+        return post
 
 
 class EditPostStateChange(BaseStateChange):
