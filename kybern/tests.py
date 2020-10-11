@@ -890,7 +890,7 @@ class TemplatesTestCase(BaseTestCase):
         self.browser.find_by_id('group_membership_settings_button').first.click()
         time.sleep(.2)
         permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
-        self.assertEquals(permissions, ["those with role forwards have permission to add members to community"])
+        self.assertTrue("those with role forwards have permission to add members to community" in permissions)
 
     def test_rejected_template(self):
 
@@ -952,7 +952,7 @@ class TemplatesTestCase(BaseTestCase):
         self.browser.reload()
         time.sleep(.25)
         permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
-        self.assertEquals(permissions, [])
+        self.assertFalse("those with role forwards have permission to add members to community" in permissions)
 
         # log back in as pinoe, approve
         self.login_user("meganrapinoe", "badlands2020")
@@ -974,7 +974,7 @@ class TemplatesTestCase(BaseTestCase):
         self.browser.find_by_id('group_membership_settings_button').first.click()
         time.sleep(.25)
         permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
-        self.assertEquals(permissions, ["those with role forwards have permission to add members to community"])
+        self.assertTrue("those with role forwards have permission to add members to community" in permissions)
 
 
 class MembershipTestCase(BaseTestCase):
@@ -993,6 +993,12 @@ class MembershipTestCase(BaseTestCase):
         press = User.objects.get(username="christenpress")
         heath = User.objects.get(username="tobinheath")
         self.client.Community.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
+
+        # delete default membership permission
+        from concord.permission_resources.models import PermissionsItem
+        for permission in PermissionsItem.objects.all():
+            if permission.change_type == Changes().Communities.AddMembers:
+                permission.delete()
 
     def test_anyone_can_join(self):
 
@@ -1363,6 +1369,12 @@ class DependentFieldTestCase(BaseTestCase):
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         self.client.Community.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk])
+
+        # delete default membership permission
+        from concord.permission_resources.models import PermissionsItem
+        for permission in PermissionsItem.objects.all():
+            if permission.change_type == Changes().Communities.AddMembers:
+                permission.delete()
 
     def test_dependent_field_created_by_posters_control_posts_template_works(self):
 
