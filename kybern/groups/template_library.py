@@ -52,7 +52,7 @@ class EmpowerPostersForumTemplate(TemplateLibraryObject):
             {"permission_type": Changes().Conditionals.Reject,
              "permission_actors": "{{nested:context.post.author||to_pk_in_list}}"}
         ]
-        action_7 = client.PermissionResource.add_condition_to_permission(
+        action_7 = client.Conditional.add_condition(
             condition_type="approvalcondition", permission_data=permission_data)
         action_7.target = "{{previous.5.result}}"
 
@@ -64,7 +64,7 @@ class EmpowerPostersForumTemplate(TemplateLibraryObject):
             permission_configuration={"commenter_only": True})
         action_8.target = "{{context.action.target}}"
 
-        action_9 = client.PermissionResource.add_condition_to_permission(
+        action_9 = client.Conditional.add_condition(
             condition_type="approvalcondition", permission_data=permission_data)  # re-use permission data from before
         action_9.target = "{{previous.7.result}}"
 
@@ -73,7 +73,7 @@ class EmpowerPostersForumTemplate(TemplateLibraryObject):
             permission_configuration={"commenter_only": True})
         action_10.target = "{{context.action.target}}"
 
-        action_11 = client.PermissionResource.add_condition_to_permission(
+        action_11 = client.Conditional.add_condition(
             condition_type="approvalcondition", permission_data=permission_data)  # re-use permission data from before
         action_11.target = "{{previous.9.result}}"
 

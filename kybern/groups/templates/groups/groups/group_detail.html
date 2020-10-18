@@ -2,7 +2,7 @@
 
 {% block content %}
 
-    {% include 'groups/groups/html_templates_to_include.html' %}
+    {% include 'groups/misc/html_templates_to_include.html' %}
 
     <div id="kybernApp">
 
@@ -75,6 +75,18 @@
                     main: advancedPermissionsComponent
                 }
             },
+            {
+                name: 'conditions',
+                path: '/conditions/:conditioned_on/:dependency_scope',
+                meta: { highlight: 'permissions'},
+                props: { sidebar: false, main: true },
+                components: {
+                    sidebar: groupConfigComponent,
+                    main: conditionManagementComponent
+                }
+            },
+
+
             // Action history
             {
                 name: 'action-history',

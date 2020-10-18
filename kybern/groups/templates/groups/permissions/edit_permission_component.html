@@ -16,18 +16,16 @@
 
             <b-button class="rounded-right btn-sm">
                 <span v-if="permission.condition" :id="'condition_' + pair_element_id">
-                    <span>on the condition that [[ permission.condition.how_to_pass ]]</span>
-                    <span v-if=user_permissions.remove_condition_from_permission
-                        v-on:click="edit_condition=true" class="badge badge-secondary ml-1 edit-condition"
-                        :class="css_name(permission.name)">🖉</span>
-                    <span v-if=user_permissions.remove_condition_from_permission
-                        v-on:click="delete_condition()" class="badge badge-secondary ml-1 delete-condition"
-                        :class="css_name(permission.name)">🗑</span>
+                    <span>on the condition that [[ permission.condition.how_to_pass_overall ]]</span>
+                    <router-link v-if=user_permissions.remove_permission_condition
+                        :to="{name: 'conditions', params: {conditioned_on: permission.pk, dependency_scope: item_model}}">
+                        <span class="badge badge-secondary ml-1 edit-condition" :class="css_name(permission.name)">🖉</span>
+                    </router-link>
                 </span>
                 <span v-else :id="'condition_' + pair_element_id">
-                    <span v-if="user_permissions.add_condition_to_permission">
-                        <b-button class="add-condition btn-sm" v-on:click="edit_condition=true">
-                            add condition</b-button></span>
+                    <router-link v-if="user_permissions.add_permission_condition"
+                        :to="{name: 'conditions', params: {conditioned_on: permission.pk, dependency_scope: item_model}}">
+                    <b-button class="add-condition btn-sm">add condition</b-button></router-link>
                     <span v-else>no condition</span>
                 </span>
             </b-button>
@@ -47,7 +45,8 @@
                 <!-- If there are fields to configure -->
                 <span v-if="configuration_fields.length > 0">
                     <p class="mt-3 font-weight-bold">Configure your permission</p>
-                    {% include 'groups/permissions/configuration_fields_include.html' %}
+                    <configurable-field v-for="field in configuration_fields" v-on:field-changed="change_field"
+                        :initial_field=field></configurable-field>
                 </span>
 
                 <div class="block">
@@ -60,12 +59,7 @@
 
             </div>
 
-
-
         </span>
-
-        <permission-condition v-if="edit_condition" :permission=permission v-on:condition-finished="edit_condition=false">
-        </permission-condition>
 
     </span>
 
@@ -78,6 +72,7 @@
         template: '#edit_permission_component_template',
         props: ['permission', 'role_to_edit', 'item_id', 'item_model'],
         store,
+        mixins: [configuredFieldsMixin],
         data: function() {
             return {
                 permission_exists: true,
@@ -93,8 +88,8 @@
             alt_target = "permissionsitem_" + this.permission.pk
             this.checkPermissions({permissions: {
                 remove_permission: {alt_target:alt_target},
-                add_condition_to_permission: {alt_target:alt_target},
-                remove_condition_from_permission: {alt_target:alt_target},
+                add_permission_condition: {alt_target:alt_target},
+                remove_permission_condition: {alt_target:alt_target},
                 add_actor_to_permission: {alt_target:alt_target},
                 remove_actor_from_permission: {alt_target:alt_target},
                 add_role_to_permission: {alt_target:alt_target},
@@ -118,7 +113,7 @@
                 user_permissions: state => state.permissions.current_user_permissions
             }),
             ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getPermissionConfigurationFields',
-                'getPermissionConfigurationFieldsWithData', 'select_field_is_multiple', 'role_to_options',
+                'getPermissionConfigurationFieldsWithData', 'role_to_options',
                 'user_pk_to_options']),
             anyone_can_take_permission() { return this.permission.anyone },
             item_or_role() {
@@ -140,7 +135,7 @@
             }
         },
         methods: {
-            ...Vuex.mapActions(['checkPermissions', 'removePermission', 'updatePermission', 'removeCondition', 'toggleAnyone']),
+            ...Vuex.mapActions(['checkPermissions', 'removePermission', 'updatePermission', 'toggleAnyone']),
             get_roles() {
                 if (this.item_or_role == "role") { return [this.role_to_edit] }
                 else if (this.item_or_role == "item") { return this.permission_roles_selected }
@@ -176,11 +171,6 @@
                     actors: this.permission_actors_selected
                 }).then(response => { this.clearState() })
                 .catch(error => {  this.error_message = error })
-            },
-            delete_condition() {
-                this.removeCondition({ permission_or_leadership: "permission",
-                                                permission_id: this.permission.pk })
-                .catch(error => { this.error_message = error.message })
             },
             toggle_anyone(enable_or_disable) {
                 this.toggleAnyone({ permission_id: this.permission.pk,

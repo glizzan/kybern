@@ -15,13 +15,6 @@
                 scopeTemplates: (state, getters) => (scope) => {
                     return state.templates[scope]
                 },
-                select_field_is_multiple: (state, getters) => (field) => {
-                    if (field.hasOwnProperty("other_data") && field["other_data"].hasOwnProperty("multiple")) {
-                        return field["other_data"]["multiple"]
-                    } else {
-                        return true  // By default, select fields allow multiple
-                    }
-                },
                 rolesAsOptions: (state, getters) => { return [] },
                 groupMembersAsOptions: (state, getters) => {
                     return [{ pk: {{ request.user.pk }}, name: '{{ request.user.username }}' }] },

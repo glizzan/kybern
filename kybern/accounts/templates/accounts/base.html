@@ -13,7 +13,7 @@
     <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap/dist/css/bootstrap.min.css" />
     <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.css"/>
     <link type="text/css" rel="stylesheet" href="https://unpkg.com/vue-multiselect@2.1.0/dist/vue-multiselect.min.css">
-    
+
     <!-- Load polyfills to support older browsers -->
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver"></script>
 
@@ -36,21 +36,12 @@
 
   <body>
 
-      <script type="application/javascript">
-        var utilityMixin = {
-          methods: {
-            shorten_text: function (text, max_length=50) {
-              if ((typeof text) === "string" && text.length > max_length) {
-                  return text.substring(0, max_length) + "..."
-              } else {
-                  return text
-              }
-            }
-          }
-        }
-      </script>
+      {% include 'groups/misc/base_mixins.html' %}
 
-      {% if object %} {% include 'groups/groups/group_vuex_include.html' %} {% endif %}
+      {% if object %}
+        {% include 'groups/groups/group_vuex_include.html' %}
+        {% include 'groups/misc/group_level_mixins.html' %}
+      {% endif %}
 
     <div>
 
@@ -78,7 +69,7 @@
 
               <!-- If not logged in, show login page. -->
               <b-nav-item v-else href="/login" >Sign In</b-nav-item>
-          
+
           </b-navbar-nav>
           </b-collapse>
         </b-navbar>
