@@ -38,7 +38,7 @@ on actions are in the actions module. -->
 
         getters: {
             get_permission_given_pk: (state, getters) => (pk, as_dict) => {
-                permission = state.permissions[pk];
+                permission = state.permissions[pk]
                 if (!permission) { console.log("No permission found for ", pk); return }
                 if (as_dict) {
                     return { [pk] : state.permissions[pk] }
@@ -99,16 +99,16 @@ on actions are in the actions module. -->
                 });
                 return new_fields
             },
-            getPermissionConditionConfigurationFieldsWithData: (state, getters) => (permission_id) => {
-                fields = state.permissions[permission_id]["condition"]["fields"]
+            getPermissionConditionConfigurationFieldsWithData: (state, getters) => (permission_id, element_id) => {
+                fields = state.permissions[permission_id]["condition"][element_id]["fields"]
                 for (field_index in fields) {
                     fields[field_index] = getters.fix_permission_field_values(fields[field_index])
                 }
                 return fields
             },
-            getLeadershipConditionConfigurationFieldsWithData: (state, getters) => (leadership_type) => {
-                if (leadership_type == "owner") { fields = state.owner_condition["fields"] }
-                else if (leadership_type == "governor") { fields = state.governor_condition["fields"] }
+            getLeadershipConditionConfigurationFieldsWithData: (state, getters) => (leadership_type, element_id) => {
+                if (leadership_type == "owner") { fields = state.owner_condition[element_id]["fields"] }
+                else if (leadership_type == "governor") { fields = state.governor_condition[element_id]["fields"] }
                 for (field_index in fields) {
                     fields[field_index] = getters.fix_permission_field_values(fields[field_index])
                 }
@@ -127,13 +127,6 @@ on actions are in the actions module. -->
             getGoverningForItem: (state, getters) => (item_key) => {
                 if (state.permission_overrides[item_key]) {
                     return state.permission_overrides[item_key].governing
-                }
-            },
-            select_field_is_multiple: (state, getters) => (field) => {
-                if (field.hasOwnProperty("other_data") && field["other_data"].hasOwnProperty("multiple")) {
-                    return field["other_data"]["multiple"]
-                } else {
-                    return true  // By default, select fields allow multiple
                 }
             }
         },
@@ -200,30 +193,38 @@ on actions are in the actions module. -->
 
             // Condition Mutations
 
-            ADD_CONDITION_TO_PERMISSION (state, data) {
+            SET_PERMISSION_CONDITION (state, data) {
                 Vue.set(state.permissions[data.pk], "condition", data.condition_data)
             },
-            REMOVE_CONDITION_FROM_PERMISSION (state, data) {
-                Vue.set(state.permissions[data.pk], "condition", null)
-            },
-            ADD_LEADERSHIP_CONDITION (state, data) {
+            SET_LEADERSHIP_CONDITION (state, data) {
                 if (data.leadership_type == "owner") {
                     Vue.set(state, "owner_condition", data.condition_data)
                 } else if (data.leadership_type == "governor") {
                     Vue.set(state, "governor_condition", data.condition_data)
-                }
-            },
-            REMOVE_LEADERSHIP_CONDITION (state, data) {
-                if (data.leadership_type == "owner") {
-                    Vue.set(state, "owner_condition", null)
-                } else if (data.leadership_type == "governor") {
-                    Vue.set(state, "governor_condition", null)
                 }
             }
 
         },
 
         actions: {
+
+            // 'fetch only if necessary'
+
+            fetchMissingPermission ({ commit, state, getters, dispatch }, payload) {
+                return new Promise((resolve, reject) => {
+
+                    pk = parseInt(payload.pk)
+                    if (isNaN(pk)) { reject("pk " + payload.pk + " is not a number") }
+
+                    permission = getters.get_permission_given_pk(pk)
+                    if (permission) { resolve(permission) }
+
+                    dispatch('getPermission', {permission_pk: pk})
+                    .then(response => resolve(getters.get_permission_given_pk(pk)))
+                    .catch(error => reject("Couldn't find permission matching " + payload.pk))
+
+                })
+            },
 
             // Permission Actions
 
@@ -293,10 +294,28 @@ on actions are in the actions module. -->
 
                 implementationCallback = (response) => {
                     if (response.data.permission_or_leadership == "permission") {
-                        commit('ADD_CONDITION_TO_PERMISSION', { pk: response.data.target_permission_id,
+                        commit('SET_PERMISSION_CONDITION', { pk: response.data.target_permission_id,
                             condition_data: response.data.condition_info })
                     } else {
-                        commit('ADD_LEADERSHIP_CONDITION', { 'leadership_type': response.data.leadership_type,
+                        commit('SET_LEADERSHIP_CONDITION', { 'leadership_type': response.data.leadership_type,
+                            condition_data: response.data.condition_info })
+                    }
+                }
+                return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback })
+            },
+
+            editCondition ({ commit, state, dispatch }, payload) {
+                url = "{% url 'edit_condition' target=object.pk %}"
+                params = { permission_or_leadership: payload.permission_or_leadership, element_id: payload.element_id,
+                    target_permission_id: payload.permission_id, leadership_type: payload.leadership_type,
+                    combined_condition_data : payload.combined_condition_data }
+
+                implementationCallback = (response) => {
+                    if (response.data.permission_or_leadership == "permission") {
+                        commit('SET_PERMISSION_CONDITION', { pk: response.data.target_permission_id,
+                            condition_data: response.data.condition_info })
+                    } else {
+                        commit('SET_LEADERSHIP_CONDITION', { 'leadership_type': response.data.leadership_type,
                             condition_data: response.data.condition_info })
                     }
                 }
@@ -306,12 +325,15 @@ on actions are in the actions module. -->
             removeCondition ({ commit, state, dispatch }, payload) {
                 url = "{% url 'remove_condition' target=object.pk %}"
                 params = { permission_or_leadership: payload.permission_or_leadership,
-                    target_permission_id : payload.permission_id, leadership_type: payload.leadership_type }
+                    target_permission_id : payload.permission_id, leadership_type: payload.leadership_type,
+                    element_id: payload.element_id }
                 implementationCallback = (response) => {
                     if (response.data.permission_or_leadership == "permission") {
-                        commit('REMOVE_CONDITION_FROM_PERMISSION', { pk: response.data.target_permission_id })
+                        commit('SET_PERMISSION_CONDITION', { pk: response.data.target_permission_id,
+                            condition_data: response.data.condition_info })
                     } else {
-                        commit('REMOVE_LEADERSHIP_CONDITION', { 'leadership_type': response.data.leadership_type })
+                        commit('SET_LEADERSHIP_CONDITION', { 'leadership_type': response.data.leadership_type,
+                            condition_data: response.data.condition_info })
                     }
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})

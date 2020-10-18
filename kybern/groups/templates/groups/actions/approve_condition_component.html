@@ -23,25 +23,25 @@
         <!-- If user has just approved or rejected condition.-->
         <span v-if="user_has_taken_action">
             <span v-if="condition_status == 'approved' || condition_status == 'rejected'" class="my-5">
-                You have [[ condition_status ]] [[ action_details.actor ]]'s action.  
+                You have [[ condition_status ]] [[ action_details.actor ]]'s action.
                 Nothing further is needed from you.
             </span>
         </span>
 
         <!-- If condition was already closed before the user opened this modal, so they haven't taken action. -->
         <span v-if="!user_has_taken_action">
-            <span v-if="condition_status == 'approved' || condition_status == 'rejected'" class="my-5"> 
-                [[ action_details.actor ]]'s action has already been [[ condition_status ]].
+            <span v-if="condition_status == 'approved' || condition_status == 'rejected'" class="my-5">
+                [[ action_details.actor ]]'s action has been [[ condition_status ]].
             </span>
         </span>
 
-        <span v-if="error_message" class="text-danger mt-3">[[ error_message ]]</span> 
+        <span v-if="error_message" class="text-danger mt-3">[[ error_message ]]</span>
 
 </span>
 </script>
 
 
-<script type="application/javascript"> 
+<script type="application/javascript">
 
 approvalConditionComponent = Vue.component('approve-condition-ui', {
     delimiters: ['[[', ']]'],
@@ -71,9 +71,9 @@ approvalConditionComponent = Vue.component('approve-condition-ui', {
 
                 // Is self-approval allowed?
                 self_approval_allowed = null
-                this.condition_details.fields.forEach((field) => { 
-                    if (field.field_name == "self_approval_allowed") { 
-                        self_approval_allowed = field.field_value } 
+                this.condition_details.fields.forEach((field) => {
+                    if (field.field_name == "self_approval_allowed") {
+                        self_approval_allowed = field.field_value }
                 })
                 if (self_approval_allowed == true) { return true }
 
@@ -97,26 +97,26 @@ approvalConditionComponent = Vue.component('approve-condition-ui', {
             axios.defaults.xsrfCookieName = 'csrftoken';
             axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
             axios.defaults.headers = { "headers": { 'Content-Type': "application/json" } }
-            url = "{% url 'get_conditional_data' %}"    
+            url = "{% url 'get_conditional_data' %}"
             params = { condition_pk: this.condition_pk, condition_type: this.condition_type }
-            return axios.post(url, params).then(response => { 
+            return axios.post(url, params).then(response => {
                 this.permission_details = response.data.permission_details
                 this.condition_details = response.data.condition_details
             }).catch(error => {  console.log(error)  })
         },
         update_conditional() {
-            
-            // For now, we don't store individual conditional data in vuex in part to make this more 
-            // extensible, although presumably there *is* a way to make vuex handle this extensibly, 
+
+            // For now, we don't store individual conditional data in vuex in part to make this more
+            // extensible, although presumably there *is* a way to make vuex handle this extensibly,
             // but that's a bit above my paygrade for now.
 
             axios.defaults.xsrfCookieName = 'csrftoken';
             axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
             axios.defaults.headers = { "headers": { 'Content-Type': "application/json" } }
 
-            url = "{% url 'update_approval_condition' %}"    
+            url = "{% url 'update_approval_condition' %}"
             params = { condition_pk: this.condition_pk, action_to_take: this.button_selected }
-            axios.post(url, params).then(response => {  
+            axios.post(url, params).then(response => {
 
                 new_action_pk = response.data.action_pk
 
@@ -136,7 +136,7 @@ approvalConditionComponent = Vue.component('approve-condition-ui', {
                     }
 
                 }).catch(error => {  console.log("Error refreshing condition data:", error); this.error_message = error })
-                
+
             }).catch(error => {  console.log("Error updating condition: ", error); this.error_message = error })
 
         }

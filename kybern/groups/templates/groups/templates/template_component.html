@@ -15,7 +15,9 @@
                 <span v-if="configuration_fields.length > 0">
                     <h5 class="mt-3 font-weight-bold">Configure fields for template: [[ this.selected_template.name ]].</h5>
 
-                    {% include 'groups/permissions/configuration_fields_include.html' %}
+                    <configurable-field v-for="field in configuration_fields" v-on:field-changed="change_field"
+                        :initial_field=field></configurable-field>
+
                 </span>
                 <span v-else>
                     <b>There are no fields to configure.</b>
@@ -46,6 +48,7 @@
         delimiters: ['[[', ']]'],
         template: '#template_template',
         store,
+        mixins: [configuredFieldsMixin],
         props: ['scope', 'create_group', 'target_id', 'target_model'],
         data: function() {
             return {
@@ -66,7 +69,7 @@
             }
         },
         computed: {
-            ...Vuex.mapGetters(['scopeTemplates', 'select_field_is_multiple', 'rolesAsOptions', 'groupMembersAsOptions']),
+            ...Vuex.mapGetters(['scopeTemplates']),
             ...Vuex.mapState({ user_permissions: state => state.permissions.current_user_permissions }),
             scope_templates: function() { return this.scopeTemplates(this.scope) }
         },

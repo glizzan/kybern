@@ -31,26 +31,21 @@
                 </b-card-text>
         </b-card>
 
-        <b-card border-variant="secondary" class="my-3" v-if="condition_type">
-
-                This action has a condition on it.  To pass the condition, [[ condition_pass ]].
-
-                <approve-condition-ui v-if="condition_type=='ApprovalCondition'" :condition_pk=condition_pk
-                    :condition_type=condition_type :action_details=action></approve-condition-ui>
-
-                <vote-condition-ui v-if="condition_type=='VoteCondition'" :condition_pk=condition_pk
-                    :condition_type=condition_type :action_details=action></vote-condition-ui>
-
-                <consensus-condition-ui v-if="condition_type=='ConsensusCondition'" :condition_pk=condition_pk
-                    :condition_type=condition_type :action_details=action></consensus-condition-ui>
-
+        <b-card border-variant="secondary" class="my-3" v-if="action.has_condition" no-body>
+            <b-card-title class="bg-light text-center pt-2 m-0 text-muted"><h5>Conditions on Action</h5></b-card-title>
+            <b-tabs card>
+                <b-tab v-for="condition in ordered_conditions" v-bind:key="condition.pk"
+                        :title="condition.type + ' ' + condition.pk">
+                    <b-card-text>
+                        {% include 'groups/actions/condition_options_include.html' %}
+                    </b-card-text>
+                </b-tab>
+            </b-tabs>
         </b-card>
 
         <b-card border-variant="secondary" class="my-3">
                 <comment-list :item_id=action_id :item_model="'action'" class="my-3"> </comment-list>
         </b-card>
-
-
 
     </span>
 
@@ -68,10 +63,7 @@
         data: function() {
             return {
                 ready_to_render: false,
-                action: null,
-                condition_type: null,
-                condition_pk: null,
-                condition_pass: null
+                action: null
             }
         },
         created () {
@@ -89,18 +81,15 @@
                 if (typeof this.action !== "undefined") {
                     this.ready_to_render = true
                 }
-            },
-            action: function(val) {
-                if (val && val.has_condition.conditions[0]) {
-                    this.condition_type = val.has_condition.conditions[0].type
-                    this.condition_pk = val.has_condition.conditions[0].pk
-                    this.condition_pass = val.has_condition.conditions[0].passing_description
-                }
             }
         },
         computed: {
             ...Vuex.mapGetters(['getActionData']),
             ...Vuex.mapState({ actions: state => state.concord_actions.actions }),
+            ordered_conditions: function() {
+                return this.action.has_condition.conditions.sort(function(a,b){
+                    if (a.pk < b.pk) { return -1 };  if (a.pk > b.pk) { return 1 }; return 0 })
+            }
         },
         methods: {
             ...Vuex.mapActions(['addOrUpdateAction']),

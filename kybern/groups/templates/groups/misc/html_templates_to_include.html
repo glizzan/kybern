@@ -8,17 +8,22 @@
 <!-- Permissions templates -->
 {% include 'groups/permissions/add_permission_component.html' %}
 {% include 'groups/permissions/edit_permission_component.html' %}
-{% include 'groups/permissions/permission_condition_component.html' %}
-{% include 'groups/permissions/manage_leadership_condition_component.html' %}
+{% include 'groups/permissions/condition_manager_component.html' %}
+{% include 'groups/permissions/edit_condition_component.html' %}
 {% include 'groups/permissions/role_permissions_component.html' %}
 {% include 'groups/permissions/person_permissions_component.html' %}
 {% include 'groups/permissions/item_permissions_component.html' %}
 {% include 'groups/permissions/advanced_permissions_component.html' %}
+<!-- Permission/Condition configuration field components -->
+{% include 'groups/permissions/complex_configurable_field_component.html' %}
+{% include 'groups/permissions/field_component.html' %}
+{% include 'groups/permissions/dependent_field_manager.html' %}
 {% include 'groups/permissions/dependent_field_component.html' %}
 
 <!-- Governance templates -->
 {% include 'groups/governance/governance_component.html' %}
 {% include 'groups/governance/leadership_component.html' %}
+{% include 'groups/governance/edit_leadership_component.html' %}
 {% include 'groups/governance/change_leadership_component.html' %}
 {% include 'groups/governance/group_membership_component.html' %}
 {% include 'groups/governance/membership_settings_component.html' %}

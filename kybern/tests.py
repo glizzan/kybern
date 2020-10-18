@@ -309,6 +309,7 @@ class ActionConditionsTestCase(BaseTestCase):
         perm_element = self.browser.find_by_text("those with role forwards have permission to add role to community")
         cond_id = "_".join(["condition"] + perm_element[0]["id"].split("_")[1:])
         self.browser.find_by_id(cond_id).first.click()
+        self.browser.find_by_id("new_condition").first.click()
         self.browser.select("condition_select", "VoteCondition")
         element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
@@ -353,9 +354,8 @@ class ApprovalConditionsTestCase(BaseTestCase):
             {"permission_type": Changes().Conditionals.Approve, "permission_roles": ["forwards"]},
             {"permission_type": Changes().Conditionals.Reject, "permission_roles": ["forwards"]}
         ]
-        self.client.PermissionResource.set_target(self.permission)
-        self.client.PermissionResource.add_condition_to_permission(
-            condition_type="approvalcondition", permission_data=perm_data)
+        self.client.Conditional.set_target(self.permission)
+        self.client.Conditional.add_condition(condition_type="approvalcondition", permission_data=perm_data)
 
         # have person take action that triggers permission/condition
         self.client.Community.set_actor(heath)
@@ -436,9 +436,8 @@ class VotingConditionTestCase(BaseTestCase):
             permission_type=Changes().Communities.AddRole, permission_roles=["forwards"]
         )
         perm_data = [{"permission_type": Changes().Conditionals.AddVote, "permission_roles": ["forwards"]}]
-        self.client.PermissionResource.set_target(self.permission)
-        self.client.PermissionResource.add_condition_to_permission(
-            condition_type="votecondition", permission_data=perm_data)
+        self.client.Conditional.set_target(self.permission)
+        self.client.Conditional.add_condition(condition_type="votecondition", permission_data=perm_data)
 
         # have person take action that triggers permission/condition
         self.client.Community.set_actor(heath)
@@ -542,9 +541,8 @@ class ConsensusConditionTestCase(BaseTestCase):
             {"permission_type": Changes().Conditionals.ResolveConsensus,
              "permission_roles": ["captains"]}
         ]
-        self.client.PermissionResource.set_target(self.permission)
-        self.client.PermissionResource.add_condition_to_permission(
-            condition_type="consensuscondition", permission_data=perm_data)
+        self.client.Conditional.set_target(self.permission)
+        self.client.Conditional.add_condition(condition_type="consensuscondition", permission_data=perm_data)
 
         # player triggers condition, it cannot be resolved yet
         self.login_user("emilysonnett", "badlands2020")
@@ -576,10 +574,9 @@ class ConsensusConditionTestCase(BaseTestCase):
             {"permission_type": Changes().Conditionals.ResolveConsensus,
              "permission_roles": ["captains"]}
         ]
-        self.client.PermissionResource.set_target(self.permission)
-        self.client.PermissionResource.add_condition_to_permission(
-            condition_type="consensuscondition", permission_data=perm_data,
-            condition_data={"minimum_duration": 0})
+        self.client.Conditional.set_target(self.permission)
+        self.client.Conditional.add_condition(
+            condition_type="consensuscondition", permission_data=perm_data, condition_data={"minimum_duration": 0})
 
         # player triggers condition
         self.login_user("crystaldunn", "badlands2020")
@@ -656,10 +653,9 @@ class ConsensusConditionTestCase(BaseTestCase):
             {"permission_type": Changes().Conditionals.ResolveConsensus,
              "permission_roles": ["captains"]}
         ]
-        self.client.PermissionResource.set_target(self.permission)
-        self.client.PermissionResource.add_condition_to_permission(
-            condition_type="consensuscondition", permission_data=perm_data,
-            condition_data={"minimum_duration": 0, "is_strict": True})
+        self.client.Conditional.set_target(self.permission)
+        self.client.Conditional.add_condition(condition_type="consensuscondition", permission_data=perm_data,
+                                              condition_data={"minimum_duration": 0, "is_strict": True})
 
         # player triggers condition
         self.login_user("crystaldunn", "badlands2020")
@@ -843,13 +839,6 @@ class ForumsTestCase(BaseTestCase):
                                             'those with role members have permission to add comment',
                                             'those with role members have permission to add a post'])
 
-    # def test_add_condition_to_permission_on_forum(self):
-    #     pass
-
-    # def test_add_condition_to_permission_on_forum_actually_works(self):
-    #     basically do the previous test, then go look at the history for the forum
-    #     pass
-
 
 class TemplatesTestCase(BaseTestCase):
 
@@ -922,6 +911,7 @@ class TemplatesTestCase(BaseTestCase):
         cond_id = "_".join(["condition"] + perm_element[0]["id"].split("_")[1:])
         self.browser.find_by_id(cond_id).first.click()
         time.sleep(.25)
+        self.browser.find_by_id("new_condition").first.click()
         self.browser.select("condition_select", "ApprovalCondition")
 
         element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
@@ -1128,7 +1118,7 @@ class MembershipTestCase(BaseTestCase):
         time.sleep(1)
         permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display")]
         self.assertEquals(permissions, ["anyone has permission to add members to community, but a user can only add themselves"])
-        condition = self.browser.find_by_text("on the condition that one person needs to approve this action")
+        condition = self.browser.find_by_text("on the condition that those with role forwards needs to approve this action")
         self.assertEquals(len(condition), 1)
 
         # random person can request but they are not added yet
@@ -1401,6 +1391,8 @@ class DependentFieldTestCase(BaseTestCase):
 
         # Inspecting what was created, everything looks fine
         self.browser.find_by_css(".edit-condition.edit_comment").first.click()
+        self.browser.find_by_css(".edit-condition-button").first.click()
+        time.sleep(.5)
         self.assertTrue(self.browser.is_text_present("set as: post's author"))
         time.sleep(.5)
         self.browser.find_by_css(".edit-dependent-field").first.click()
@@ -1413,6 +1405,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.assertEquals(field_select.value, "author")
 
         # User makes a post
+        self.browser.back()
         self.browser.back()
         self.browser.find_by_id('add_post_button').first.click()
         self.browser.fill('post_title', 'I have an idea')
@@ -1466,6 +1459,7 @@ class DependentFieldTestCase(BaseTestCase):
 
         # adds an approval condition with permission_actors dependency field as member_pk_list
         self.browser.find_by_css('.add-condition').first.click()
+        self.browser.find_by_id("new_condition").first.click()
         self.browser.select("condition_select", "ApprovalCondition")
         self.browser.find_by_css('.add-dependent-field')[1].click()
         self.browser.find_by_id('depend_on_model_action').first.click()
@@ -1490,6 +1484,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.back()
         self.browser.find_by_id('group_history_button').first.click()
         self.browser.find_by_text("link").first.click()
+        time.sleep(1)
         self.assertTrue(self.browser.is_text_present('You do not have permission to approve or reject this action.'))
 
         # Midge approves, and now there are 5 members
@@ -1506,3 +1501,114 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('members_member_count')[0].scroll_to()
         self.assertEquals(self.browser.find_by_id('members_member_count').text, "5 people")
+
+
+class MultipleConditionsTestCase(BaseTestCase):
+
+    def setUp(self):
+
+        # Basic setup
+        self.create_users()
+        self.create_templates()
+        self.actor = User.objects.first()
+        self.client = Client(actor=self.actor)
+        self.community = self.client.Community.create_community(name="USWNT")
+        self.client.update_target_on_all(target=self.community)
+        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()[:4]])
+        self.client.Community.add_role(role_name="forwards")
+        pinoe = User.objects.get(username="meganrapinoe")
+        press = User.objects.get(username="christenpress")
+        heath = User.objects.get(username="tobinheath")
+        self.client.Community.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk, heath.pk])
+
+        # Permission setup
+        action, self.permission = self.client.PermissionResource.add_permission(
+            permission_type=Changes().Communities.AddRole, permission_roles=["forwards"])
+
+    def test_multiple_conditions(self):
+
+        # add a condition
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button')[0].click()
+        self.browser.find_by_id('forwards_editrole')[0].scroll_to()
+        self.browser.find_by_id('forwards_editrole').first.click()
+        time.sleep(.25)
+        perm_element = self.browser.find_by_text("those with role forwards have permission to add role to community")
+        cond_id = "_".join(["condition"] + perm_element[0]["id"].split("_")[1:])
+        self.browser.find_by_id(cond_id).first.click()
+        self.browser.find_by_id("new_condition").first.click()
+        self.browser.select("condition_select", "ApprovalCondition")
+        element_containing_role_dropdown = self.browser.find_by_css(".permissionactorfield")[0]
+        self.select_from_multiselect("christenpress", search_within=element_containing_role_dropdown)
+        self.browser.find_by_id('save_condition_button').first.click()
+
+        # add another condition
+        self.browser.find_by_id("new_condition").first.click()
+        self.browser.select("condition_select", "ApprovalCondition")
+        element_containing_role_dropdown = self.browser.find_by_css(".permissionactorfield")[0]
+        self.select_from_multiselect("tobinheath", search_within=element_containing_role_dropdown)
+        self.browser.find_by_id('save_condition_button').first.click()
+
+        # add a third condition
+        self.browser.find_by_id("new_condition").first.click()
+        self.browser.select("condition_select", "ApprovalCondition")
+        element_containing_role_dropdown = self.browser.find_by_css(".permissionactorfield")[0]
+        self.select_from_multiselect("crystaldunn", search_within=element_containing_role_dropdown)
+        self.browser.find_by_id('save_condition_button').first.click()
+
+        time.sleep(5)
+
+        # delete third condition
+        self.browser.find_by_css(".edit-condition-button").last.click()
+        self.browser.find_by_id("delete_condition_button").first.click()
+
+        time.sleep(.5)
+
+        # edit one of the two remaining conditions
+        self.browser.find_by_css(".edit-condition-button").first.click()
+        element_containing_role_dropdown = self.browser.find_by_css(".permissionactorfield")[0]
+        self.select_from_multiselect("tobinheath", search_within=element_containing_role_dropdown)
+        self.browser.find_by_id("save_edit_condition_button").first.click()
+
+        time.sleep(5)
+
+        # take action to trigger the new conditions
+        self.login_user("christenpress", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('governance_button')[0].click()
+        self.browser.find_by_id('add_role_button').first.click()
+        self.browser.fill('role_name', 'midfielders')
+        self.browser.find_by_id('save_role_button').first.click()
+        self.assertTrue(self.browser.is_text_present('There is a condition on your action which must be resolved before your action can be implemented.'))
+
+        # resolve each of the two remaining conditions
+        self.login_user("tobinheath", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('group_history_button')[0].click()
+        self.browser.find_by_css(".action-link-button")[0].click()
+        self.assertTrue(self.browser.is_text_present('Please approve or reject this action.'))
+        self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span").first.click()
+        time.sleep(.25)
+        self.browser.find_by_id('save_approve_choice').first.click()
+        time.sleep(.25)
+        text = "You have approved christenpress's action. Nothing further is needed from you."
+        self.assertTrue(self.browser.is_text_present(text))
+        self.browser.find_by_css('.card-header-tabs li a').last.click()
+        self.assertTrue(self.browser.is_text_present('Please approve or reject this action.'))
+        self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span").first.click()
+        time.sleep(.25)
+        self.browser.find_by_id('save_approve_choice').first.click()
+        time.sleep(.25)
+        text = "You have approved christenpress's action. Nothing further is needed from you."
+        self.assertTrue(self.browser.is_text_present(text))
+        time.sleep(.5)
+
+        # action implemented
+        self.browser.reload()
+        self.browser.find_by_id('governance_button')[0].click()
+        roles = [item.text for item in self.browser.find_by_css(".role_name_display")]
+        self.assertEquals(roles, ["members", "forwards", "midfielders"])
+
+
+

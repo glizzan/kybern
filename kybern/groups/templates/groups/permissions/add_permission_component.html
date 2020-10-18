@@ -40,7 +40,8 @@
                 <!-- If there are fields to configure -->
                 <span v-if="configuration_fields.length > 0" class="mb-3">
                     <p class="mt-3 font-weight-bold">Configure your permission</p>
-                    {% include 'groups/permissions/configuration_fields_include.html' %}
+                    <configurable-field v-for="field in configuration_fields" v-on:field-changed="change_field"
+                        :initial_field=field></configurable-field>
                 </span>
 
                 <b-button size="sm" class="mt-3" @click="add_permission()" id="save_permission_button">
@@ -63,6 +64,7 @@
         delimiters: ['[[', ']]'],
         template: '#add_permission_component_template',
         props: ['default_selection', 'role_to_edit', 'item_id', 'item_model'],  // item_model is required
+        mixins: [configuredFieldsMixin],
         store,
         data: function() {
             return {
@@ -101,7 +103,7 @@
                 user_permissions: state => state.permissions.current_user_permissions
                 }),
             ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getPermissionConfigurationFields',
-                'select_field_is_multiple', 'role_to_options', 'user_pk_to_options']),
+                'role_to_options', 'user_pk_to_options']),
             item_or_role() {
                 if (this.role_to_edit) { return "role"}
                 else if (this.item_id && this.item_model) { return "item" }

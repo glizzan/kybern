@@ -42,6 +42,7 @@ urlpatterns = [
 
     # condition views
     path('api/add_condition/<int:target>/', views.add_condition, name='add_condition'),
+    path('api/edit_condition/<int:target>/', views.edit_condition, name='edit_condition'),
     path('api/remove_condition/<int:target>/', views.remove_condition, name='remove_condition'),
 
     # leadership views

@@ -152,14 +152,10 @@ def serialize_existing_permission_for_vue(permission, pk_as_key=True):
         "roles": permission.get_roles(), "anyone": permission.anyone,
         "fields": permission.get_configuration(), "pk": permission.pk,
         "change_field_options": permission.get_change_fields(),
-        "dependent_field_options": permission.get_all_context_keys()
+        "dependent_field_options": permission.get_context_keys()
     }
 
-    if permission.has_condition():
-        condition_data = permission.get_condition_data(info="basic")
-        condition_data["fields"] = permission.get_condition_data(info="fields")
-    else:
-        condition_data = None
+    condition_data = permission.get_condition_data() if permission.has_condition() else None
     permission_dict.update({"condition": condition_data})
 
     if pk_as_key:
@@ -795,24 +791,25 @@ def add_condition(request, target, condition_type, permission_or_leadership,
     if permission_or_leadership == "permission":
 
         target = client.PermissionResource.get_permission(pk=target_permission_id)
-        client.PermissionResource.set_target(target)
+        client.update_target_on_all(target)
 
-        action, result = client.PermissionResource.add_condition_to_permission(
+        action, result = client.Conditional.add_condition(
             condition_type=condition_type, condition_data=condition_data, permission_data=permission_data)
+
         if action.status == "implemented":
-            condition_data = result.get_condition_data(info="all")
+            condition_data = target.get_condition_data()
 
     elif permission_or_leadership == "leadership":
 
         target = client.Community.get_community(community_pk=target)
-        client.Community.set_target(target)
+        client.update_target_on_all(target)
 
-        action, result = client.Community.add_leadership_condition(
+        action, result = client.Conditional.add_condition(
             condition_type=condition_type, leadership_type=leadership_type,
             condition_data=condition_data, permission_data=permission_data
         )
         if action.status == "implemented":
-            condition_data = target.get_condition_data(leadership_type=leadership_type, info="all")
+            condition_data = target.get_condition_data(leadership_type=leadership_type)
 
     action_dict = get_action_dict(action)
     action_dict.update({
@@ -824,23 +821,64 @@ def add_condition(request, target, condition_type, permission_or_leadership,
 
 @login_required
 @reformat_input_data
-def remove_condition(request, target, permission_or_leadership, target_permission_id=None, leadership_type=None):
+def edit_condition(request, target, permission_or_leadership, element_id, target_permission_id=None,
+                   leadership_type=None, condition_data=None, permission_data=None):
+
+    client = Client(actor=request.user)
+
+    if permission_or_leadership == "permission":
+
+        target = client.PermissionResource.get_permission(pk=target_permission_id)
+        client.update_target_on_all(target)
+
+        action, result = client.Conditional.edit_condition(
+            element_id=element_id, condition_data=condition_data, permission_data=permission_data)
+
+        if action.status == "implemented":
+            condition_data = target.get_condition_data()
+
+    elif permission_or_leadership == "leadership":
+
+        target = client.Community.get_community(community_pk=target)
+        client.update_target_on_all(target)
+
+        action, result = client.Conditional.edit_condition(
+            element_id=element_id, leadership_type=leadership_type,
+            condition_data=condition_data, permission_data=permission_data
+        )
+        if action.status == "implemented":
+            condition_data = target.get_condition_data(leadership_type=leadership_type)
+
+    action_dict = get_action_dict(action)
+    action_dict.update({
+        "condition_info": condition_data, "permission_or_leadership": permission_or_leadership,
+        "leadership_type": leadership_type, "target_permission_id": target_permission_id
+    })
+    return JsonResponse(action_dict)
+
+
+@login_required
+@reformat_input_data
+def remove_condition(request, target, permission_or_leadership, target_permission_id=None, leadership_type=None,
+                     element_id=None):
 
     client = Client(actor=request.user)
 
     if permission_or_leadership == "permission":
         target = client.PermissionResource.get_permission(pk=target_permission_id)
         client.update_target_on_all(target)
-        action, result = client.PermissionResource.remove_condition_from_permission()
+        action, result = client.Conditional.remove_condition(element_id=element_id)
     elif permission_or_leadership == "leadership":
         target = client.Community.get_community(community_pk=target)
         client.update_target_on_all(target)
-        action, result = client.Community.remove_leadership_condition(leadership_type=leadership_type)
+        action, result = client.Conditional.remove_condition(leadership_type=leadership_type, element_id=element_id)
+
+    result = result.get_condition_form_data() if result else result
 
     action_dict = get_action_dict(action)
     action_dict.update({
         "permission_or_leadership": permission_or_leadership, "leadership_type": leadership_type,
-        "target_permission_id": target_permission_id
+        "target_permission_id": target_permission_id, "condition_info": result
     })
     return JsonResponse(action_dict)
 
@@ -1017,7 +1055,7 @@ def get_permission(request):
     client = Client(actor=request.user)
     permission = client.PermissionResource.get_permission(pk=permission_pk)
 
-    return JsonResponse({"permission_data": serialize_existing_permission_for_vue(permission)})
+    return JsonResponse({"permission_data": serialize_existing_permission_for_vue(permission, pk_as_key=False)})
 
 
 @login_required
@@ -1446,19 +1484,25 @@ def check_individual_permission(client, actor, permission_name, params):
         return client.PermissionResource.has_permission(
             client.PermissionResource, "change_configuration_of_permission",
             {"configurable_field_name": "ABC", "configurable_field_value": "DEF"})
-    if permission_name == "add_condition_to_permission":
+    if permission_name == "add_permission_condition":
         return client.PermissionResource.has_permission(
-            client.PermissionResource, "add_condition_to_permission", {"condition_type": "ApprovalCondition"})
-    if permission_name == "remove_condition_from_permission":
+            client.Conditional, "add_condition", {"condition_type": "ApprovalCondition"})
+    if permission_name == "remove_permission_condition":
+        return client.PermissionResource.has_permission(client.Conditional, "remove_condition", {})
+    if permission_name == "add_owner_condition":
         return client.PermissionResource.has_permission(
-            client.PermissionResource, "remove_condition_from_permission", {})
-    if permission_name == "add_leadership_condition":
+            client.Conditional, "add_condition",
+            {"leadership_type": "owner", "condition_type": "ApprovalCondition"})
+    if permission_name == "remove_owner_condition":
         return client.PermissionResource.has_permission(
-            client.Community, "add_leadership_condition",
-            {"leadership_type": params["leadership_type"], "condition_type": "ApprovalCondition"})
-    if permission_name == "remove_leadership_condition":
+            client.Conditional, "remove_condition", {"leadership_type": "owner"})
+    if permission_name == "add_governor_condition":
         return client.PermissionResource.has_permission(
-            client.Community, "remove_leadership_condition", {"leadership_type": params["leadership_type"]})
+            client.Conditional, "add_condition",
+            {"leadership_type": "governor", "condition_type": "ApprovalCondition"})
+    if permission_name == "remove_governor_condition":
+        return client.PermissionResource.has_permission(
+            client.Conditional, "remove_condition", {"leadership_type": "governor"})
     if permission_name == "enable_foundational_permission":
         return client.PermissionResource.has_permission(client.Action, "enable_foundational_permission", {})
     if permission_name == "disable_foundational_permission":

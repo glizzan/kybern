@@ -1,0 +1,47 @@
+<script type="text/x-template" id="edit_condition_element_component_template">
+
+</script>
+
+<script type="application/javascript">
+
+var conditionLookupMixin = {
+    methods: {
+        get_conditioned_item_from_db(conditioned_on) {
+            // Only needed for permissions (for now), checks if conditioned item is in vuex and, if not, gets from DB
+            // Gets the conditioned item from vuex or, if it's not there, calls the action to look it up from db
+            // Conditioned on is 'owner', 'governor' or permission pk
+            if (["owner", "governor"].indexOf(this.conditioned_on) > -1) {
+                // make sure conditioned item is there
+            } else {
+                permission_pk = parseInt(this.conditioned_on)
+                if (permission_pk != NaN) {
+                    this.permission = this.get_permission_given_pk(permission_pk)
+                    if (!this.permission) {
+                        this.getPermission({permission_pk:permission_pk})
+                        .then(response => this.permission = this.get_permission_given_pk(permission_pk))
+                    }
+                }
+            }
+
+
+        }
+
+    }
+}
+
+
+
+editConditionElementComponent = Vue.component('edit-condition-element', {
+        delimiters: ['[[', ']]'],
+        template: '#edit_condition_element_component_template',
+        store,
+        props: ['create', 'element_id', 'leadership_type' ]
+        props: ['element_id', 'condition_selected', 'initial_configuration_fields', 'params'],
+        data: function() {
+            return {
+                configuration_fields: [],
+                error_message : ''
+            }
+        },
+
+</script>
