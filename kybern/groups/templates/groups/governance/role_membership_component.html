@@ -7,8 +7,8 @@
         <div v-if="can_edit">
 
             <span id="change_membership_multiselect">
-                <vue-multiselect v-model="people_selected" :options="people_to_choose_from" :multiple="true" 
-                :close-on-select="true" :clear-on-select="false" placeholder="No one selected" 
+                <vue-multiselect v-model="people_selected" :options="people_to_choose_from" :multiple="true"
+                :close-on-select="true" :clear-on-select="false" placeholder="No one selected"
                 label="name" track-by="pk" class="mt-3">
                     <template slot="selection" slot-scope="{ values, search, isOpen }">
                         <span v-if="!isOpen">
@@ -17,7 +17,7 @@
                     </template>
                 </vue-multiselect>
             </span>
-            
+
             <b-button class="btn-sm mt-3" @click="updateMembers()" id="save_member_changes">Save your changes</b-button>
 
             <div class="mb-3" v-if="add_error_message || remove_error_message">
@@ -38,7 +38,7 @@
 </script>
 
 
-<script type="application/javascript"> 
+<script type="application/javascript">
 
 
     changeRoleMembershipComponent = Vue.component('change-role-membership-modal', {
@@ -54,7 +54,7 @@
             }
         },
         created () {
-            this.checkPermissions({permissions: 
+            this.checkPermissions({permissions:
                 {"add_people_to_role": {"role_name": this.role_selected}, "remove_people_from_role": {"role_name": this.role_selected}}})
             .catch(error => {  this.error_message = error; console.log(error) })
         },
@@ -72,7 +72,7 @@
                 }
             },
             title_string: function() {
-                return "Change members with role '" + this.role_selected + "'" 
+                return "Change members with role '" + this.role_selected + "'"
             },
             can_edit: function() {
                 if (this.user_permissions.add_people_to_role || this.user_permissions.remove_people_from_role) {
@@ -84,12 +84,12 @@
                 if (this.user_permissions.add_people_to_role) {
                     return "You have permission to add people to this role, but not to remove people from it." }
                 if (this.user_permissions.remove_people_from_role) {
-                    return "You have permission to remove people from this role, but not to add people to it." }   
-                return "You do not have permission to add people to or remove people from this role." 
+                    return "You have permission to remove people from this role, but not to add people to it." }
+                return "You do not have permission to add people to or remove people from this role."
             }
         },
         watch: {
-            role_selected: function() { 
+            role_selected: function() {
                 this.people_selected = this.people_in_role  // populate with current data initially
             }
         },
@@ -104,14 +104,14 @@
 
                 if (to_add.length > 0) {
                     this.addUsersToRole({ role_name: this.role_selected, user_pks: to_add })
-                    .catch(error => {  
-                        this.add_error_message = error 
+                    .catch(error => {
+                        this.add_error_message = error
                         this.people_selected = this.people_in_role })
                 }
 
                 if (to_remove.length > 0) {
                     this.removeUsersFromRole({ role_name: this.role_selected, user_pks: to_remove })
-                        .catch(error => {  
+                        .catch(error => {
                             this.remove_error_message = error
                             this.people_selected = this.people_in_role  })
                 }

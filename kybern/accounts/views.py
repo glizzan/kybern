@@ -19,6 +19,10 @@ class RegistrationViewWithCode(RegistrationView):
     success_url = "/register/complete/"
 
 
+class TestJSView(generic.TemplateView):
+    template_name = 'accounts/test_js.html'
+
+
 class IndexView(generic.TemplateView):
     template_name = 'accounts/index.html'
 

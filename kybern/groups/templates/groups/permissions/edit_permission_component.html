@@ -15,7 +15,7 @@
             </b-button>
 
             <b-button class="rounded-right btn-sm">
-                <span v-if="permission.condition" :id="'condition_' + pair_element_id">
+                <span v-if="permission.condition" :id="'condition_' + pair_element_id_existing">
                     <span>on the condition that [[ permission.condition.how_to_pass_overall ]]</span>
                     <router-link v-if=user_permissions.remove_permission_condition
                         :to="{name: 'conditions', params: {conditioned_on: permission.pk, dependency_scope: item_model}}">

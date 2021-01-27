@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     # django contrib stuff needs to be here so accounts can override default logout page
     'django.contrib.auth',
     'django.contrib.admin',
+    'webpack_loader'
 ]
 
 # CONCORD_APPS and KYBERN_APPS are used in logging
@@ -195,3 +196,19 @@ if os.environ.get("KYBERN_ENVIRONMENT") and os.environ.get("KYBERN_ENVIRONMENT")
     from .production_settings import *  # noqa: F403, F401
 else:
     from .local_settings import *  # noqa: F403, F401
+
+
+# Webpack stuffs
+
+VUE_FRONTEND_DIR = os.path.join(BASE_DIR, 'frontend')
+
+WEBPACK_LOADER = {
+    'DEFAULT': {
+        'CACHE': not DEBUG,
+        'BUNDLE_DIR_NAME': 'vue/',  # must end with slash
+        'STATS_FILE': os.path.join(VUE_FRONTEND_DIR, 'webpack-stats.json'),
+        'POLL_INTERVAL': 0.1,
+        'TIMEOUT': None,
+        'IGNORE': [r'.+\.hot-update.js', r'.+\.map']
+    }
+}

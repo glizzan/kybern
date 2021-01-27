@@ -8,7 +8,8 @@ sqlparse==0.3.1
 PyYAML==5.3.1
 # Supports running site in production on Heroku
 psycopg2
-dj-database-url 
-gunicorn 
+dj-database-url
+gunicorn
 whitenoise
 -e git+https://f23bc53183ac718cff2174b3d43ec925dc0e26bd@github.com/glizzan/glizzan-concord#egg=concord
+django-webpack-loader==0.6.0

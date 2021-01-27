@@ -94,6 +94,7 @@
                 }
             },
             validate_template() {
+                console.log("THIS", this.configuration_fields)
                 for (field in this.configuration_fields) {
                     if (this.configuration_fields[field]["required"] && !this.configuration_fields[field]["value"]){
                         this.error_message = "Required field " + this.configuration_fields[field]["field_name"] + " needs a value"
