@@ -4,7 +4,7 @@ from django_registration.backends.activation.views import RegistrationView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseRedirect
 
-from concord.actions.utils import Client
+from concord.utils.helpers import Client
 
 from accounts.models import Profile
 from accounts.forms import RegistrationFormWithCode

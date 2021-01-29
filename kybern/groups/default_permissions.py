@@ -1,4 +1,4 @@
-from concord.actions.utils import Changes
+from concord.utils.helpers  import Changes
 
 
 DEFAULT_PERMISSIONS = {

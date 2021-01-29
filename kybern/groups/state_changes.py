@@ -1,5 +1,6 @@
-from concord.actions.state_changes import BaseStateChange, InputField
+from concord.actions.state_changes import BaseStateChange
 from concord.permission_resources.utils import delete_permissions_on_target
+from concord.utils import field_utils
 
 from .models import Group, Forum, Post
 
@@ -10,10 +11,10 @@ from .models import Group, Forum, Post
 
 
 class ChangeGroupDescriptionStateChange(BaseStateChange):
-    description = "Change group description"
+    change_description = "Change group description"
     preposition = "for"
     section = "Community"
-    input_fields = [InputField(name="group_description", type="CharField", required=True, validate=True)]
+    group_description = field_utils.CharField(label="Group description", required=True)
 
     def __init__(self, group_description):
         self.group_description = group_description
@@ -32,7 +33,7 @@ class ChangeGroupDescriptionStateChange(BaseStateChange):
     def description_past_tense(self):
         return f"changed description of group to {self.group_description}"
 
-    def implement(self, actor, target):
+    def implement(self, actor, target, action):
         target.group_description = self.group_description
         target.save()
         return target
@@ -44,12 +45,14 @@ class ChangeGroupDescriptionStateChange(BaseStateChange):
 
 
 class AddForumStateChange(BaseStateChange):
-    description = "Create a forum"
+    change_description = "Create a forum"
     preposition = "on"
     section = "Forum"
-    input_fields = [InputField(name="name", type="CharField", required=True, validate=True),
-                    InputField(name="description", type="CharField", required=False, validate=True)]
-    input_target = Forum
+    input_target = Forum   # is this vestigial?
+
+    #fields
+    name = field_utils.CharField(label="Name of forum", required=True)
+    description = field_utils.CharField(label="Forum description")
 
     def __init__(self, *, name, description=None):
         self.name = name
@@ -69,18 +72,18 @@ class AddForumStateChange(BaseStateChange):
     def description_past_tense(self):
         return f"added forum {self.name}"
 
-    def implement(self, actor, target):
+    def implement(self, actor, target, action):
         forum = Forum.objects.create(name=self.name, description=self.description, owner=target.get_owner())
         self.set_default_permissions(actor, forum)
         return forum
 
 
 class EditForumStateChange(BaseStateChange):
-    description = "Edit a forum"
+    change_description = "Edit a forum"
     preposition = "in"
     section = "Forum"
-    input_fields = [InputField(name="name", type="CharField", required=False, validate=True),
-                    InputField(name="description", type="CharField", required=False, validate=True)]
+    name = field_utils.CharField(label="Name of forum")
+    description = field_utils.CharField(label="Forum description")
 
     def __init__(self, *, name=None, description=None):
         self.name = name
@@ -108,7 +111,7 @@ class EditForumStateChange(BaseStateChange):
             return False
         return True
 
-    def implement(self, actor, target):
+    def implement(self, actor, target, action):
         target.name = self.name if self.name else target.name
         target.description = self.description if self.description else target.description
         target.save()
@@ -116,7 +119,7 @@ class EditForumStateChange(BaseStateChange):
 
 
 class DeleteForumStateChange(BaseStateChange):
-    description = "Delete a forum"
+    change_description = "Delete a forum"
     preposition = "in"
     section = "Forum"
 
@@ -142,7 +145,7 @@ class DeleteForumStateChange(BaseStateChange):
             return False
         return True
 
-    def implement(self, actor, target):
+    def implement(self, actor, target, action):
         pk = target.pk
         delete_permissions_on_target(target)
         target.delete()
@@ -155,11 +158,13 @@ class DeleteForumStateChange(BaseStateChange):
 
 
 class AddPostStateChange(BaseStateChange):
-    description = "Add a post"
+    change_description = "Add a post"
     section = "Forum"
-    input_fields = [InputField(name="title", type="CharField", required=True, validate=True),
-                    InputField(name="content", type="CharField", required=True, validate=True)]
     input_target = Post
+
+    # Fields
+    title = field_utils.CharField(label="Title", required=True)
+    content = field_utils.CharField(label="Content", required=True)
 
     def __init__(self, *, title, content):
         self.title = title
@@ -179,7 +184,7 @@ class AddPostStateChange(BaseStateChange):
     def description_past_tense(self):
         return f"added post with title {self.title}"
 
-    def implement(self, actor, target):
+    def implement(self, actor, target, action):
         post = Post.objects.create(
             title=self.title, content=self.content, author=actor, owner=target.get_owner(), forum=target
         )
@@ -188,13 +193,14 @@ class AddPostStateChange(BaseStateChange):
 
 
 class EditPostStateChange(BaseStateChange):
-    description = "Edit a post"
+    change_description = "Edit a post"
     section = "Forum"
     preposition = "in"
     context_keys = ["forum", "post"]
-    input_fields = [InputField(name="title", type="CharField", required=False, validate=True),
-                    InputField(name="content", type="CharField", required=False, validate=True),
-                    InputField(name="author_only", type="BooleanField", required=False, validate=False)]
+
+    title = field_utils.CharField(label="Title")
+    content = field_utils.CharField(label="Content")
+    author_only = field_utils.BooleanField(label="Only allow author to do this")
 
     def __init__(self, *, title=None, content=None, author_only=False):
         self.title = title
@@ -253,7 +259,7 @@ class EditPostStateChange(BaseStateChange):
             return False
         return True
 
-    def implement(self, actor, target):
+    def implement(self, actor, target, action):
         target.title = self.title if self.title else target.title
         target.content = self.content if self.content else target.content
         target.save()
@@ -261,11 +267,11 @@ class EditPostStateChange(BaseStateChange):
 
 
 class DeletePostStateChange(BaseStateChange):
-    description = "Delete a post"
+    change_description = "Delete a post"
     preposition = "from"
     section = "Forum"
     context_keys = ["forum", "post"]
-    input_fields = [InputField(name="author_only", type="BooleanField", required=False, validate=False)]
+    author_only = field_utils.BooleanField(label="Only allow author to do this")
 
     def __init__(self, *, author_only=False):
         self.author_only = author_only
@@ -314,7 +320,7 @@ class DeletePostStateChange(BaseStateChange):
     def description_past_tense(self):
         return "removed post"
 
-    def implement(self, actor, target):
+    def implement(self, actor, target, action):
         pk = target.pk
         delete_permissions_on_target(target)
         target.delete()

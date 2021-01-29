@@ -6,7 +6,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 
 from django.contrib.auth.models import User
-from concord.actions.utils import Changes, Client
+from concord.utils.helpers  import Changes, Client
 from groups.models import Forum
 from concord.actions.models import TemplateModel
 
@@ -178,7 +178,6 @@ class GroupBasicsTestCase(BaseTestCase):
         self.assertEquals(["christenpress"], self.get_selected_in_multiselect())
         self.browser.find_by_id('save_member_changes', wait_time=5).first.click()
         self.browser.find_by_css(".close", wait_time=5).first.click()  # close modal
-        time.sleep(20)
         self.assertEquals(self.browser.find_by_id('forwards_member_count', wait_time=5).text, "1 people")
 
 
@@ -1106,9 +1105,12 @@ class MembershipTestCase(BaseTestCase):
         # random person can request but they are not added yet
         self.login_user("midgepurce", "badlands2020")
         self.go_to_group("USWNT")
+        time.sleep(1)
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        time.sleep(1)
         self.browser.find_by_id("join_group_button", wait_time=5).first.click()
-        self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
+        time.sleep(1) # may be necessary for scroll_tos?
+        self.browser.find_by_id('members_member_count')[0].scroll_to()
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "4 people")
 
         # Christen Press, with role forwards, approves
@@ -1383,11 +1385,16 @@ class DependentFieldTestCase(BaseTestCase):
         # User makes a post
         self.browser.back()
         self.browser.back()
-        self.browser.find_by_id('add_post_button').first.click()
+        self.browser.find_by_id('add_post_button', wait_time=5).first.click()
+        time.sleep(3)  # this seems to be the important sleep
         self.browser.fill('post_title', 'I have an idea')
+        time.sleep(.5)
         self.browser.fill('post_content', "It's a good one")
+        time.sleep(.5)
         self.browser.find_by_id('add_post_save_button', wait_time=5).first.click()
+        time.sleep(1)
         self.assertTrue(self.browser.is_text_present('I have an idea', wait_time=5))
+        # FIXME: This only breaks on headless, not sure what's going on but added lots of sleeps
 
         # Another user makes a comment on the post
         self.login_user("christenpress", "badlands2020")

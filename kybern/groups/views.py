@@ -8,10 +8,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 
-from concord.actions.utils import Client, Changes, get_all_dependent_fields
 from concord.actions.models import TemplateModel
 from concord.resources.models import Comment, SimpleList, CommentCatcher
 from concord.permission_resources.models import PermissionsItem
+from concord.utils.lookups import get_all_dependent_fields
+from concord.utils.helpers import Client, Changes
 
 from accounts.models import User
 from .models import Group, Forum, Post
@@ -35,21 +36,16 @@ def get_model(model_name):
             pass
 
 
-readable_log_dict = {
-    "action did not meet any permission criteria": "You do not have permission to take this action."
-}
-
-
 def make_action_errors_readable(action):
     """If needed, gets or creates both a developer-friendly (detailed) log and a user-friendly log."""
 
     if action.status in ["accepted", "implemented"]:  # should be approved, but do we want accepted/approved here at all?
-        return "Your action has been implemented.", action.resolution.log     # unlikely to be displayed/accessed
+        return "Your action has been implemented.", action.get_logs()    # unlikely to be displayed/accessed
     if action.status == "waiting":
-        return "This action cannot be completed until a condition is passed.", action.resolution.log
+        return "This action cannot be completed until a condition is passed.", action.get_logs()
     if action.status == "rejected":
-        return "You do not have permission to take this action", action.resolution.log
-    return readable_log_dict.get(action.resolution.log, "We're sorry, there was an error"), action.resolution.log
+        return "You do not have permission to take this action", action.get_logs()
+    return "We're sorry, there was an error", action.get_logs()
 
 
 def process_action(action):
@@ -57,7 +53,7 @@ def process_action(action):
 
     if action.status == "implemented":
         action_verb = ""
-        follow_up = "They did so because they have the permission %s." % action.resolution.approved_through
+        follow_up = f"They did so because they have the permission {action.approved_through()}."
     else:
         action_verb = "tried to "
         follow_up = ""
@@ -83,10 +79,10 @@ def process_action(action):
         "actor": action.actor.username,
         "actor_pk": action.actor.pk,
         "status": action.status,
-        "resolution_passed_by": action.resolution.approved_through,
+        "resolution_passed_by": action.approved_through(),
         "display": action_string,
         "is_template": action.change.get_change_type() == Changes().Actions.ApplyTemplate,
-        "template_description": action.resolution.template_info,
+        "template_description": action.get_template_info(),
         "has_condition": {
             "exists": True if conditions else False,
             "conditions": [{"pk": condition.pk, "type": condition.__class__.__name__,
@@ -127,7 +123,7 @@ def get_multiple_action_dicts(actions):
     for action in actions:
         if action.status != "implemented":
             action_status = "error"
-            action_log += action.resolution.log if action.resolution.log else ""
+            action_log += action.get_logs() if action.get_logs() else ""
     # individual action data
     action_dicts_list = []
     for action in actions:
@@ -285,7 +281,7 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
             for permission in settable_permissions:
                 context["permission_options"][model_string].append({
                     "value": permission.get_change_type(),
-                    "text": permission.description,
+                    "text": permission.change_description,
                     "group": permission.section
                 })
 
