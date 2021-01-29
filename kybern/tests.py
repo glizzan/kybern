@@ -1007,9 +1007,11 @@ class MembershipTestCase(BaseTestCase):
         # random person can join
         self.login_user("midgepurce", "badlands2020")
         self.go_to_group("USWNT")
+        time.sleep(.5)
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        time.sleep(.5)
         self.browser.find_by_id("join_group_button", wait_time=5).first.click()
-        time.sleep(.5)  # needs a moment to query backend and update
+        time.sleep(1)  # needs a moment to query backend and update
 
         # we should now have 5 members, not 4
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()

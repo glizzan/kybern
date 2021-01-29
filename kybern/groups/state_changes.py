@@ -14,18 +14,9 @@ class ChangeGroupDescriptionStateChange(BaseStateChange):
     change_description = "Change group description"
     preposition = "for"
     section = "Community"
+    allowable_targets = [Group]
+
     group_description = field_utils.CharField(label="Group description", required=True)
-
-    def __init__(self, group_description):
-        self.group_description = group_description
-
-    @classmethod
-    def get_allowable_targets(cls):
-        return [Group]
-
-    @classmethod
-    def get_settable_classes(cls):
-        return [Group]
 
     def description_present_tense(self):
         return f"change description of group to {self.group_description}"
@@ -49,22 +40,12 @@ class AddForumStateChange(BaseStateChange):
     preposition = "on"
     section = "Forum"
     input_target = Forum   # is this vestigial?
+    allowable_targets = ["all_community_models"]
+    settable_classes = ["all_community_models", Forum]
 
     #fields
     name = field_utils.CharField(label="Name of forum", required=True)
-    description = field_utils.CharField(label="Forum description")
-
-    def __init__(self, *, name, description=None):
-        self.name = name
-        self.description = description if description else ""
-
-    @classmethod
-    def get_allowable_targets(cls):
-        return cls.get_community_models()
-
-    @classmethod
-    def get_settable_classes(cls):
-        return cls.get_community_models() + [Forum]
+    description = field_utils.CharField(label="Forum description", null_value="")
 
     def description_present_tense(self):
         return f"add forum {self.name}"
@@ -82,20 +63,11 @@ class EditForumStateChange(BaseStateChange):
     change_description = "Edit a forum"
     preposition = "in"
     section = "Forum"
+    allowable_targets = [Forum]
+    settable_classes = ["all_community_models", Forum]
+
     name = field_utils.CharField(label="Name of forum")
     description = field_utils.CharField(label="Forum description")
-
-    def __init__(self, *, name=None, description=None):
-        self.name = name
-        self.description = description
-
-    @classmethod
-    def get_allowable_targets(cls):
-        return [Forum]
-
-    @classmethod
-    def get_settable_classes(cls):
-        return cls.get_community_models() + [Forum]
 
     def description_present_tense(self):
         return "edit forum"
@@ -122,14 +94,8 @@ class DeleteForumStateChange(BaseStateChange):
     change_description = "Delete a forum"
     preposition = "in"
     section = "Forum"
-
-    @classmethod
-    def get_allowable_targets(cls):
-        return [Forum]
-
-    @classmethod
-    def get_settable_classes(cls):
-        return cls.get_community_models() + [Forum]
+    allowable_targets = [Forum]
+    settable_classes = ["all_community_models", Forum]
 
     def description_present_tense(self):
         return "remove forum"
@@ -161,22 +127,12 @@ class AddPostStateChange(BaseStateChange):
     change_description = "Add a post"
     section = "Forum"
     input_target = Post
+    allowable_targets = [Forum]
+    settable_classes = ["all_community_models", Forum]
 
     # Fields
     title = field_utils.CharField(label="Title", required=True)
     content = field_utils.CharField(label="Content", required=True)
-
-    def __init__(self, *, title, content):
-        self.title = title
-        self.content = content
-
-    @classmethod
-    def get_allowable_targets(cls):
-        return [Forum]
-
-    @classmethod
-    def get_settable_classes(cls):
-        return cls.get_community_models() + [Forum]
 
     def description_present_tense(self):
         return f"add post with title {self.title}"
@@ -197,23 +153,12 @@ class EditPostStateChange(BaseStateChange):
     section = "Forum"
     preposition = "in"
     context_keys = ["forum", "post"]
+    allowable_targets = [Post]
+    settable_classes = ["all_community_models", Forum, Post]
 
     title = field_utils.CharField(label="Title")
     content = field_utils.CharField(label="Content")
-    author_only = field_utils.BooleanField(label="Only allow author to do this")
-
-    def __init__(self, *, title=None, content=None, author_only=False):
-        self.title = title
-        self.content = content
-        self.author_only = author_only
-
-    @classmethod
-    def get_allowable_targets(cls):
-        return [Post]
-
-    @classmethod
-    def get_settable_classes(cls):
-        return cls.get_community_models() + [Forum, Post]
+    author_only = field_utils.BooleanField(label="Only allow author to do this", null_value=False)
 
     @classmethod
     def get_configurable_fields(cls):
@@ -271,18 +216,10 @@ class DeletePostStateChange(BaseStateChange):
     preposition = "from"
     section = "Forum"
     context_keys = ["forum", "post"]
-    author_only = field_utils.BooleanField(label="Only allow author to do this")
+    allowable_targets = [Post]
+    settable_classes = ["all_community_models", Forum, Post]
 
-    def __init__(self, *, author_only=False):
-        self.author_only = author_only
-
-    @classmethod
-    def get_allowable_targets(cls):
-        return [Post]
-
-    @classmethod
-    def get_settable_classes(cls):
-        return cls.get_community_models() + [Forum, Post]
+    author_only = field_utils.BooleanField(label="Only allow author to do this", null_value=False)
 
     @classmethod
     def get_configurable_fields(cls):
