@@ -828,14 +828,14 @@ class ForumsTestCase(BaseTestCase):
         self.assertCountEqual(permissions, ['those with role members have permission to add comment',
                                             'those with role members have permission to add a post'])
         self.browser.find_by_id('add_permission_button').first.click()
-        self.select_from_multiselect("Edit a forum")
+        self.select_from_multiselect("Edit forum")
         time.sleep(.25)
         element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
         self.browser.find_by_id('save_permission_button').first.click()
         time.sleep(.25)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
-        self.assertCountEqual(permissions, ['those with role forwards have permission to edit a forum',
+        self.assertCountEqual(permissions, ['those with role forwards have permission to edit forum',
                                             'those with role members have permission to add comment',
                                             'those with role members have permission to add a post'])
 
@@ -1002,7 +1002,7 @@ class MembershipTestCase(BaseTestCase):
         # check template was applied
         permission_display = self.browser.find_by_css("#add_member_permissions * .permission-display", wait_time=5)
         self.assertEquals([item.text for item in permission_display],
-            ["anyone has permission to add members to community, but a user can only add themselves"])
+            ["anyone has permission to add members to community, but only if the user is adding themselves"])
 
         # random person can join
         self.login_user("midgepurce", "badlands2020")
@@ -1100,7 +1100,7 @@ class MembershipTestCase(BaseTestCase):
 
         # check template was applied
         permissions = [item.text for item in self.browser.find_by_css("#add_member_permissions * .permission-display", wait_time=5)]
-        self.assertEquals(permissions, ["anyone has permission to add members to community, but a user can only add themselves"])
+        self.assertEquals(permissions, ["anyone has permission to add members to community, but only if the user is adding themselves"])
         condition = self.browser.find_by_text("on the condition that those with role forwards needs to approve this action")
         self.assertEquals(len(condition), 1)
 
@@ -1328,6 +1328,10 @@ class ListTestCase(BaseTestCase):
 
 class DependentFieldTestCase(BaseTestCase):
 
+    def tearDown(self):
+        time.sleep(3)  # FIXME: give time for db to be torn down, this is really a hack to deal with
+                       # how buggy check_permissions is
+
     def setUp(self):
 
         # Basic setup
@@ -1369,6 +1373,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.find_by_css(".permission-display", wait_time=5)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(len(permissions), 9)
+        time.sleep(.5)
         self.assertTrue(self.browser.is_text_present(
             "anyone has permission to edit comment, but only if the user is the commenter"))
 
@@ -1432,6 +1437,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
         self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
         self.browser.find_by_id('add_permission_button', wait_time=5).first.click()
+        time.sleep(1)
         self.select_from_multiselect("members")
         self.browser.find_by_id('save_permission_button', wait_time=5).first.click()
 
@@ -1440,6 +1446,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.find_by_id("new_condition", wait_time=5).first.click()
         self.browser.select("condition_select", "ApprovalCondition")
         self.browser.find_by_css('.add-dependent-field', wait_time=5)[1].click()
+        time.sleep(.25)
         self.browser.find_by_id('depend_on_model_action', wait_time=5).first.click()
         self.browser.select('dependent-field-select', 'member_pk_list')
         self.browser.find_by_id('save-dependent-field', wait_time=5).first.click()

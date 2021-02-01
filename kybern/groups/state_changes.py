@@ -11,18 +11,18 @@ from .models import Group, Forum, Post
 
 
 class ChangeGroupDescriptionStateChange(BaseStateChange):
-    change_description = "Change group description"
-    preposition = "for"
+
+    descriptive_text = {
+        "verb": "change",
+        "default_string": "description of group",
+        "detail_string": "description of group to {group_description}",
+        "preposition": "for"
+    }
+
     section = "Community"
     allowable_targets = [Group]
 
     group_description = field_utils.CharField(label="Group description", required=True)
-
-    def description_present_tense(self):
-        return f"change description of group to {self.group_description}"
-
-    def description_past_tense(self):
-        return f"changed description of group to {self.group_description}"
 
     def implement(self, actor, target, action):
         target.group_description = self.group_description
@@ -36,8 +36,14 @@ class ChangeGroupDescriptionStateChange(BaseStateChange):
 
 
 class AddForumStateChange(BaseStateChange):
-    change_description = "Create a forum"
-    preposition = "on"
+
+    descriptive_text = {
+        "verb": "add",
+        "default_string": "a forum",
+        "detail_string": "a forum '{name}'",
+        "preposition": "on"
+    }
+
     section = "Forum"
     input_target = Forum   # is this vestigial?
     allowable_targets = ["all_community_models"]
@@ -47,12 +53,6 @@ class AddForumStateChange(BaseStateChange):
     name = field_utils.CharField(label="Name of forum", required=True)
     description = field_utils.CharField(label="Forum description", null_value="")
 
-    def description_present_tense(self):
-        return f"add forum {self.name}"
-
-    def description_past_tense(self):
-        return f"added forum {self.name}"
-
     def implement(self, actor, target, action):
         forum = Forum.objects.create(name=self.name, description=self.description, owner=target.get_owner())
         self.set_default_permissions(actor, forum)
@@ -60,20 +60,19 @@ class AddForumStateChange(BaseStateChange):
 
 
 class EditForumStateChange(BaseStateChange):
-    change_description = "Edit a forum"
-    preposition = "in"
+
+    descriptive_text = {
+        "verb": "edit",
+        "default_string": "forum",
+        "preposition": "in"
+    }
+
     section = "Forum"
     allowable_targets = [Forum]
     settable_classes = ["all_community_models", Forum]
 
     name = field_utils.CharField(label="Name of forum")
     description = field_utils.CharField(label="Forum description")
-
-    def description_present_tense(self):
-        return "edit forum"
-
-    def description_past_tense(self):
-        return "edited forum"
 
     def validate(self, actor, target):
         if not super().validate(actor=actor, target=target):
@@ -91,17 +90,16 @@ class EditForumStateChange(BaseStateChange):
 
 
 class DeleteForumStateChange(BaseStateChange):
-    change_description = "Delete a forum"
-    preposition = "in"
+
+    descriptive_text = {
+        "verb": "delete",
+        "default_string": "a forum",
+        "preposition": "in"
+    }
+
     section = "Forum"
     allowable_targets = [Forum]
     settable_classes = ["all_community_models", Forum]
-
-    def description_present_tense(self):
-        return "remove forum"
-
-    def description_past_tense(self):
-        return "removed forum"
 
     def validate(self, actor, target):
         if not super().validate(actor=actor, target=target):
@@ -124,7 +122,13 @@ class DeleteForumStateChange(BaseStateChange):
 
 
 class AddPostStateChange(BaseStateChange):
-    change_description = "Add a post"
+
+    descriptive_text = {
+        "verb": "add",
+        "default_string": "a post",
+        "detail_string": "a post with title '{title}'"
+    }
+
     section = "Forum"
     input_target = Post
     allowable_targets = [Forum]
@@ -133,12 +137,6 @@ class AddPostStateChange(BaseStateChange):
     # Fields
     title = field_utils.CharField(label="Title", required=True)
     content = field_utils.CharField(label="Content", required=True)
-
-    def description_present_tense(self):
-        return f"add post with title {self.title}"
-
-    def description_past_tense(self):
-        return f"added post with title {self.title}"
 
     def implement(self, actor, target, action):
         post = Post.objects.create(
@@ -149,9 +147,15 @@ class AddPostStateChange(BaseStateChange):
 
 
 class EditPostStateChange(BaseStateChange):
-    change_description = "Edit a post"
+
+    descriptive_text = {
+        "verb": "edit",
+        "default_string": "a post",
+        "configurations": [("author_only", "if the user is the post's author")],
+        "preposition": "in"
+    }
+
     section = "Forum"
-    preposition = "in"
     context_keys = ["forum", "post"]
     allowable_targets = [Post]
     settable_classes = ["all_community_models", Forum, Post]
@@ -163,12 +167,6 @@ class EditPostStateChange(BaseStateChange):
     @classmethod
     def get_configurable_fields(cls):
         return {"author_only": {"display": "Only allow author to edit post", "type": "BooleanField"}}
-
-    @classmethod
-    def get_configured_field_text(cls, configuration):
-        if "author_only" in configuration and configuration['author_only']:
-            return ", but only if the user is the post's author"
-        return ""
 
     @classmethod
     def check_configuration_is_valid(cls, configuration):
@@ -190,12 +188,6 @@ class EditPostStateChange(BaseStateChange):
         """Returns the forum and the post object."""
         return {"post": action.target, "forum": action.target.forum}
 
-    def description_present_tense(self):
-        return "edit post"
-
-    def description_past_tense(self):
-        return "edited post"
-
     def validate(self, actor, target):
         if not super().validate(actor=actor, target=target):
             return False
@@ -212,8 +204,14 @@ class EditPostStateChange(BaseStateChange):
 
 
 class DeletePostStateChange(BaseStateChange):
-    change_description = "Delete a post"
-    preposition = "from"
+
+    descriptive_text = {
+        "verb": "delete",
+        "default_string": "a post",
+        "configurations": [("author_only", "if the user is the post's author")],
+        "preposition": "from"
+    }
+
     section = "Forum"
     context_keys = ["forum", "post"]
     allowable_targets = [Post]
@@ -224,12 +222,6 @@ class DeletePostStateChange(BaseStateChange):
     @classmethod
     def get_configurable_fields(cls):
         return {"author_only": {"display": "Only allow author to edit post", "type": "BooleanField"}}
-
-    @classmethod
-    def get_configured_field_text(cls, configuration):
-        if "author_only" in configuration and configuration['author_only']:
-            return ", but only if the user is the post's author"
-        return ""
 
     @classmethod
     def check_configuration_is_valid(cls, configuration):
@@ -250,12 +242,6 @@ class DeletePostStateChange(BaseStateChange):
     def get_context_instances(self, action):
         """Returns the forum and the post object."""
         return {"post": action.target, "forum": action.target.forum}
-
-    def description_present_tense(self):
-        return "remove post"
-
-    def description_past_tense(self):
-        return "removed post"
 
     def implement(self, actor, target, action):
         pk = target.pk

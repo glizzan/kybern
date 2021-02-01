@@ -144,6 +144,7 @@ def serialize_existing_permission_for_vue(permission, pk_as_key=True):
 
     permission_dict = {
         "name": permission.change_display_string(), "display": permission.display_string(),
+        "change_name": permission.change_name(),
         "change_type": permission.change_type, "actors": permission.get_actors(),
         "roles": permission.get_roles(), "anyone": permission.anyone,
         "fields": permission.get_configuration(), "pk": permission.pk,
@@ -281,7 +282,7 @@ class GroupDetailView(LoginRequiredMixin, generic.DetailView):
             for permission in settable_permissions:
                 context["permission_options"][model_string].append({
                     "value": permission.get_change_type(),
-                    "text": permission.change_description,
+                    "text": permission.change_description(),
                     "group": permission.section
                 })
 
