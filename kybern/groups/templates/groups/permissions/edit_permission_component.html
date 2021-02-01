@@ -19,7 +19,7 @@
                     <span>on the condition that [[ permission.condition.how_to_pass_overall ]]</span>
                     <router-link v-if=user_permissions.remove_permission_condition
                         :to="{name: 'conditions', params: {conditioned_on: permission.pk, dependency_scope: item_model}}">
-                        <span class="badge badge-secondary ml-1 edit-condition" :class="css_name(permission.name)">🖉</span>
+                        <span class="badge badge-secondary ml-1 edit-condition" :class="css_name(permission.change_name)">🖉</span>
                     </router-link>
                 </span>
                 <span v-else :id="'condition_' + pair_element_id">
