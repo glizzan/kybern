@@ -9,7 +9,7 @@
                 <span class="float-left">Roles</span>
 
                 <span class="float-right">
-                    <b-button v-if="user_permissions.add_role" class="btn-sm"
+                    <b-button v-if="user_permissions.add_role_to_community" class="btn-sm"
                         v-b-modal.add_role_modal id="add_role_button">add a role</b-button>
 
                     <router-link v-if="user_permissions.apply_template"
@@ -89,7 +89,7 @@
             }
         },
         created () {
-            this.checkPermissions({permissions: {"add_role": null, "apply_template": null}})
+            this.checkPermissions({permissions: {"add_role_to_community": null, "apply_template": null}})
             .catch(error => {  this.error_message = error; console.log(error) })
         },
         computed: {

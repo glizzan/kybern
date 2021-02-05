@@ -19,31 +19,31 @@ class EmpowerPostersForumTemplate(TemplateLibraryObject):
         # Step 1: add permissions for authors to edit or delete their own posts, and add/edit/delete comments
 
         action_1 = client.PermissionResource.add_permission(
-            permission_type=Changes().Groups.EditPost, anyone=True, permission_configuration={"author_only": True})
+            change_type=Changes().Groups.EditPost, anyone=True, configuration={"author_only": True})
         action_1.target = "{{context.action.target}}"
 
         action_2 = client.PermissionResource.add_permission(
-            permission_type=Changes().Groups.DeletePost, anyone=True, permission_configuration={"author_only": True})
+            change_type=Changes().Groups.DeletePost, anyone=True, configuration={"author_only": True})
         action_2.target = "{{context.action.target}}"
 
         action_3 = client.PermissionResource.add_permission(
-            permission_type=Changes().Resources.EditComment, anyone=True,
-            permission_configuration={"original_creator_only": True})
+            change_type=Changes().Resources.EditComment, anyone=True,
+            configuration={"original_creator_only": True})
         action_3.target = "{{context.action.target}}"
 
         action_4 = client.PermissionResource.add_permission(
-            permission_type=Changes().Resources.DeleteComment, anyone=True,
-            permission_configuration={"original_creator_only": True})
+            change_type=Changes().Resources.DeleteComment, anyone=True,
+            configuration={"original_creator_only": True})
         action_4.target = "{{context.action.target}}"
 
         action_5 = client.PermissionResource.add_permission(
-            permission_type=Changes().Resources.AddComment, anyone=True,
-            permission_configuration={"original_creator_only": True})
+            change_type=Changes().Resources.AddComment, anyone=True,
+            configuration={"original_creator_only": True})
         action_5.target = "{{context.action.target}}"
 
         # Step 2: give other people ability to add comments if approved by original poster
 
-        action_6 = client.PermissionResource.add_permission(permission_type=Changes().Resources.AddComment, anyone=True)
+        action_6 = client.PermissionResource.add_permission(change_type=Changes().Resources.AddComment, anyone=True)
         action_6.target = "{{context.action.target}}"
 
         permission_data = [
@@ -60,8 +60,8 @@ class EmpowerPostersForumTemplate(TemplateLibraryObject):
         # AND they are approved by original poster
 
         action_8 = client.PermissionResource.add_permission(
-            permission_type=Changes().Resources.EditComment, anyone=True,
-            permission_configuration={"commenter_only": True})
+            change_type=Changes().Resources.EditComment, anyone=True,
+            configuration={"commenter_only": True})
         action_8.target = "{{context.action.target}}"
 
         action_9 = client.Conditional.add_condition(
@@ -69,8 +69,8 @@ class EmpowerPostersForumTemplate(TemplateLibraryObject):
         action_9.target = "{{previous.7.result}}"
 
         action_10 = client.PermissionResource.add_permission(
-            permission_type=Changes().Resources.DeleteComment, anyone=True,
-            permission_configuration={"commenter_only": True})
+            change_type=Changes().Resources.DeleteComment, anyone=True,
+            configuration={"commenter_only": True})
         action_10.target = "{{context.action.target}}"
 
         action_11 = client.Conditional.add_condition(
@@ -96,7 +96,7 @@ class ForumModeratorTemplate(TemplateLibraryObject):
         client = self.get_client()
 
         # Step 1: create moderator role
-        action_1 = client.Community.add_role(role_name="moderators")
+        action_1 = client.Community.add_role_to_community(role_name="moderators")
         action_1.target = "{{context.group}}"
 
         # Step 2: add initial people to role
@@ -106,11 +106,11 @@ class ForumModeratorTemplate(TemplateLibraryObject):
 
         # Step 3: give moderators permission to delete posts
         action_3 = client.PermissionResource.add_permission(
-            permission_type=Changes().Groups.DeletePost, permission_roles=["moderators"])
+            change_type=Changes().Groups.DeletePost, roles=["moderators"])
 
         # Step 4: give moderators permission to delete comments
         action_4 = client.PermissionResource.add_permission(
-            permission_type=Changes().Resources.DeleteComment, permission_roles=["moderators"])
+            change_type=Changes().Resources.DeleteComment, roles=["moderators"])
 
         return [action_1, action_2, action_3, action_4]
 
@@ -132,27 +132,27 @@ class BasicMemberRoleTemplate(TemplateLibraryObject):
 
         # Step 1: template permissions
         action_1 = client.PermissionResource.add_permission(
-            permission_type=Changes().Actions.ApplyTemplate, permission_roles=["members"],
-            permission_configuration={"original_creator_only": True})
+            change_type=Changes().Actions.ApplyTemplate, roles=["members"],
+            configuration={"original_creator_only": True})
 
         # Step 2: comment permissions
         action_2 = client.PermissionResource.add_permission(
-            permission_type=Changes().Resources.AddComment, permission_roles=["members"])
+            change_type=Changes().Resources.AddComment, roles=["members"])
         action_3 = client.PermissionResource.add_permission(
-            permission_type=Changes().Resources.EditComment, permission_roles=["members"],
-            permission_configuration={"commenter_only": True})
+            change_type=Changes().Resources.EditComment, roles=["members"],
+            configuration={"commenter_only": True})
         action_4 = client.PermissionResource.add_permission(
-            permission_type=Changes().Resources.DeleteComment, permission_roles=["members"],
-            permission_configuration={"commenter_only": True})
+            change_type=Changes().Resources.DeleteComment, roles=["members"],
+            configuration={"commenter_only": True})
 
         # Step 3: list permissions
         action_5 = client.PermissionResource.add_permission(
-            permission_type=Changes().Resources.AddList, permission_roles=["members"])
+            change_type=Changes().Resources.AddList, roles=["members"])
 
         # Step 4: forum & post permissions
         action_6 = client.PermissionResource.add_permission(
-            permission_type=Changes().Groups.AddForum, permission_roles=["members"])
+            change_type=Changes().Groups.AddForum, roles=["members"])
         action_7 = client.PermissionResource.add_permission(
-            permission_type=Changes().Groups.AddPost, permission_roles=["members"])
+            change_type=Changes().Groups.AddPost, roles=["members"])
 
         return [action_1, action_2, action_3, action_4, action_5, action_6, action_7]

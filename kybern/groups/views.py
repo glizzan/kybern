@@ -7,6 +7,7 @@ from django.apps import apps
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
 
 from concord.actions.models import TemplateModel
 from concord.resources.models import Comment, SimpleList, CommentCatcher
@@ -355,7 +356,7 @@ def create_group(request):
     # add description - need to do this separately as create_community is a Concord method that doesn't know about the
     # Group description field
     client.Community.set_target(community)
-    client.Community.change_group_description(new_description=group_description)
+    client.Community.change_group_description(group_description=group_description)
 
     return JsonResponse({"group_pk": community.pk})
 
@@ -371,7 +372,7 @@ def change_group_name(request):
     target = client.Community.get_community(community_pk=group_pk)
     client.Community.set_target(target=target)
 
-    action, result = client.Community.change_name(new_name=new_name)
+    action, result = client.Community.change_name_of_community(name=new_name)
     action_dict = get_action_dict(action)
     action_dict["group_name"] = new_name
     return JsonResponse(action_dict)
@@ -382,15 +383,15 @@ def change_group_description(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
     group_pk = request_data.get("group_pk")
-    new_description = request_data.get("new_description")
+    group_description = request_data.get("group_description")
 
     client = Client(actor=request.user)
     target = client.Community.get_community(community_pk=group_pk)
     client.Community.set_target(target=target)
 
-    action, result = client.Community.change_group_description(new_description=new_description)
+    action, result = client.Community.change_group_description(group_description=group_description)
     action_dict = get_action_dict(action)
-    action_dict["group_description"] = new_description
+    action_dict["group_description"] = group_description
     return JsonResponse(action_dict)
 
 
@@ -435,7 +436,7 @@ def add_forum(request, target):
     name = request_data.get("name")
     description = request_data.get("description", None)
 
-    action, result = client.Forum.create_forum(name=name, description=description)
+    action, result = client.Forum.add_forum(name=name, description=description)
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
@@ -520,7 +521,7 @@ def add_post(request, target):
     forum = client.Forum.get_forum_given_pk(forum_pk)
     client.Forum.set_target(target=forum)
 
-    action, result = client.Forum.add_post(title, content)
+    action, result = client.Forum.add_post(title=title, content=content)
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
@@ -540,7 +541,7 @@ def edit_post(request, target):
     post = client.Forum.get_post_given_pk(pk)
     client.Forum.set_target(target=post)
 
-    action, result = client.Forum.edit_post(title, content)
+    action, result = client.Forum.edit_post(title=title, content=content)
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
@@ -579,7 +580,7 @@ def add_role(request, target):
     target = client.Community.get_community(community_pk=target)
     client.update_target_on_all(target=target)
 
-    action, result = client.Community.add_role(role_name=request_data['role_name'])
+    action, result = client.Community.add_role_to_community(role_name=request_data['role_name'])
 
     return JsonResponse(get_action_dict(action))
 
@@ -593,7 +594,7 @@ def remove_role(request, target):
     target = client.Community.get_community(community_pk=target)
     client.update_target_on_all(target=target)
 
-    action, result = client.Community.remove_role(role_name=request_data['role_name'])
+    action, result = client.Community.remove_role_from_community(role_name=request_data['role_name'])
 
     return JsonResponse(get_action_dict(action))
 
@@ -607,7 +608,7 @@ def add_members(request, target):
     target = client.Community.get_community(community_pk=target)
     client.update_target_on_all(target=target)
 
-    action, result = client.Community.add_members(member_pk_list=request_data["user_pks"])
+    action, result = client.Community.add_members_to_community(member_pk_list=request_data["user_pks"])
 
     return JsonResponse(get_action_dict(action))
 
@@ -621,7 +622,7 @@ def remove_members(request, target):
     target = client.Community.get_community(community_pk=target)
     client.update_target_on_all(target=target)
 
-    action, result = client.Community.remove_members(request_data['user_pks'])
+    action, result = client.Community.remove_members_from_community(member_pk_list=request_data['user_pks'])
 
     return JsonResponse(get_action_dict(action))
 
@@ -665,6 +666,7 @@ def remove_people_from_role(request, target):
 ####################################
 
 
+@transaction.non_atomic_requests
 def get_permissions_given_role(actor, target, role_name):
 
     client = Client(actor=actor, target=target)
@@ -679,6 +681,7 @@ def get_permissions_given_role(actor, target, role_name):
     return permission_pks, permissions
 
 
+@transaction.non_atomic_requests
 @login_required
 def get_data_for_role(request, target):
 
@@ -715,8 +718,8 @@ def add_permission(request, target, permission_type, item_or_role, permission_ac
     client = Client(actor=request.user, target=target)
 
     action, result = client.PermissionResource.add_permission(
-        permission_type=permission_type, permission_actors=permission_actors,
-        permission_roles=permission_roles, permission_configuration=permission_configuration
+        change_type=permission_type, actors=permission_actors,
+        roles=permission_roles, configuration=permission_configuration
     )
 
     action_dict = get_action_dict(action)
@@ -937,6 +940,7 @@ def update_consensus_condition(request):
     return JsonResponse(get_action_dict(action))
 
 
+@transaction.non_atomic_requests
 @login_required
 def get_conditional_data(request):
 
@@ -1055,6 +1059,7 @@ def get_permission(request):
     return JsonResponse({"permission_data": serialize_existing_permission_for_vue(permission, pk_as_key=False)})
 
 
+@transaction.non_atomic_requests
 @login_required
 def get_permissions(request):
 
@@ -1339,7 +1344,7 @@ def add_row(request, target, list_pk, row_content, index=None):
     target = client.List.get_list(pk=list_pk)
     client.List.set_target(target=target)
 
-    action, result = client.List.add_row(row_content=row_content, index=index)
+    action, result = client.List.add_row_to_list(row_content=row_content, index=index)
 
     return JsonResponse(get_action_dict(action))
 
@@ -1352,7 +1357,7 @@ def edit_row(request, target, list_pk, row_content, index):
     target = client.List.get_list(pk=list_pk)
     client.List.set_target(target=target)
 
-    action, result = client.List.edit_row(row_content=row_content, index=index)
+    action, result = client.List.edit_row_in_list(row_content=row_content, index=index)
 
     return JsonResponse(get_action_dict(action))
 
@@ -1365,7 +1370,7 @@ def move_row(request, target, list_pk, old_index, new_index):
     target = client.List.get_list(pk=list_pk)
     client.List.set_target(target=target)
 
-    action, result = client.List.move_row(old_index=old_index, new_index=new_index)
+    action, result = client.List.move_row_in_list(old_index=old_index, new_index=new_index)
 
     return JsonResponse(get_action_dict(action))
 
@@ -1378,27 +1383,33 @@ def delete_row(request, target, list_pk, index):
     target = client.List.get_list(pk=list_pk)
     client.List.set_target(target=target)
 
-    action, result = client.List.delete_row(index=index)
+    action, result = client.List.delete_row_in_list(index=index)
 
     return JsonResponse(get_action_dict(action))
 
 
-##############################
-### Permission Check Views ###
-##############################
+######################################################################
+### Check Permissions Logic (FIXME: desperately needs refactoring) ###
+######################################################################
 
 
-def check_individual_permission(client, actor, permission_name, params):
-    """Function which matches a permission name to the actual backend call to be performed,
-    returns a lambda function to be executed by caller."""
+permission_aliases = {
+    "join_group": "add_members_to_community",
+    "leave_group": "remove_members_from_community",
+    "add_permission_condition": "add_condition",  # just use this
+    "remove_permission_condition": "remove_condition"  # just use this
+}
 
-    group_members = client.Community.target.roles.get_users_given_role("members")
-    test_user = User.objects.first()
-    if not test_user:
-        raise ValueError("WWWWWWWWWTTTTTTTTTTTTTTTFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
-    if test_user.pk == actor.pk:
-        test_user = User.objects.last()
 
+def update_leaders(client, pass_in_client, params, methods_to_try):
+    for new_name in methods_to_try:
+        result = client.PermissionResource.has_permission(pass_in_client, new_name, params)
+        if result:
+            return True
+    return False
+
+
+def get_alt_target(client, params):
     # create new client with new target if target is not community
     alt_target = params.pop("alt_target", None) if params else None
     if alt_target:
@@ -1406,161 +1417,11 @@ def check_individual_permission(client, actor, permission_name, params):
         if model == "action":
             """Action is not a PermissionedModel but rarely gets set as target (through
             comments mostly), we automatically give people access to Action comments"""
-            return True
-        target = client.Action.get_object_given_model_and_pk(model, int(pk))
-        client.update_target_on_all(target)
-
-    # Membership
-    if permission_name == "add_members":
-        return client.PermissionResource.has_permission(
-            client.Community, "add_members", {"member_pk_list": [test_user.pk]})
-    if permission_name == "remove_members":
-        return client.PermissionResource.has_permission(
-            client.Community, "remove_members", {"member_pk_list": [test_user.pk]})
-    if permission_name == "join_group":
-        group_members = client.Community.target.roles.get_users_given_role("members")
-        return False if actor.pk in group_members else client.PermissionResource.has_permission(
-            client.Community, "add_members", {"member_pk_list": [actor.pk]})
-    if permission_name == "leave_group":
-        group_members = client.Community.target.roles.get_users_given_role("members")
-        return True if actor.pk in group_members else client.PermissionResource.has_permission(
-            client.Community, "remove_members", {"member_pk_list": [actor.pk]})
-    # Forums & Posts
-    if permission_name == "add_forum":
-        return client.PermissionResource.has_permission(
-            client.Forum, "create_forum", {'name': 'ABC', 'description': 'DEF'})
-    if permission_name == "edit_forum":
-        return client.PermissionResource.has_permission(
-            client.Forum, "edit_forum", {'name': 'ABC', 'description': 'DEF'})
-    if permission_name == "delete_forum":
-        return client.PermissionResource.has_permission(client.Forum, "delete_forum", {})
-    if permission_name == "add_post":
-        return client.PermissionResource.has_permission(
-            client.Forum, "add_post", {'title': 'ABC', 'content': 'DEF'})
-    if permission_name == "edit_post":
-        return client.PermissionResource.has_permission(
-            client.Forum, "edit_post", {'title': 'ABC', 'content': 'DEF'})
-    if permission_name == "delete_post":
-        return client.PermissionResource.has_permission(client.Forum, "delete_post", {})
-    # Roles
-    if permission_name == "add_role":
-        return client.PermissionResource.has_permission(client.Community, "add_role", {'role_name': 'ABC'})
-    if permission_name == "add_people_to_role":
-        return client.PermissionResource.has_permission(
-            client.Community, "add_people_to_role", {'role_name': 'ABC', 'people_to_add': [test_user.pk]})
-    if permission_name == "remove_people_from_role":
-        return client.PermissionResource.has_permission(
-            client.Community, "remove_people_from_role", {'role_name': 'ABC', 'people_to_remove': [[test_user.pk]]})
-    # Permissions & Conditions
-    if permission_name == "add_permission":
-        return client.PermissionResource.has_permission(
-            client.PermissionResource, "add_permission",
-            {"permission_type": 'concord.communities.state_changes.AddMembersStateChange', "anyone": True})
-    if permission_name == "remove_permission":
-        return client.PermissionResource.has_permission(
-            client.PermissionResource, "remove_permission", {})
-    if permission_name == "add_actor_to_permission":
-        return client.PermissionResource.has_permission(
-            client.PermissionResource, "add_actor_to_permission", {"actor": str(test_user.pk)})
-    if permission_name == "remove_actor_from_permission":
-        return client.PermissionResource.has_permission(
-            client.PermissionResource, "remove_actor_from_permission", {"actor": str(test_user.pk)})
-    if permission_name == "add_role_to_permission":
-        return client.PermissionResource.has_permission(
-            client.PermissionResource, "add_role_to_permission", {"role_name": "fakerole"})
-    if permission_name == "remove_role_from_permission":
-        return client.PermissionResource.has_permission(
-            client.PermissionResource, "remove_role_from_permission", {"role_name": "fakerole"})
-    if permission_name == "give_anyone_permission":
-        return client.PermissionResource.has_permission(
-            client.PermissionResource, "give_anyone_permission", {})
-    if permission_name == "remove_anyone_from_permission":
-        return client.PermissionResource.has_permission(
-            client.PermissionResource, "remove_anyone_from_permission", {})
-    if permission_name == "change_configuration_of_permission":
-        return client.PermissionResource.has_permission(
-            client.PermissionResource, "change_configuration_of_permission",
-            {"configurable_field_name": "ABC", "configurable_field_value": "DEF"})
-    if permission_name == "add_permission_condition":
-        return client.PermissionResource.has_permission(
-            client.Conditional, "add_condition", {"condition_type": "ApprovalCondition"})
-    if permission_name == "remove_permission_condition":
-        return client.PermissionResource.has_permission(client.Conditional, "remove_condition", {})
-    if permission_name == "add_owner_condition":
-        return client.PermissionResource.has_permission(
-            client.Conditional, "add_condition",
-            {"leadership_type": "owner", "condition_type": "ApprovalCondition"})
-    if permission_name == "remove_owner_condition":
-        return client.PermissionResource.has_permission(
-            client.Conditional, "remove_condition", {"leadership_type": "owner"})
-    if permission_name == "add_governor_condition":
-        return client.PermissionResource.has_permission(
-            client.Conditional, "add_condition",
-            {"leadership_type": "governor", "condition_type": "ApprovalCondition"})
-    if permission_name == "remove_governor_condition":
-        return client.PermissionResource.has_permission(
-            client.Conditional, "remove_condition", {"leadership_type": "governor"})
-    if permission_name == "enable_foundational_permission":
-        return client.PermissionResource.has_permission(client.Action, "enable_foundational_permission", {})
-    if permission_name == "disable_foundational_permission":
-        return client.PermissionResource.has_permission(client.Action, "disable_foundational_permission", {})
-    if permission_name == "enable_governing_permission":
-        return client.PermissionResource.has_permission(client.Action, "enable_governing_permission", {})
-    if permission_name == "disable_governing_permission":
-        return client.PermissionResource.has_permission(client.Action, "disable_governing_permission", {})
-    # leaders
-    if permission_name == "update_owners":
-        if client.PermissionResource.has_permission(client.Community, "add_owner", {"owner_pk": [test_user.pk]}):
-            return True
-        if client.PermissionResource.has_permission(client.Community, "remove_owner", {"owner_pk": [test_user.pk]}):
-            return True
-        if client.PermissionResource.has_permission(client.Community, "add_owner_role", {"owner_role": "ABC"}):
-            return True
-        if client.PermissionResource.has_permission(client.Community, "remove_owner_role", {"owner_role": "ABC"}):
-            return True
-        return False
-    if permission_name == "update_governors":
-        if client.PermissionResource.has_permission(client.Community, "add_governor", {"governor_pk": [test_user.pk]}):
-            return True
-        if client.PermissionResource.has_permission(client.Community, "remove_governor", {"governor_pk": [test_user.pk]}):
-            return True
-        if client.PermissionResource.has_permission(client.Community, "add_governor_role", {"governor_role": "ABC"}):
-            return True
-        if client.PermissionResource.has_permission(client.Community, "remove_governor_role", {"governor_role": "ABC"}):
-            return True
-        return False
-    # templates
-    if permission_name == "apply_template":
-        return client.PermissionResource.has_permission(
-            client.Template, "apply_template", {"template_model_pk": TemplateModel.objects.first().pk})
-    # comments
-    if permission_name == "add_comment":
-        return client.PermissionResource.has_permission(client.Comment, "add_comment", {"text": "ABC"})
-    if permission_name == "edit_comment":
-        return client.PermissionResource.has_permission(client.Comment, "edit_comment", {"text": "DEF"})
-    if permission_name == "delete_comment":
-        return client.PermissionResource.has_permission(client.Comment, "delete_comment", {})
-    # lists
-    if permission_name == "add_list":
-        return client.PermissionResource.has_permission(
-            client.List, "add_list", {"name": "ABC", "configuration": {"content": {"required": True}}})
-    if permission_name == "edit_list":
-        return client.PermissionResource.has_permission(client.List, "edit_list", {"name": "DEF"})
-    if permission_name == "delete_list":
-        return client.PermissionResource.has_permission(client.List, "delete_list", {})
-    if permission_name == "add_row":
-        return client.PermissionResource.has_permission(client.List, "add_row", {"row_content": "ABC"})
-    if permission_name == "edit_row":
-        return client.PermissionResource.has_permission(client.List, "edit_row", {"row_content": "ABC", "index": 0})
-    if permission_name == "move_row":
-        return client.PermissionResource.has_permission(client.List, "move_row", {"old_index": 0, "new_index": 0})
-    if permission_name == "delete_row":
-        return client.PermissionResource.has_permission(client.List, "delete_row", {"index": 0})
-
-    logger.warn(f"no permission {permission_name} found")
-    return False
+            return "action"
+        return client.Action.get_object_given_model_and_pk(model, int(pk))
 
 
+@transaction.non_atomic_requests
 @reformat_input_data
 @login_required
 def check_permissions(request, target, permissions):
@@ -1569,13 +1430,25 @@ def check_permissions(request, target, permissions):
     whether or not the use has the permissions."""
 
     client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=target)
-    client.update_target_on_all(target=target)
+    default_target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=default_target)
 
     permission_dict = {}
     for permission_name, params in permissions.items():
-        client.update_target_on_all(target=target)  # reset target if it was edited for last permission
-        has_permission = check_individual_permission(client, request.user, permission_name, params)
-        permission_dict.update({permission_name: has_permission})
+
+        pass_in_client = Client(actor=request.user, target=default_target)
+
+        alt_target = get_alt_target(client, params)
+        if alt_target == "action":
+            permission_dict.update({permission_name: True})
+            continue
+        if alt_target is not None:
+            pass_in_client.update_target_on_all(alt_target)
+
+        name_to_use = permission_aliases.get(permission_name, permission_name)
+        result = client.PermissionResource.has_permission(pass_in_client, name_to_use, params, exclude_conditional=True)
+        permission_dict.update({permission_name: result})
 
     return JsonResponse({"user_permissions": permission_dict})
+
+
