@@ -14,8 +14,8 @@ class ChangeGroupDescriptionStateChange(BaseStateChange):
 
     descriptive_text = {
         "verb": "change",
-        "default_string": "description of group",
-        "detail_string": "description of group to {group_description}",
+        "default_string": "group description",
+        "detail_string": "group description to {group_description}",
         "preposition": "for"
     }
 
@@ -39,8 +39,8 @@ class AddForumStateChange(BaseStateChange):
 
     descriptive_text = {
         "verb": "add",
-        "default_string": "a forum",
-        "detail_string": "a forum '{name}'",
+        "default_string": "forum",
+        "detail_string": "forum '{name}'",
         "preposition": "on"
     }
 
@@ -93,7 +93,7 @@ class DeleteForumStateChange(BaseStateChange):
 
     descriptive_text = {
         "verb": "delete",
-        "default_string": "a forum",
+        "default_string": "forum",
         "preposition": "in"
     }
 
@@ -125,8 +125,8 @@ class AddPostStateChange(BaseStateChange):
 
     descriptive_text = {
         "verb": "add",
-        "default_string": "a post",
-        "detail_string": "a post with title '{title}'"
+        "default_string": "post",
+        "detail_string": "post with title '{title}'"
     }
 
     section = "Forum"
@@ -150,7 +150,7 @@ class EditPostStateChange(BaseStateChange):
 
     descriptive_text = {
         "verb": "edit",
-        "default_string": "a post",
+        "default_string": "post",
         "configurations": [("author_only", "if the user is the post's author")],
         "preposition": "in"
     }
@@ -207,7 +207,7 @@ class DeletePostStateChange(BaseStateChange):
 
     descriptive_text = {
         "verb": "delete",
-        "default_string": "a post",
+        "default_string": "post",
         "configurations": [("author_only", "if the user is the post's author")],
         "preposition": "from"
     }

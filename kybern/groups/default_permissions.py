@@ -3,9 +3,9 @@ from concord.utils.helpers  import Changes
 
 DEFAULT_PERMISSIONS = {
     "forum": [
-        {"permission_type": Changes().Groups.AddPost,
-         "permission_roles": ["members"]},
-        {"permission_type": Changes().Resources.AddComment,
-         "permission_roles": ["members"]}
+        {"change_type": Changes().Groups.AddPost,
+         "roles": ["members"]},
+        {"change_type": Changes().Resources.AddComment,
+         "roles": ["members"]}
     ]
 }

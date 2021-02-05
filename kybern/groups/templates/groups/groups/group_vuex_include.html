@@ -9,7 +9,7 @@
 {% include 'groups/simplelists/simplelist_vuex_include.html' %}
 
 
-<script type="application/javascript"> 
+<script type="application/javascript">
 
     axios.defaults.xsrfCookieName = 'csrftoken';
     axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
@@ -27,40 +27,40 @@
             templates: TemplateVuexModule,
             simplelists: SimplelistVuexModule
         },
-        state: { 
+        state: {
             group_name: '{{ object.name|escapejs }}',
             group_description: '{{ object.group_description|escapejs }}',
         },
         // getters: { },
-        mutations: { 
+        mutations: {
             UPDATE_GROUP_NAME (state, data) { state.group_name = data.group_name },
             UPDATE_GROUP_DESCRIPTION (state, data) { state.group_description = data.group_description }
         },
-        actions: { 
+        actions: {
 
             // Group info actions
 
-            changeGroupName({ commit, state, dispatch }, payload) { 
-                url = "{% url 'change_group_name' %}"    
+            changeGroupName({ commit, state, dispatch }, payload) {
+                url = "{% url 'change_group_name' %}"
                 params = { group_pk : payload.group_pk, new_name : payload.new_name }
-                implementationCallback = (response) => { 
+                implementationCallback = (response) => {
                     commit('UPDATE_GROUP_NAME', { group_name : response.data.group_name })
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
 
-            changeGroupDescription({ commit, state, dispatch }, payload) { 
-                url = "{% url 'change_group_description' %}"    
-                params = { group_pk : payload.group_pk, new_description : payload.new_description }
-                implementationCallback = (response) => { 
+            changeGroupDescription({ commit, state, dispatch }, payload) {
+                url = "{% url 'change_group_description' %}"
+                params = { group_pk : payload.group_pk, group_description : payload.group_description }
+                implementationCallback = (response) => {
                     commit('UPDATE_GROUP_DESCRIPTION', { group_description : response.data.group_description })
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
-            },            
+            },
 
             // Should possibly be some kind of plugin, since any site requests should go through this
 
-            actionAPIcall({ commit, state, dispatch }, payload) { 
+            actionAPIcall({ commit, state, dispatch }, payload) {
 
                 url = payload.url
                 params = payload.params
@@ -85,11 +85,11 @@
                         throw error_to_throw
                     }
 
-                }).catch(error => { 
+                }).catch(error => {
                     console.log("Error: ", error); throw error })
             },
 
-            getAPIcall({ commit, state, dispatch }, payload) { 
+            getAPIcall({ commit, state, dispatch }, payload) {
             // we might not need this method, since view should be an action, but let's keep it for now
 
 
@@ -97,7 +97,7 @@
                 var params = payload.params
                 var implementationCallback = payload.implementationCallback
 
-                return axios.post(url, params).then(response => { implementationCallback(response) })     
+                return axios.post(url, params).then(response => { implementationCallback(response) })
                 .catch(error => { console.log(error); throw error })
             }
 

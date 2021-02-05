@@ -212,3 +212,6 @@ WEBPACK_LOADER = {
         'IGNORE': [r'.+\.hot-update.js', r'.+\.map']
     }
 }
+
+
+RUN_HEADLESS = True

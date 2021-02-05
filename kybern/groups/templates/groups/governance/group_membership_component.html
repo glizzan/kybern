@@ -49,7 +49,7 @@
 
             <hr >
 
-            <span v-if="user_permissions.add_members">
+            <span v-if="user_permissions.add_members_to_community">
 
                 <span v-if="add_member_button_selected">
                     <vue-multiselect v-model="members_to_add_selected" :options="nonmembersAsOptions" :multiple="true"
@@ -71,7 +71,7 @@
 
             </span>
 
-            <span v-if="user_permissions.remove_members">
+            <span v-if="user_permissions.remove_members_from_community">
 
                 <span v-if="remove_member_button_selected">
                     <vue-multiselect v-model="members_to_remove_selected" :options="groupMembersAsOptions" :multiple="true"
@@ -117,7 +117,7 @@
             }
         },
         created () {
-            this.checkPermissions({permissions: {"add_members": null, "remove_members": null }})
+            this.checkPermissions({permissions: {"add_members_to_community": null, "remove_members_from_community": null }})
                 .catch(error => {  this.error_message = error; console.log(error) })
             this.getPermissionsForItem({ item_id: this.item_id, item_model: this.item_model })
                 .catch(error => {  this.error_message = error; console.log(error) })

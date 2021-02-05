@@ -24,7 +24,7 @@
                     list permissions</b-button>
         </router-link>
 
-        <router-link v-if="user_permissions.add_row"
+        <router-link v-if="user_permissions.add_row_to_list"
                     :to="{ name: 'add-list-row', params: { list_id: list_id, mode: 'create' } }">
                 <b-button variant="outline-info" class="btn-sm" id="add_row_button">
                     add a row</b-button>
@@ -41,17 +41,17 @@
 
                     <b-form inline>
 
-                        <router-link v-if="user_permissions.edit_row" :to="{ name: 'edit-list-row',
+                        <router-link v-if="user_permissions.edit_row_in_list" :to="{ name: 'edit-list-row',
                             params: { list_id: list_id, mode: 'edit', row_index: data.item.index } }"
                             :id="'edit_row_' + data.item.index">
                             <b-button variant="outline-secondary" class="btn-sm mx-1">edit</b-button>
                         </router-link>
 
-                        <b-button v-if="user_permissions.delete_row" variant="outline-secondary"
+                        <b-button v-if="user_permissions.delete_row_in_list" variant="outline-secondary"
                             class="btn-sm mx-1" @click="delete_row(data.item)" :id="'delete_row_' + data.item.index">
                         delete</b-button>
 
-                        <b-button v-if="user_permissions.move_row" variant="outline-secondary"
+                        <b-button v-if="user_permissions.move_row_in_list" variant="outline-secondary"
                             class="btn-sm mx-1" v-b-modal.move_row_modal @click="old_index=data.item.index"
                             :id="'move_row_' + data.item.index">
                         move</b-button>
@@ -106,10 +106,10 @@
                 permissions:
                     { edit_list: {alt_target : alt_target},
                       delete_list: {alt_target : alt_target},
-                      add_row: {alt_target : alt_target},
-                      edit_row: {alt_target : alt_target},
-                      move_row: {alt_target : alt_target},
-                      delete_row: {alt_target : alt_target}}
+                      add_row_to_list: {alt_target : alt_target},
+                      edit_row_in_list: {alt_target : alt_target},
+                      move_row_in_list: {alt_target : alt_target},
+                      delete_row_in_list: {alt_target : alt_target}}
             }).catch(error => {  this.error_message = error; console.log(error) })
         },
         computed: {

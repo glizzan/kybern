@@ -68,7 +68,9 @@ and history -->
             }
         },
         created () {
-            this.checkPermissions({permissions: {"join_group": null, "leave_group": null} })
+            this.checkPermissions({permissions:
+                {join_group: {member_pk_list:[{{ request.user.pk }}]},
+                 leave_group: {member_pk_list:[{{ request.user.pk }}] }}})
         },
         computed: {
             ...Vuex.mapState({

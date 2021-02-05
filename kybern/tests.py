@@ -4,7 +4,9 @@ from splinter import Browser
 from django.conf import settings
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from unittest import skip
 
+from django import db
 from django.contrib.auth.models import User
 from concord.utils.helpers  import Changes, Client
 from groups.models import Forum
@@ -12,9 +14,8 @@ from concord.actions.models import TemplateModel
 
 settings.DEBUG = True
 chrome_options = webdriver.ChromeOptions()
-run_headless = True
 
-if os.environ.get("GITHUB_ACTIONS") or run_headless:
+if os.environ.get("GITHUB_ACTIONS") or settings.RUN_HEADLESS:
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--headless')
     chrome_options.add_argument('--disable-dev-shm-usage')
@@ -28,6 +29,7 @@ class BaseTestCase(StaticLiveServerTestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.browser = Browser('chrome', options=chrome_options)
+        # print("running ", cls.__name__)
 
     @classmethod
     def tearDownClass(cls):
@@ -45,6 +47,9 @@ class BaseTestCase(StaticLiveServerTestCase):
         # Create templates (note that this servces as a test that all templates can be instantiated)
         from django.core.management import call_command
         call_command('update_templates', recreate=True, verbosity=0)
+
+    def tearDown(self):
+        time.sleep(3)  # FIXME: give time for db to be torn down, you can turn this off if you don't mind lots of passing tests with errors printing
 
     def login_user(self, username, password):
         self.browser.visit(self.live_server_url + "/login/")
@@ -190,8 +195,8 @@ class PermissionsTestCase(BaseTestCase):
         self.client = Client(actor=self.actor)
         self.community = self.client.Community.create_community(name="USWNT")
         self.client.update_target_on_all(target=self.community)
-        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()])
-        self.client.Community.add_role(role_name="forwards")
+        self.client.Community.add_members_to_community(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.Community.add_role_to_community(role_name="forwards")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         heath = User.objects.get(username="tobinheath")
@@ -254,7 +259,7 @@ class ActionsTestCase(BaseTestCase):
         self.client = Client(actor=self.actor)
         self.community = self.client.Community.create_community(name="USWNT")
         self.client.update_target_on_all(target=self.community)
-        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.Community.add_members_to_community(member_pk_list=[user.pk for user in User.objects.all()])
 
     def test_taking_action_generates_action(self):
 
@@ -284,8 +289,8 @@ class ActionConditionsTestCase(BaseTestCase):
         self.client = Client(actor=self.actor)
         self.community = self.client.Community.create_community(name="USWNT")
         self.client.update_target_on_all(target=self.community)
-        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()])
-        self.client.Community.add_role(role_name="forwards")
+        self.client.Community.add_members_to_community(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.Community.add_role_to_community(role_name="forwards")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         heath = User.objects.get(username="tobinheath")
@@ -293,7 +298,7 @@ class ActionConditionsTestCase(BaseTestCase):
 
         # Permission setup
         action, self.permission = self.client.PermissionResource.add_permission(
-            permission_type=Changes().Communities.AddRole, permission_roles=["forwards"])
+            change_type=Changes().Communities.AddRole, roles=["forwards"])
 
     def test_adding_condition_to_permission_generates_condition(self):
 
@@ -340,8 +345,8 @@ class ApprovalConditionsTestCase(BaseTestCase):
         self.client = Client(actor=self.actor)
         self.community = self.client.Community.create_community(name="USWNT")
         self.client.update_target_on_all(target=self.community)
-        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()])
-        self.client.Community.add_role(role_name="forwards")
+        self.client.Community.add_members_to_community(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.Community.add_role_to_community(role_name="forwards")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         heath = User.objects.get(username="tobinheath")
@@ -349,7 +354,7 @@ class ApprovalConditionsTestCase(BaseTestCase):
 
         # add permission & condition to permission
         action, self.permission = self.client.PermissionResource.add_permission(
-            permission_type=Changes().Communities.AddRole, permission_roles=["forwards"])
+            change_type=Changes().Communities.AddRole, roles=["forwards"])
         perm_data = [
             {"permission_type": Changes().Conditionals.Approve, "permission_roles": ["forwards"]},
             {"permission_type": Changes().Conditionals.Reject, "permission_roles": ["forwards"]}
@@ -359,7 +364,7 @@ class ApprovalConditionsTestCase(BaseTestCase):
 
         # have person take action that triggers permission/condition
         self.client.Community.set_actor(heath)
-        self.client.Community.add_role(role_name="midfielders")
+        self.client.Community.add_role_to_community(role_name="midfielders")
 
     def test_approve_implements_action(self):
 
@@ -424,8 +429,8 @@ class VotingConditionTestCase(BaseTestCase):
         self.client = Client(actor=self.actor)
         self.community = self.client.Community.create_community(name="USWNT")
         self.client.update_target_on_all(target=self.community)
-        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()])
-        self.client.Community.add_role(role_name="forwards")
+        self.client.Community.add_members_to_community(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.Community.add_role_to_community(role_name="forwards")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         heath = User.objects.get(username="tobinheath")
@@ -433,7 +438,7 @@ class VotingConditionTestCase(BaseTestCase):
 
         # add permission & condition to permission
         action, self.permission = self.client.PermissionResource.add_permission(
-            permission_type=Changes().Communities.AddRole, permission_roles=["forwards"]
+            change_type=Changes().Communities.AddRole, roles=["forwards"]
         )
         perm_data = [{"permission_type": Changes().Conditionals.AddVote, "permission_roles": ["forwards"]}]
         self.client.Conditional.set_target(self.permission)
@@ -441,7 +446,7 @@ class VotingConditionTestCase(BaseTestCase):
 
         # have person take action that triggers permission/condition
         self.client.Community.set_actor(heath)
-        self.client.Community.add_role(role_name="midfielders")
+        self.client.Community.add_role_to_community(role_name="midfielders")
 
     def test_yea_updates_vote_results(self):
 
@@ -513,10 +518,10 @@ class ConsensusConditionTestCase(BaseTestCase):
         self.client = Client(actor=self.actor)
         self.community = self.client.Community.create_community(name="USWNT")
         self.client.update_target_on_all(target=self.community)
-        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()])
-        self.client.Community.add_role(role_name="forwards")
-        self.client.Community.add_role(role_name="defense")
-        self.client.Community.add_role(role_name="captains")
+        self.client.Community.add_members_to_community(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.Community.add_role_to_community(role_name="forwards")
+        self.client.Community.add_role_to_community(role_name="defense")
+        self.client.Community.add_role_to_community(role_name="captains")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         heath = User.objects.get(username="tobinheath")
@@ -533,7 +538,7 @@ class ConsensusConditionTestCase(BaseTestCase):
 
         # set up permission & condition
         action, self.permission = self.client.PermissionResource.add_permission(
-            permission_type=Changes().Communities.AddRole, permission_roles=["defense"]
+            change_type=Changes().Communities.AddRole, roles=["defense"]
         )
         perm_data = [
             {"permission_type": Changes().Conditionals.RespondConsensus,
@@ -566,7 +571,7 @@ class ConsensusConditionTestCase(BaseTestCase):
 
         # set up permission & condition
         action, self.permission = self.client.PermissionResource.add_permission(
-            permission_type=Changes().Communities.AddRole, permission_roles=["defense"]
+            change_type=Changes().Communities.AddRole, roles=["defense"]
         )
         perm_data = [
             {"permission_type": Changes().Conditionals.RespondConsensus,
@@ -645,7 +650,7 @@ class ConsensusConditionTestCase(BaseTestCase):
 
         # set up permission & condition
         action, self.permission = self.client.PermissionResource.add_permission(
-            permission_type=Changes().Communities.AddRole, permission_roles=["defense"]
+            change_type=Changes().Communities.AddRole, roles=["defense"]
         )
         perm_data = [
             {"permission_type": Changes().Conditionals.RespondConsensus,
@@ -711,8 +716,8 @@ class ForumsTestCase(BaseTestCase):
         self.client = Client(actor=self.actor)
         self.community = self.client.Community.create_community(name="USWNT")
         self.client.update_target_on_all(target=self.community)
-        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()])
-        self.client.Community.add_role(role_name="forwards")
+        self.client.Community.add_members_to_community(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.Community.add_role_to_community(role_name="forwards")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         heath = User.objects.get(username="tobinheath")
@@ -742,9 +747,9 @@ class ForumsTestCase(BaseTestCase):
         self.browser.find_by_css(".close").first.click()  # close modal
 
         # Edit forum
-        time.sleep(.25)
-        self.browser.find_by_css(".forum-description").last.click()
-        self.browser.find_by_id("edit_forum_button").first.click()
+        self.browser.reload()
+        self.browser.find_by_css(".forum-description", wait_time=5).last.click()
+        self.browser.find_by_id("edit_forum_button", wait_time=5).last.click()
         self.browser.fill('forum_description', 'A place to make strategy')
         self.browser.find_by_id('edit_forum_save_button').first.click()
         self.browser.find_by_css(".close").first.click()  # close modal
@@ -821,23 +826,24 @@ class ForumsTestCase(BaseTestCase):
         self.browser.find_by_css(".close").first.click()  # close modal
         self.browser.find_by_css(".forum-description").first.click()
         time.sleep(.25)
+        time.sleep(3)
 
         # Add permissions - we start with only default permissions, but then have one more
-        self.browser.find_by_id("forum_permissions_button").first.click()
-        permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
+        self.browser.find_by_id("forum_permissions_button", wait_time=5).first.click()
+        permissions = [item.text for item in self.browser.find_by_css(".permission-display", wait_time=5)]
         self.assertCountEqual(permissions, ['those with role members have permission to add comment',
-                                            'those with role members have permission to add a post'])
+                                            'those with role members have permission to add post'])
         self.browser.find_by_id('add_permission_button').first.click()
         self.select_from_multiselect("Edit forum")
         time.sleep(.25)
         element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
         self.browser.find_by_id('save_permission_button').first.click()
-        time.sleep(.25)
+        time.sleep(1.5)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertCountEqual(permissions, ['those with role forwards have permission to edit forum',
                                             'those with role members have permission to add comment',
-                                            'those with role members have permission to add a post'])
+                                            'those with role members have permission to add post'])
 
 
 class TemplatesTestCase(BaseTestCase):
@@ -850,8 +856,8 @@ class TemplatesTestCase(BaseTestCase):
         self.client = Client(actor=self.actor)
         self.community = self.client.Community.create_community(name="USWNT")
         self.client.update_target_on_all(target=self.community)
-        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()])
-        self.client.Community.add_role(role_name="forwards")
+        self.client.Community.add_members_to_community(member_pk_list=[user.pk for user in User.objects.all()])
+        self.client.Community.add_role_to_community(role_name="forwards")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         heath = User.objects.get(username="tobinheath")
@@ -971,8 +977,8 @@ class MembershipTestCase(BaseTestCase):
         self.client = Client(actor=self.actor)
         self.community = self.client.Community.create_community(name="USWNT")
         self.client.update_target_on_all(target=self.community)
-        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()[:4]])
-        self.client.Community.add_role(role_name="forwards")
+        self.client.Community.add_members_to_community(member_pk_list=[user.pk for user in User.objects.all()[:4]])
+        self.client.Community.add_role_to_community(role_name="forwards")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         heath = User.objects.get(username="tobinheath")
@@ -1087,6 +1093,7 @@ class MembershipTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        time.sleep(1)
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "4 people")
 
@@ -1109,7 +1116,6 @@ class MembershipTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         time.sleep(1)
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
-        time.sleep(1)
         self.browser.find_by_id("join_group_button", wait_time=5).first.click()
         time.sleep(1) # may be necessary for scroll_tos?
         self.browser.find_by_id('members_member_count')[0].scroll_to()
@@ -1148,8 +1154,8 @@ class ListTestCase(BaseTestCase):
         self.client = Client(actor=self.actor)
         self.community = self.client.Community.create_community(name="USWNT")
         self.client.update_target_on_all(target=self.community)
-        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()[:4]])
-        self.client.Community.add_role(role_name="forwards")
+        self.client.Community.add_members_to_community(member_pk_list=[user.pk for user in User.objects.all()[:4]])
+        self.client.Community.add_role_to_community(role_name="forwards")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         self.client.Community.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk])
@@ -1328,10 +1334,6 @@ class ListTestCase(BaseTestCase):
 
 class DependentFieldTestCase(BaseTestCase):
 
-    def tearDown(self):
-        time.sleep(3)  # FIXME: give time for db to be torn down, this is really a hack to deal with
-                       # how buggy check_permissions is
-
     def setUp(self):
 
         # Basic setup
@@ -1341,8 +1343,8 @@ class DependentFieldTestCase(BaseTestCase):
         self.client = Client(actor=self.actor)
         self.community = self.client.Community.create_community(name="USWNT")
         self.client.update_target_on_all(target=self.community)
-        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()[:4]])
-        self.client.Community.add_role(role_name="forwards")
+        self.client.Community.add_members_to_community(member_pk_list=[user.pk for user in User.objects.all()[:4]])
+        self.client.Community.add_role_to_community(role_name="forwards")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         self.client.Community.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk])
@@ -1370,6 +1372,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.find_by_id("apply_templates", wait_time=5).first.click()
         self.browser.find_by_id("select_template_posters_control_posts", wait_time=5).first.click()
         self.browser.find_by_id("submit_apply_template", wait_time=5).first.click()
+        time.sleep(1)
         self.browser.find_by_css(".permission-display", wait_time=5)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(len(permissions), 9)
@@ -1399,7 +1402,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.fill('post_content', "It's a good one")
         time.sleep(.5)
         self.browser.find_by_id('add_post_save_button', wait_time=5).first.click()
-        time.sleep(1)
+        time.sleep(3)
         self.assertTrue(self.browser.is_text_present('I have an idea', wait_time=5))
         # FIXME: This only breaks on headless, not sure what's going on but added lots of sleeps
 
@@ -1428,6 +1431,8 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.back()
         self.browser.back()
         self.assertTrue(self.browser.is_text_present("it's ok I guess", wait_time=5))
+
+        time.sleep(3)  # extra time?
 
     def test_make_dependent_field_from_scratch(self):
 
@@ -1496,8 +1501,8 @@ class MultipleConditionsTestCase(BaseTestCase):
         self.client = Client(actor=self.actor)
         self.community = self.client.Community.create_community(name="USWNT")
         self.client.update_target_on_all(target=self.community)
-        self.client.Community.add_members(member_pk_list=[user.pk for user in User.objects.all()[:4]])
-        self.client.Community.add_role(role_name="forwards")
+        self.client.Community.add_members_to_community(member_pk_list=[user.pk for user in User.objects.all()[:4]])
+        self.client.Community.add_role_to_community(role_name="forwards")
         pinoe = User.objects.get(username="meganrapinoe")
         press = User.objects.get(username="christenpress")
         heath = User.objects.get(username="tobinheath")
@@ -1505,7 +1510,7 @@ class MultipleConditionsTestCase(BaseTestCase):
 
         # Permission setup
         action, self.permission = self.client.PermissionResource.add_permission(
-            permission_type=Changes().Communities.AddRole, permission_roles=["forwards"])
+            change_type=Changes().Communities.AddRole, roles=["forwards"])
 
     def test_multiple_conditions(self):
 
@@ -1591,6 +1596,7 @@ class MultipleConditionsTestCase(BaseTestCase):
 
         # action implemented
         self.browser.reload()
+        time.sleep(1)
         self.browser.find_by_id('governance_button', wait_time=5)[0].click()
         roles = [item.text for item in self.browser.find_by_css(".role_name_display", wait_time=5)]
         self.assertEquals(roles, ["members", "forwards", "midfielders"])
