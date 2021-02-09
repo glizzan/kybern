@@ -1,13 +1,14 @@
-from django.views import generic
-from django.http import HttpResponseRedirect, JsonResponse
 import json, logging
+from contextlib import suppress
 
-from django.urls import reverse
+from django.urls import reverse, get_resolver, exceptions
 from django.apps import apps
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
+from django.views import generic
+from django.http import HttpResponseRedirect, JsonResponse
 
 from concord.actions.models import TemplateModel
 from concord.resources.models import Comment, SimpleList, CommentCatcher
@@ -26,6 +27,32 @@ logger = logging.getLogger(__name__)
 ##################################
 ### Helper methods and classes ###
 ##################################
+
+
+def generate_url_map(request, target=None):
+
+    resolver = get_resolver(None)
+    url_map = {}
+
+    for url_name in resolver.reverse_dict.keys():
+
+        if isinstance(url_name, str):
+
+            with suppress(exceptions.NoReverseMatch):
+                url = resolver.reverse(url_name)
+                url_map.update({url_name: url})
+                continue
+
+            with suppress(exceptions.NoReverseMatch):
+                if target:
+                    url = resolver.reverse(url_name, target=target)
+                    url_map.update({url_name: url})
+                    continue
+
+    url_map = {key:value for key, value in url_map.items() if "groups/" in value}
+
+    return JsonResponse({"urls": url_map})
+
 
 
 def get_model(model_name):

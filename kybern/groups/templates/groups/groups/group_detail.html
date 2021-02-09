@@ -291,7 +291,13 @@
             delimiters: ['[[', ']]'],
             el: '#kybernApp',
             store,
-            router
+            router,
+            methods: {
+            ...Vuex.mapActions(['get_url_data']),
+            },
+            created: function () {
+                this.get_url_data()
+            }
         })
 
     </script>

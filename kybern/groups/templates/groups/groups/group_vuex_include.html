@@ -13,7 +13,7 @@
 
     axios.defaults.xsrfCookieName = 'csrftoken';
     axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
-    axios.defaults.headers = { "headers": { 'Content-Type': "application/json" } }
+    axios.defaults.headers = { "headers": { 'Content-Type': "application/json" } };
 
     // Create store
 
@@ -28,20 +28,46 @@
             simplelists: SimplelistVuexModule
         },
         state: {
+            group_pk: '{{ object.pk|escapejs }}',
             group_name: '{{ object.name|escapejs }}',
             group_description: '{{ object.group_description|escapejs }}',
+            urls: {},
         },
-        // getters: { },
+        getters: {
+            url_lookup: (state, getters) => (url_name) => {
+
+                return new Promise((resolve, reject) => {
+
+                    var url_lookup_interval = setInterval(function() {
+                        if (Object.keys(state.urls).length == 0) return;
+                        clearInterval(url_lookup_interval);
+                        resolve("/" + state.urls[url_name])
+                    }, 1000);
+
+                })
+            }
+        },
         mutations: {
             UPDATE_GROUP_NAME (state, data) { state.group_name = data.group_name },
-            UPDATE_GROUP_DESCRIPTION (state, data) { state.group_description = data.group_description }
+            UPDATE_GROUP_DESCRIPTION (state, data) { state.group_description = data.group_description },
+            SET_URL_MAP(state, data) { state.urls = data.urls }
         },
         actions: {
 
+            // Initialization actions
+
+            get_url_data({ commit, state, dispatch }, payload) {
+                url = "/groups/api/get_urls/" + state.group_pk + "/"
+                return axios.post(url).then(response => {
+                    commit('SET_URL_MAP', { urls : response.data.urls })
+                })
+                .catch(error => { console.log(error); throw error })
+            },
+
             // Group info actions
 
-            changeGroupName({ commit, state, dispatch }, payload) {
-                url = "{% url 'change_group_name' %}"
+            changeGroupName({ commit, getters, state, dispatch }, payload) {
+                url = getters.url_lookup('change_group_name')
                 params = { group_pk : payload.group_pk, new_name : payload.new_name }
                 implementationCallback = (response) => {
                     commit('UPDATE_GROUP_NAME', { group_name : response.data.group_name })
@@ -49,8 +75,8 @@
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
 
-            changeGroupDescription({ commit, state, dispatch }, payload) {
-                url = "{% url 'change_group_description' %}"
+            changeGroupDescription({ commit, getters, state, dispatch }, payload) {
+                url = getters.url_lookup('change_group_description')
                 params = { group_pk : payload.group_pk, group_description : payload.group_description }
                 implementationCallback = (response) => {
                     commit('UPDATE_GROUP_DESCRIPTION', { group_description : response.data.group_description })
@@ -92,7 +118,6 @@
             getAPIcall({ commit, state, dispatch }, payload) {
             // we might not need this method, since view should be an action, but let's keep it for now
 
-
                 var url = payload.url
                 var params = payload.params
                 var implementationCallback = payload.implementationCallback
@@ -100,7 +125,6 @@
                 return axios.post(url, params).then(response => { implementationCallback(response) })
                 .catch(error => { console.log(error); throw error })
             }
-
         }
     })
 

@@ -1,16 +1,15 @@
-<script type="application/javascript"> 
+<script type="application/javascript">
 
-    const CommentVuexModule = { 
+    const CommentVuexModule = {
 
-        state: { 
+        state: {
 
-            item_comments: {},          // { item_pk + "_" + item_model: [pk, pk, pk] } 
+            item_comments: {},          // { item_pk + "_" + item_model: [pk, pk, pk] }
             comments: {}                // { int(pk) : { text: x, created_at: x, author: pk, etc}}
 
         },
 
-        getters: { 
-
+        getters: {
             getCommentsForItem: (state, getters) => (item_key) => {
                 comments = []
                 for (index in state.item_comments[item_key]) {
@@ -21,7 +20,7 @@
             }
         },
 
-        mutations: { 
+        mutations: {
 
             REPLACE_ITEM_COMMENTS (state, data) {
                 item_key = data.item_id + "_" + data.item_model
@@ -48,22 +47,22 @@
 
         actions: {
 
-            getCommentData({ commit, state, dispatch }, payload) { 
-                url = "{% url 'get_comment_data' %}"    
+            async getCommentData({ commit, state, dispatch, getters }, payload) {
+                var url = await getters.url_lookup('get_comment_data')
                 params = { item_id: payload.item_id, item_model: payload.item_model }
-                implementationCallback = (response) => { 
+                implementationCallback = (response) => {
                     for (comment_pk in response.data.comments) {
                         commit('ADD_OR_UPDATE_COMMENT', { pk: comment_pk, data: response.data.comments[comment_pk] })
                     }
-                    commit('REPLACE_ITEM_COMMENTS', { item_id: response.data.item_id, item_model: response.data.item_model, 
+                    commit('REPLACE_ITEM_COMMENTS', { item_id: response.data.item_id, item_model: response.data.item_model,
                         pks: response.data.comment_pks })
                 }
                 return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            addComment({ commit, state, dispatch }, payload) { 
-                url = "{% url 'add_comment' %}"    
+            async addComment({ commit, state, dispatch, getters }, payload) {
+                var url = await getters.url_lookup('add_comment')
                 params = { item_id: payload.item_id, item_model: payload.item_model, text: payload.text }
-                implementationCallback = (response) => { 
+                implementationCallback = (response) => {
                     pk = Object.keys(response.data.comment)[0]
                     data = response.data.comment[pk]
                     commit('ADD_OR_UPDATE_COMMENT', { pk: pk, data: data })
@@ -71,20 +70,20 @@
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            editComment({ commit, state, dispatch }, payload) { 
-                url = "{% url 'edit_comment' %}"    
+            async editComment({ commit, state, dispatch, getters }, payload) {
+                var url = await getters.url_lookup('edit_comment')
                 params = { text: payload.text, comment_pk: payload.comment_pk }
-                implementationCallback = (response) => { 
+                implementationCallback = (response) => {
                     pk = Object.keys(response.data.comment)[0]
                     data = response.data.comment[pk]
                     commit('ADD_OR_UPDATE_COMMENT', { pk: pk, data: data })
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            deleteComment({ commit, state, dispatch }, payload) { 
-                url = "{% url 'delete_comment' %}"    
+            async deleteComment({ commit, state, dispatch, getters }, payload) {
+                var url = await getters.url_lookup('delete_comment')
                 params = { comment_pk: payload.comment_pk }
-                implementationCallback = (response) => { 
+                implementationCallback = (response) => {
                     commit('REMOVE_COMMENT_FROM_ITEM', { item_id: payload.item_id, item_model: payload.item_model,
                         comment_pk:response.data.deleted_comment_pk })
                     commit('DELETE_COMMENT', { pk: response.data.deleted_comment_pk })

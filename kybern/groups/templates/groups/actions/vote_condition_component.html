@@ -4,18 +4,18 @@
 
         <!-- Information about the vote. -->
         <span v-if="is_resolved">
-            This vote ended on [[ voting_deadline_display ]]. 
+            This vote ended on [[ voting_deadline_display ]].
             The results were [[ vote_results ]], which means the action was [[ condition_details.status ]].
-            It required a [[ majority_or_plurality ]] vote and abstentions were 
+            It required a [[ majority_or_plurality ]] vote and abstentions were
             <span v-if="!allow_abstain">not</span> allowed.
         </span>
 
         <span v-else>
-            This vote will end on [[ voting_deadline_display ]]. 
+            This vote will end on [[ voting_deadline_display ]].
             The results so far are [[ vote_results ]].
-            It requires a [[ majority_or_plurality ]] vote and abstentions are 
+            It requires a [[ majority_or_plurality ]] vote and abstentions are
             <span v-if="!allow_abstain">not</span> allowed.
-        </span> 
+        </span>
 
 
         <!-- If action is waiting, and user has not taken action -->
@@ -29,7 +29,7 @@
                         buttons name="radios-btn-default" button-variant="outline-primary">
                     </b-form-radio-group>
                     <b-button @click="update_condition" id="save_vote_choice">Submit</b-button>
-            
+
             </span>
 
             <span v-else-if="can_vote && !not_yet_voted">
@@ -47,13 +47,13 @@
             Thank you for voting!  No further action from you is needed.
         </span>
 
-        <span v-if="error_message" class="text-danger">[[ error_message ]]</span> 
+        <span v-if="error_message" class="text-danger">[[ error_message ]]</span>
 
 </span>
 </script>
 
 
-<script type="application/javascript"> 
+<script type="application/javascript">
 
 voteConditionComponent = Vue.component('vote-condition-ui', {
     delimiters: ['[[', ']]'],
@@ -73,6 +73,7 @@ voteConditionComponent = Vue.component('vote-condition-ui', {
         }
     },
     computed: {
+        ...Vuex.mapGetters(['url_lookup']),
         voting_deadline_display: function() {
             if (this.voting_deadline) {
                 return Date(this.voting_deadline)
@@ -86,10 +87,10 @@ voteConditionComponent = Vue.component('vote-condition-ui', {
         },
         majority_or_plurality: function() {
             if (this.require_majority == true ) {
-                return "majority (as opposed to plurality)" 
+                return "majority (as opposed to plurality)"
             } else if ( this.require_majority == false ) {
                 return "plurality (as opposed to majority)"
-            } 
+            }
         },
         vote_results: function() {
             if (this.condition_details) {
@@ -121,13 +122,13 @@ voteConditionComponent = Vue.component('vote-condition-ui', {
     },
     methods: {
         ...Vuex.mapActions(['addOrUpdateAction']),
-        get_conditional_data() {
+        async get_conditional_data() {
             axios.defaults.xsrfCookieName = 'csrftoken';
             axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
             axios.defaults.headers = { "headers": { 'Content-Type': "application/json" } }
-            url = "{% url 'get_conditional_data' %}"    
+            var url = await this.url_lookup('get_conditional_data')
             params = { condition_pk: this.condition_pk, condition_type: this.condition_type }
-            return axios.post(url, params).then(response => { 
+            return axios.post(url, params).then(response => {
                 this.condition_details = response.data.condition_details
                 this.permission_details = response.data.permission_details
                 for (field in this.condition_details.fields) {
@@ -137,19 +138,19 @@ voteConditionComponent = Vue.component('vote-condition-ui', {
                 }
             }).catch(error => {  console.log("Error calling get_conditional_data in vote condition: ", error)  })
         },
-        update_condition() {
+        async update_condition() {
 
-            // For now, we don't store individual conditional data in vuex in part to make this more 
-            // extensible, although presumably there *is* a way to make vuex handle this extensibly, 
+            // For now, we don't store individual conditional data in vuex in part to make this more
+            // extensible, although presumably there *is* a way to make vuex handle this extensibly,
             // but that's a bit above my paygrade for now.
 
             axios.defaults.xsrfCookieName = 'csrftoken';
             axios.defaults.xsrfHeaderName = 'X-CSRFTOKEN';
             axios.defaults.headers = { "headers": { 'Content-Type': "application/json" } }
-            
-            url = "{% url 'update_vote_condition' %}"    
+
+            var url = await this.url_lookup('update_vote_condition')
             params = { condition_pk: this.condition_pk, action_to_take: this.button_selected }
-            axios.post(url, params).then(response => {  
+            axios.post(url, params).then(response => {
 
                 new_action_pk = response.data.action_pk
 
@@ -174,7 +175,7 @@ voteConditionComponent = Vue.component('vote-condition-ui', {
                     }
 
                 }).catch(error => {  console.log("Error refreshing condition data:", error); this.error_message = error })
-                
+
             }).catch(error => {  console.log("Error updating condition: ", error); this.error_message = error })
 
         }

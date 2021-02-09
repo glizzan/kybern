@@ -14,6 +14,10 @@ urlpatterns = [
     # create group ajax view
     path('create-group/', views.create_group, name='create_group'),
 
+    # initial data views
+    path('api/get_urls/', views.generate_url_map, name='generate_url_map'),
+    path('api/get_urls/<int:target>/', views.generate_url_map, name='generate_url_map_with_target'),
+
     # group change views
     path('api/change_group_name/', views.change_group_name, name='change_group_name'),
     path('api/change_group_description/', views.change_group_description, name='change_group_description'),

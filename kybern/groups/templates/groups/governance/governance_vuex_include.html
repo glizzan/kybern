@@ -19,7 +19,66 @@
             governors: {{ governors|safe }},        // { actors: [pk, pk], roles: ['rolename', 'rolename'] }
 
         },
+        getters: {
 
+            memberNames: (state, getters) => {
+                return state.members.map(member => { return getters.getUserName(member) })
+            },
+            roleNames: state => {
+                names = []
+                state.roles.forEach(function(item){ names.push(item.name)})
+                return names
+            },
+            allRoles: (state, getters) => {
+                return [{ name: "members", current_members: state.members }].concat(state.roles)
+            },
+            rolesAsOptions: (state, getters) => {
+                return getters.allRoles.map(role => { return {name: role.name } })
+            },
+            getUser: (state) => (pk) => {
+                return state.users.find(user => user.pk == pk)
+            },
+            getUserName: (state, getters) => (pk) => {
+                return getters.getUser(pk).name
+            },
+            membersInRole: (state, getters) => (role_name) => {
+                return state.roles.find(role => role.name == role_name).current_members
+            },
+            role_to_options: (state, getters) => (role_list) => {
+                if (!role_list) { return [] }
+                if (!Array.isArray(role_list)) { role_list = [ role_list ]}
+                return role_list.map(role => { return  { name: role } })
+            },
+            user_pk_to_options: (state, getters) => (pk_list) => {
+                if (pk_list) {
+                    return pk_list.map(pk => { return  { pk: pk, name: getters.getUser(pk).name }  })
+                } else {
+                    return []
+                }
+            },
+            groupMembersAsOptions: (state, getters) => {
+                return getters.user_pk_to_options(state.members)
+            },
+            roleMembersAsOptions: (state, getters) => (role_name) => {
+                role_members = getters.membersInRole(role_name)
+                return getters.user_pk_to_options(role_members)
+            },
+            membersAsOptions: (state, getters) => (role_name) => {
+                if (role_name == 'members') {  return getters.groupMembersAsOptions  }
+                else {  return getters.roleMembersAsOptions(role_name)  }
+            },
+            nonmembersAsOptions: (state, getters) => {
+                return state.users.filter(user => state.members.indexOf(user.pk) == -1 )
+            },
+            leadershipAsOptions: (state, getters) => {
+                return {
+                    owner_role_options: state.owners.roles.map(role => { return {name: role } }),
+                    owner_actor_options: getters.user_pk_to_options(state.owners.actors),
+                    governor_role_options: state.governors.roles.map(role => { return {name: role } }),
+                    governor_actor_options: getters.user_pk_to_options(state.governors.actors)
+                }
+            }
+        },
         mutations: {
             ADD_ROLE (state, data) {
                 role_exists = state.roles.find(role => role.name == data.role_name)
@@ -118,14 +177,14 @@
         },
 
         actions: {
-            addMembers ({ commit, state, dispatch }, payload) {
-                url = "{% url 'add_members' target=object.pk %}"
+            async addMembers ({ commit, state, dispatch, getters}, payload) {
+                var url = await getters.url_lookup('add_members')
                 params = { user_pks : payload.user_pks }
                 implementationCallback = () => { commit('ADD_MEMBERS', { user_pks: payload.user_pks }) }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            removeMembers ({ commit, state, dispatch }, payload) {
-                url = "{% url 'remove_members' target=object.pk %}"
+            async removeMembers ({ commit, state, dispatch, getters}, payload) {
+                var url = await getters.url_lookup('remove_members')
                 params = { user_pks : payload.user_pks }
                 implementationCallback = () => {
                     commit('REMOVE_USERS_FROM_ALL_ROLES', { user_pks: payload.user_pks })
@@ -133,34 +192,34 @@
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            addUsersToRole ({ commit, state, dispatch }, payload) {
-                url = "{% url 'add_people_to_role' target=object.pk %}"
+            async addUsersToRole ({ commit, state, dispatch, getters}, payload) {
+                var url = await getters.url_lookup('add_people_to_role')
                 params = { role_name : payload.role_name, user_pks: payload.user_pks }
                 implementationCallback = () => { commit('ADD_USERS_TO_ROLE',
                     { role_name : payload.role_name, user_pks: payload.user_pks }) }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            removeUsersFromRole ({ commit, state, dispatch }, payload) {
-                url = "{% url 'remove_people_from_role' target=object.pk %}"
+            async  removeUsersFromRole ({ commit, state, dispatch, getters}, payload) {
+                var url = await getters.url_lookup('remove_people_from_role')
                 params = { role_name : payload.role_name, user_pks: payload.user_pks }
                 implementationCallback = () => { commit('REMOVE_USERS_FROM_ROLE',
                     { role_name : payload.role_name, user_pks: payload.user_pks }) }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            addRole ({ commit, state, dispatch }, payload) {
-                url = "{% url 'add_role_to_group' target=object.pk %}"
+            async addRole ({ commit, state, dispatch, getters}, payload) {
+                var url = await getters.url_lookup('add_role_to_group')
                 params = { role_name: payload.role_name }
                 implementationCallback = () => { commit('ADD_ROLE', { role_name: payload.role_name }) }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            removeRole ({ commit, state, dispatch }, payload) {
-                url = "{% url 'remove_role_from_group' target=object.pk %}"
+            async removeRole ({ commit, state, dispatch, getters}, payload) {
+                var url = await getters.url_lookup('remove_role_from_group')
                 params = { role_name: payload.role_name }
                 implementationCallback = () => { commit('REMOVE_ROLE', { role_name: payload.role_name }) }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            updateOwners({ commit, state, dispatch}, payload) {
-                url = "{% url 'update_owners' target=object.pk %}"
+            async updateOwners({ commit, state, dispatch, getters}, payload) {
+                var url = await getters.url_lookup('update_owners')
                 params = { owner_roles: payload.roles, owner_actors: payload.actors }
                 implementationCallback = () => {
                     roles_to_add = payload.roles.filter(x => !state.owners.roles.includes(x))
@@ -172,8 +231,8 @@
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            updateGovernors({ commit, state, dispatch}, payload) {
-                url = "{% url 'update_governors' target=object.pk %}"
+            async updateGovernors({ commit, state, dispatch, getters}, payload) {
+                var url = await getters.url_lookup('update_governors')
                 params = { governor_roles: payload.roles, governor_actors: payload.actors }
                 implementationCallback = () => {
                     roles_to_add = payload.roles.filter(x => !state.governors.roles.includes(x))
@@ -185,67 +244,7 @@
                 }
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             }
-         },
-        getters: {
-            memberNames: (state, getters) => {
-                return state.members.map(member => { return getters.getUserName(member) })
-            },
-            roleNames: state => {
-                names = []
-                state.roles.forEach(function(item){ names.push(item.name)})
-                return names
-            },
-            allRoles: (state, getters) => {
-                return [{ name: "members", current_members: state.members }].concat(state.roles)
-            },
-            rolesAsOptions: (state, getters) => {
-                return getters.allRoles.map(role => { return {name: role.name } })
-            },
-            getUser: (state) => (pk) => {
-                return state.users.find(user => user.pk == pk)
-            },
-            getUserName: (state, getters) => (pk) => {
-                return getters.getUser(pk).name
-            },
-            membersInRole: (state, getters) => (role_name) => {
-                return state.roles.find(role => role.name == role_name).current_members
-            },
-            role_to_options: (state, getters) => (role_list) => {
-                if (!role_list) { return [] }
-                if (!Array.isArray(role_list)) { role_list = [ role_list ]}
-                return role_list.map(role => { return  { name: role } })
-            },
-            user_pk_to_options: (state, getters) => (pk_list) => {
-                if (pk_list) {
-                    return pk_list.map(pk => { return  { pk: pk, name: getters.getUser(pk).name }  })
-                } else {
-                    return []
-                }
-            },
-            groupMembersAsOptions: (state, getters) => {
-                return getters.user_pk_to_options(state.members)
-            },
-            roleMembersAsOptions: (state, getters) => (role_name) => {
-                role_members = getters.membersInRole(role_name)
-                return getters.user_pk_to_options(role_members)
-            },
-            membersAsOptions: (state, getters) => (role_name) => {
-                if (role_name == 'members') {  return getters.groupMembersAsOptions  }
-                else {  return getters.roleMembersAsOptions(role_name)  }
-            },
-            nonmembersAsOptions: (state, getters) => {
-                return state.users.filter(user => state.members.indexOf(user.pk) == -1 )
-            },
-            leadershipAsOptions: (state, getters) => {
-                return {
-                    owner_role_options: state.owners.roles.map(role => { return {name: role } }),
-                    owner_actor_options: getters.user_pk_to_options(state.owners.actors),
-                    governor_role_options: state.governors.roles.map(role => { return {name: role } }),
-                    governor_actor_options: getters.user_pk_to_options(state.governors.actors)
-                }
-            },
-
-        }
+         }
 
     }
 

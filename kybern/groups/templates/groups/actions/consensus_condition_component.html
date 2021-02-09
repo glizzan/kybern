@@ -78,7 +78,7 @@ consensusConditionComponent = Vue.component('consensus-condition-ui', {
         }
     },
     computed: {
-        ...Vuex.mapGetters(['getUserName']),
+        ...Vuex.mapGetters(['getUserName', 'url_lookup']),
         can_respond: function() {
             if (this.permission_details) {
                 return this.permission_details["concord.conditionals.state_changes.RespondConsensusStateChange"][0]
@@ -119,9 +119,9 @@ consensusConditionComponent = Vue.component('consensus-condition-ui', {
             axios.defaults.headers = { "headers": { 'Content-Type': "application/json" } }
             return axios
         },
-        get_conditional_data() {
+        async get_conditional_data() {
             axios = this.get_axios()
-            url = "{% url 'get_conditional_data' %}"
+            var url = await this.url_lookup('get_conditional_data')
             params = { condition_pk: this.condition_pk, condition_type: this.condition_type }
             return axios.post(url, params).then(response => {
                 this.permission_details = response.data.permission_details
@@ -154,10 +154,10 @@ consensusConditionComponent = Vue.component('consensus-condition-ui', {
             // also call vuex to record this as an action (need to do this for all actions)
             this.addOrUpdateAction({ action_pk: new_action_pk })
         },
-        submit_response() {
+        async submit_response() {
             if (!this.response_selected) { this.error_message = "Please select a response" }
             if (this.response_selected == this.user_response) { this.error_message = "Your response has not changed"; return }
-            url = "{% url 'update_consensus_condition' %}"
+            var url = await this.url_lookup('update_consensus_condition')
             params = { condition_pk: this.condition_pk, action_to_take: "respond", response: this.response_selected }
             axios.post(url, params).then(response => {
                 if (["implemented", "waiting"].indexOf(response.data.action_status) > -1) {
@@ -168,8 +168,8 @@ consensusConditionComponent = Vue.component('consensus-condition-ui', {
                 }
             }).catch(error => {  console.log("Error updating condition: ", error); this.error_message = error })
         },
-        resolve_condition() {
-            url = "{% url 'update_consensus_condition' %}"
+        async resolve_condition() {
+            var url = await this.url_lookup('update_consensus_condition')
             params = { condition_pk: this.condition_pk, action_to_take: "resolve" }
             axios.post(url, params).then(response => {
                 if (["implemented", "waiting"].indexOf(response.data.action_status) > -1) {

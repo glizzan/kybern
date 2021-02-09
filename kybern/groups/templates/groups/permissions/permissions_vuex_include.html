@@ -228,9 +228,8 @@ on actions are in the actions module. -->
 
             // Permission Actions
 
-            addPermission ({ commit, state, dispatch }, payload) {
-
-                url = "{% url 'add_permission' target=object.pk %}"
+            async addPermission ({ commit, state, dispatch, getters }, payload) {
+                url = await getters.url_lookup('add_permission')
                 params = { item_or_role: payload.item_or_role, item_id: payload.item_id,
                     item_model: payload.item_model, permission_type : payload.permission_selected,
                     permission_roles : payload.roles, permission_actors : payload.actors,
@@ -251,9 +250,8 @@ on actions are in the actions module. -->
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
 
-            updatePermission ({ commit, state, dispatch }, payload) {
-
-                url = "{% url 'update_permission' target=object.pk %}"
+            async updatePermission ({ commit, state, dispatch, getters }, payload) {
+                var url = await getters.url_lookup('update_permission')
                 params = { permission_id : payload.permission_id, permission_roles : payload.roles,
                     permission_actors : payload.actors, permission_configuration : payload.configuration }
                 implementationCallback = (response) => {
@@ -264,8 +262,8 @@ on actions are in the actions module. -->
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
 
-            removePermission ({ commit, getters, dispatch }, payload) {
-                url = "{% url 'delete_permission' target=object.pk %}"
+            async removePermission ({ commit, dispatch, getters }, payload) {
+                var url = await getters.url_lookup('delete_permission')
                 params = { permission_id : payload.permission_id }
                 implementationCallback = (response) => {
 
@@ -286,8 +284,8 @@ on actions are in the actions module. -->
 
             // Condition Actions
 
-            addCondition ({ commit, state, dispatch }, payload) {
-                url = "{% url 'add_condition' target=object.pk %}"
+            async addCondition ({ commit, state, dispatch, getters }, payload) {
+                var url = await getters.url_lookup('add_condition')
                 params = { condition_type: payload.condition_type, permission_or_leadership: payload.permission_or_leadership,
                     target_permission_id: payload.permission_id, leadership_type: payload.leadership_type,
                     combined_condition_data : payload.combined_condition_data }
@@ -304,8 +302,8 @@ on actions are in the actions module. -->
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback })
             },
 
-            editCondition ({ commit, state, dispatch }, payload) {
-                url = "{% url 'edit_condition' target=object.pk %}"
+            async editCondition ({ commit, state, dispatch, getters }, payload) {
+                var url = await getters.url_lookup('edit_condition')
                 params = { permission_or_leadership: payload.permission_or_leadership, element_id: payload.element_id,
                     target_permission_id: payload.permission_id, leadership_type: payload.leadership_type,
                     combined_condition_data : payload.combined_condition_data }
@@ -322,8 +320,8 @@ on actions are in the actions module. -->
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback })
             },
 
-            removeCondition ({ commit, state, dispatch }, payload) {
-                url = "{% url 'remove_condition' target=object.pk %}"
+            async removeCondition ({ commit, state, dispatch, getters }, payload) {
+                var url = await getters.url_lookup('remove_condition')
                 params = { permission_or_leadership: payload.permission_or_leadership,
                     target_permission_id : payload.permission_id, leadership_type: payload.leadership_type,
                     element_id: payload.element_id }
@@ -340,16 +338,16 @@ on actions are in the actions module. -->
             },
 
             // Misc other actions
-            getPermission({ commit, state, dispatch}, payload) {
-                url = "{% url 'get_permission' %}"
+            async getPermission({ commit, state, dispatch, getters}, payload) {
+                var url = await getters.url_lookup('get_permission')
                 var params = { permission_pk: payload.permission_pk }
                 var implementationCallback = (response) => {
                     commit('ADD_OR_UPDATE_PERMISSION', { pk : payload.permission_pk, data : response.data.permission_data })
                 }
                 return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
-            getPermissionsForItem({ commit, state, dispatch}, payload) {
-                url = "{% url 'get_permissions' %}"
+            async getPermissionsForItem({ commit, state, dispatch, getters }, payload) {
+                var url = await getters.url_lookup('get_permissions')
                 var params = { item_id: payload.item_id, item_model: payload.item_model }
                 var implementationCallback = (response) => {
                     commit('REPLACE_ITEM_PERMISSIONS', { item_id: response.data.item_id,
@@ -369,8 +367,8 @@ on actions are in the actions module. -->
                 return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
 
-            changePermissionOverride ({ commit, state, dispatch }, payload) {
-                url = "{% url 'change_item_permission_override' %}"
+            async changePermissionOverride ({ commit, state, dispatch, getters }, payload) {
+                var url = await getters.url_lookup('change_item_permission_override')
                 params = { item_id: payload.item_id, item_model: payload.item_model,
                     enable_or_disable: payload.enable_or_disable, governing_or_foundational: payload.governing_or_foundational }
                 implementationCallback = (response) => {
@@ -384,8 +382,8 @@ on actions are in the actions module. -->
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
 
-            toggleAnyone ({ commit, getters, dispatch }, payload) {
-                url = "{% url 'toggle_anyone' target=object.pk %}"
+            async toggleAnyone ({ commit, getters, dispatch }, payload) {
+                var url = await getters.url_lookup('toggle_anyone')
                 params = { permission_id : payload.permission_id, enable_or_disable: payload.enable_or_disable }
                 implementationCallback = (response) => {
                     pk = response.data.permission.pk
@@ -395,8 +393,8 @@ on actions are in the actions module. -->
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
 
-            checkPermissions ({ commit, state, dispatch }, payload) {
-                var url = "{% url 'check_permissions' target=object.pk %}"
+            async checkPermissions ({ commit, state, dispatch, getters }, payload) {
+                var url = await getters.url_lookup('check_permissions')
                 params = { permissions: payload.permissions }
                 var implementationCallback = (response) => {
                     commit('ADD_OR_UPDATE_CURRENT_USER_PERMISSIONS', { user_permissions: response.data.user_permissions })
@@ -404,8 +402,8 @@ on actions are in the actions module. -->
                 return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
 
-            refreshRoleData ({ commit, state, dispatch }, payload) {
-                url = "{% url 'get_data_for_role' target=object.pk %}"
+            async refreshRoleData ({ commit, state, dispatch, getters }, payload) {
+                var url = await getters.url_lookup('get_data_for_role')
                 params = { role_name : payload.role }
                 implementationCallback = (response) => {
                     commit('REPLACE_ROLE_PERMISSIONS', { role: payload.role, pks: response.data.role_permissions })

@@ -5,8 +5,8 @@ const ForumsVuexModule = {
         forums: {{ forums|safe }},      // [ { pk: pk, name: name, description: description }],
         posts: []                       // [ { pk: pk, forum_pk: forum_pk, title: title, content: content, author: author, etc } ] }
     },
-    getters: { 
-        getForumData: (state, getters) => (forum_pk) => { 
+    getters: {
+        getForumData: (state, getters) => (forum_pk) => {
             return state.forums.find(forum => forum.pk == forum_pk)
         },
         getPostsDataForForum: (state, getters) => (forum_pk) => {
@@ -16,8 +16,8 @@ const ForumsVuexModule = {
             return state.posts.find(post => post.pk == post_pk)
         }
     },
-    mutations: { 
-    
+    mutations: {
+
         ADD_OR_UPDATE_FORUM (state, data) {
             for (index in state.forums) {
                 if (state.forums[index].pk == data.forum_data.pk) {
@@ -27,7 +27,7 @@ const ForumsVuexModule = {
             }
             state.forums.push(data.forum_data)
         },
-        DELETE_FORUM (state, data) { 
+        DELETE_FORUM (state, data) {
             for (index in state.forums) {
                 if (state.forums[index].pk == data.pk) {
                     state.forums.splice(index, 1)
@@ -58,32 +58,32 @@ const ForumsVuexModule = {
         }
     },
     actions: {
-        getForum({ commit, state, dispatch}, payload) { 
-            url = "{% url 'get_forum' target=object.pk %}"    
+        async getForum({ commit, state, dispatch, getters }, payload) {
+            var url = await getters.url_lookup('get_forum')
             params = { forum_pk: payload.forum_pk }
-            implementationCallback = (response) => { 
+            implementationCallback = (response) => {
                 commit('ADD_OR_UPDATE_FORUM', { forum_data : response.data.forum_data })
             }
             return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
-        addForum({ commit, state, dispatch}, payload) {
-            url = "{% url 'add_forum' target=object.pk %}"    
+        async addForum({ commit, state, dispatch, getters }, payload) {
+            var url = await getters.url_lookup('add_forum')
             params = { name: payload.name, description: payload.description }
             implementationCallback = (response) => {
                 commit('ADD_OR_UPDATE_FORUM', { forum_data : response.data.forum_data })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
-        editForum({ commit, state, dispatch}, payload) { 
-            url = "{% url 'edit_forum' target=object.pk %}"    
+        async editForum({ commit, state, dispatch, getters }, payload) {
+            var url = await getters.url_lookup('edit_forum')
             params = { pk: payload.pk, name: payload.name, description: payload.description }
             implementationCallback = (response) => {
                 commit('ADD_OR_UPDATE_FORUM', { forum_data : response.data.forum_data })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
-        deleteForum({ commit, state, dispatch}, payload) { 
-            url = "{% url 'delete_forum' target=object.pk %}"    
+        async deleteForum({ commit, state, dispatch, getters }, payload) {
+            var url = await getters.url_lookup('delete_forum')
             params = { pk: payload.pk }
             implementationCallback = (response) => {
                 commit('DELETE_FORUM', { pk : response.data.deleted_forum_pk })
@@ -91,44 +91,44 @@ const ForumsVuexModule = {
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
-        getPosts({ commit, state, dispatch}, payload) { 
-            url = "{% url 'get_posts_for_forum' target=object.pk %}"    
+        async getPosts({ commit, state, dispatch, getters }, payload) {
+            var url = await getters.url_lookup('get_posts_for_forum')
             params = { forum_pk: payload.forum_pk }
-            implementationCallback = (response) => { 
+            implementationCallback = (response) => {
                 for (index in response.data.posts) {
                     commit('ADD_POST', { post_data: response.data.posts[index] })
                 }
             }
             return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
-        getPost({ commit, state, dispatch}, payload) { 
-            url = "{% url 'get_post' target=object.pk %}"    
+        async getPost({ commit, state, dispatch, getters }, payload) {
+            var url = await getters.url_lookup('get_post')
             params = { post_pk: payload.post_pk }
-            implementationCallback = (response) => { 
+            implementationCallback = (response) => {
                 commit('ADD_POST', { post_data: response.data.post })
             }
             return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
-        addPost ({ commit, state, dispatch }, payload) { 
-            url = "{% url 'add_post' target=object.pk %}"    
+        async  addPost ({ commit, state, dispatch, getters}, payload) {
+            var url = await getters.url_lookup('add_post')
             params = { forum_pk: payload.forum_pk, title: payload.title, content: payload.content  }
-            implementationCallback = (response) => { 
+            implementationCallback = (response) => {
                 commit('ADD_POST', { post_data: response.data.post_data})
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
-        editPost ({ commit, state, dispatch }, payload) { 
-            url = "{% url 'edit_post' target=object.pk %}"    
+        async editPost ({ commit, state, dispatch, getters}, payload) {
+            var url = await getters.url_lookup('edit_post')
             params = { pk: payload.pk, title: payload.title, content: payload.content  }
-            implementationCallback = (response) => { 
+            implementationCallback = (response) => {
                 commit('EDIT_POST', { post_data: response.data.post_data})
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
-        deletePost ({ commit, state, dispatch }, payload) { 
-            url = "{% url 'delete_post' target=object.pk %}"    
+        async deletePost ({ commit, state, dispatch, getters}, payload) {
+            var url = await getters.url_lookup('delete_post')
             params = { pk: payload.pk, forum_pk: payload.forum_pk }
-            implementationCallback = (response) => { 
+            implementationCallback = (response) => {
                 commit('DELETE_POST', { pk: response.data.deleted_post_pk })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
