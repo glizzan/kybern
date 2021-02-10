@@ -11,7 +11,7 @@
                         [[ governance_forum.name ]] </router-link>
                 </b-card-header>
                 <b-card-text id="forum-description" class="text-muted p-3">
-                    [[ governance_forum.description ]] of {{ object.get_name }}
+                    [[ governance_forum.description ]] of [[ group_name ]]
                 </b-card-text>
             </b-card>
 
@@ -50,7 +50,7 @@
             }
         },
         computed: {
-            ...Vuex.mapState({ forums: state => state.forums.forums }),
+            ...Vuex.mapState({ forums: state => state.forums.forums, group_name: state => state.group_name }),
             governance_forum: function() {
                 gov_forum = null
                 this.forums.forEach((forum) => { if (forum.special == "Gov") { gov_forum = forum } })

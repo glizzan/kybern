@@ -3,7 +3,7 @@
     <span>
 
         <h3 class="mt-3">[[ forum_name ]]</h3>
-        <p>[[ forum_description ]] of {{ object.get_name }}</p>
+        <p>[[ forum_description ]] of [[ group_name ]]</p>
 
         <router-link :to="{ name: 'edit-forum', params: { forum_id: forum_id } }" v-if="user_permissions.edit_forum">
             <b-button variant="outline-secondary" class="btn-sm" id="edit_forum_button">
@@ -68,7 +68,10 @@
             }).catch(error => {  this.error_message = error; console.log(error) })
         },
         computed: {
-            ...Vuex.mapState({user_permissions: state => state.permissions.current_user_permissions}),
+            ...Vuex.mapState({
+                user_permissions: state => state.permissions.current_user_permissions,
+                group_name: state => state.group_name
+            }),
             ...Vuex.mapGetters(['getForumData', 'getPostsDataForForum', 'getUserName']),
             posts: function() {
                 if (this.forum_id) { return this.getPostsDataForForum(this.forum_id) }

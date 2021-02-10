@@ -2,7 +2,7 @@
 
     <span>
 
-        <h3>Change leadership of {{ object.name }}</h3>
+        <h3>Change leadership of [[ group_name ]]</h3>
 
         <p class="font-weight-bold">Owners</p>
 
@@ -88,7 +88,8 @@
             ...Vuex.mapState({
                 owner_condition: state => state.permissions.owner_condition,
                 governor_condition: state => state.permissions.governor_condition,
-                user_permissions: state => state.permissions.current_user_permissions
+                user_permissions: state => state.permissions.current_user_permissions,
+                group_name: state => state.group_name
             }),
             ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'leadershipAsOptions']),
             owner_condition_display: function() {

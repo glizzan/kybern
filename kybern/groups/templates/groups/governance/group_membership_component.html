@@ -107,7 +107,6 @@
         store,
         data: function() {
             return {
-                item_id: {{ object.pk }},  // Group id,
                 item_model: 'group',  // group model
                 add_member_button_selected: false,
                 remove_member_button_selected: false,
@@ -125,7 +124,8 @@
         computed: {
             ...Vuex.mapState({
                 permissions: state => state.permissions.permissions,
-                user_permissions: state => state.permissions.current_user_permissions
+                user_permissions: state => state.permissions.current_user_permissions,
+                item_id: state => state.group_pk
             }),
             ...Vuex.mapGetters(['groupMembersAsOptions', 'nonmembersAsOptions'])
         },

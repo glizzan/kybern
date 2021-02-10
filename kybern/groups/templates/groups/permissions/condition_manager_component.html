@@ -3,7 +3,7 @@
     <span>
 
         <h5>Conditions for
-            <span v-if="leadership_type" class="text-info">{{object.name}}'s [[ leadership_type ]]s</span>
+            <span v-if="leadership_type" class="text-info">[[ group_name ]]'s [[ leadership_type ]]s</span>
             <span v-if="permission">permission <span class="text-info">'[[ permission.display]]'</span></span>
         </h5>
 
@@ -76,7 +76,8 @@ conditionManagementComponent = Vue.component('condition-manager', {
                 owner_condition: state => state.permissions.owner_condition,
                 governor_condition: state => state.permissions.governor_condition,
                 condition_options: state => state.permissions.condition_options,
-                permissions: state => state.permissions.permissions
+                permissions: state => state.permissions.permissions,
+                group_name: state => state.group_name
             }),
             permission: function() {
                 if (!this.leadership_type) {

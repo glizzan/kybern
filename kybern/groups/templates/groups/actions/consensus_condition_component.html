@@ -143,9 +143,8 @@ consensusConditionComponent = Vue.component('consensus-condition-ui', {
 
         },
         set_user_response() {
-            user_pk = parseInt("{{request.user.pk}}")
             for (user in this.responses) {
-                if (user == user_pk) { this.response_selected = this.responses[user] }
+                if (user == store.state.user_pk) { this.response_selected = this.responses[user] }
             }
         },
         update_action(new_action_pk) {

@@ -46,7 +46,6 @@
         store,
         data: function() {
             return {
-                item_id: {{ object.pk }},  // Group id,
                 item_model: 'group',  // group model
                 add_member_state_change: 'concord.communities.state_changes.AddMembersStateChange',
                 remove_member_state_change: 'concord.communities.state_changes.RemoveMembersStateChange',
@@ -62,7 +61,8 @@
         computed: {
             ...Vuex.mapState({
                 permissions: state => state.permissions.permissions,
-                user_permissions: state => state.permissions.current_user_permissions
+                user_permissions: state => state.permissions.current_user_permissions,
+                item_id: state => state.group_pk
             }),
             addmember_permissions: function() {
                 return Object.values(this.permissions).filter(permission =>

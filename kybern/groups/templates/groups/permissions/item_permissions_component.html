@@ -54,11 +54,11 @@
             ...Vuex.mapState({ user_permissions: state => state.permissions.current_user_permissions }),
             ...Vuex.mapGetters(['permissionsForItem']),
             final_item_id: function() {
-                return (typeof this.item_id === "undefined") ? {{ object.pk }} : this.item_id },
+                return (typeof this.item_id === "undefined") ? store.state.group_pk : this.item_id },
             final_item_model: function() {
                 return (typeof this.item_model === "undefined") ? 'group' : this.item_model },
             final_item_name: function() {
-                return (typeof this.item_name === "undefined") ? '{{ object.get_name }}' : this.item_name },
+                return (typeof this.item_name === "undefined") ? store.state.group_name : this.item_name },
             title_string: function() {
                 return "Permissions for " + this.final_item_name
             },

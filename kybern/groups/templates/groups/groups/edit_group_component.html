@@ -37,16 +37,20 @@
         store,
         data: function() {
             return {
-                item_id: {{ object.pk }},
                 item_model: 'group',
-                edited_group_name: '{{ object.name|escapejs }}',
-                edited_group_description: '{{ object.group_description|escapejs }}',
+                edited_group_name: '',
+                edited_group_description: '',
                 error_message: ''
             }
         },
+        created () {
+            this.edited_group_name = this.group_name
+            this.edited_group_description = this.group_description
+        },
         computed: {
             ...Vuex.mapState({ group_name: state => state.group_name,
-                               group_description: state => state.group_description })
+                               group_description: state => state.group_description,
+                               item_id: state => state.group_pk })
         },
         methods: {
             ...Vuex.mapActions(['changeGroupName', 'changeGroupDescription']),

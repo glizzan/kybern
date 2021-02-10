@@ -80,7 +80,7 @@ approvalConditionComponent = Vue.component('approve-condition-ui', {
 
                 // Or, if it's not allowed, is the action-taker not the approver?
 
-                if ("{{ request.user.username }}" != this.action_details.actor ) { return true }
+                if (store.state.user_name != this.action_details.actor ) { return true }
             }
             return false
         },

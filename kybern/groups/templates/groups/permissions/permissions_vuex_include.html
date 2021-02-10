@@ -9,15 +9,15 @@ on actions are in the actions module. -->
         state: {
 
             // Permission & condition options
-            permission_options: {{ permission_options|safe }},
+            permission_options: [],
                 // [ { value: x , text: x } ]
-            permission_configuration_options: {{ permission_configuration_options|safe }},
+            permission_configuration_options: {},
                 // { permission_type: { fieldname: { display: x, type: x, required: x, value: x, field_name: x } }
-            condition_options: {{ condition_options|safe }},
+            condition_options: [],
                 // [ { value: x , text: x } ]
-            condition_configuration_options: {{ condition_configuration_options|safe }},
+            condition_configuration_options: {},
                 // { condition_type: { fieldname: { display: x, type: x, required: x, value: x, field_name: x } }
-            dependent_field_options: {{ dependent_field_options|safe }},
+            dependent_field_options: [],
 
             // Permission data (loaded opportunistically)
             permissions: {},                // { int(pk) : { name: x, display: x, change_type: x } }
@@ -31,8 +31,8 @@ on actions are in the actions module. -->
             item_permissions: {},           // { item_pk + "_" + item_model: [pk, pk, pk] }
 
             // Governance conditions
-            owner_condition: {{ owner_condition|safe }},         // None or ???
-            governor_condition: {{ governor_condition|safe }},    // None or ??
+            owner_condition: null,
+            governor_condition: null
 
         },
 
@@ -133,6 +133,26 @@ on actions are in the actions module. -->
 
         mutations: {
 
+            // set options
+
+            SET_PERMISSION_OPTIONS (state, data) {
+                Vue.set(state, "permission_options", data.options)
+            },
+            SET_PERMISSION_CONFIGURATION_OPTIONS (state, data) {
+                Vue.set(state, "permission_configuration_options", data.options)
+            },
+            SET_CONDITION_OPTIONS (state, data) {
+                Vue.set(state, "condition_options", data.options)
+            },
+            SET_CONDITION_CONFIGURATION_OPTIONS (state, data) {
+                Vue.set(state, "condition_configuration_options", data.options)
+            },
+            SET_DEPENDENT_FIELD_OPTIONS (state, data) {
+                Vue.set(state, "dependent_field_options", data.options)
+            },
+
+            // permissions
+
             ADD_OR_UPDATE_PERMISSION (state, data) {
                 Vue.set(state.permissions, data.pk, data.data) // { name: x, display: x, change_type: x } }
             },
@@ -207,6 +227,24 @@ on actions are in the actions module. -->
         },
 
         actions: {
+
+            // initialize data
+
+            async getPermissionData ({ commit, state, dispatch, getters}, payload) {
+                var url = await getters.url_lookup('get_permission_data')
+                implementationCallback = (response) => {
+                    commit('SET_PERMISSION_OPTIONS', { options: response.data.permission_options })
+                    commit('SET_PERMISSION_CONFIGURATION_OPTIONS', { options: response.data.permission_configuration_options })
+                    commit('SET_CONDITION_OPTIONS', { options: response.data.condition_options })
+                    commit('SET_CONDITION_CONFIGURATION_OPTIONS', { options: response.data.condition_configuration_options })
+                    commit('SET_DEPENDENT_FIELD_OPTIONS', { options: response.data.dependent_field_options })
+                    commit('SET_LEADERSHIP_CONDITION', { 'leadership_type': "owner",
+                            condition_data: response.data.owner_condition })
+                    commit('SET_LEADERSHIP_CONDITION', { 'leadership_type': "governor",
+                            condition_data: response.data.governor_condition })
+                }
+                return dispatch('getAPIcall', { url: url, implementationCallback: implementationCallback})
+            },
 
             // 'fetch only if necessary'
 

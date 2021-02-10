@@ -2,10 +2,10 @@
 
     <span>
 
-        <h4 class="text-secondary pb-3">{{ object.name }}'s Lists
+        <h4 class="text-secondary pb-3">[[ group_name ]]'s Lists
 
         <router-link :to="{ name: 'add-new-list'}">
-            <b-button variant="outline-secondary" 
+            <b-button variant="outline-secondary"
                 class="btn-sm ml-3" id="new_list_button">+ add new</b-button>
         </router-link>
         </h4>
@@ -22,11 +22,11 @@
         <span v-if="Object.keys(lists).length === 0">You do not have any lists yet.</span>
 
     </span>
-       
+
 </script>
 
 
-<script type="application/javascript"> 
+<script type="application/javascript">
 
     // Main vue instance for list app
     var simplelistListComponent = Vue.component('simplelist-list-component', {
@@ -38,9 +38,10 @@
             }
         },
         computed: {
-            ...Vuex.mapState({ 
+            ...Vuex.mapState({
                 lists: state => state.simplelists.lists,
-                user_permissions: state => state.permissions.current_user_permissions
+                user_permissions: state => state.permissions.current_user_permissions,
+                group_name: state => state.group_name
             }),
         },
         created () {

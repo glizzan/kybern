@@ -28,9 +28,11 @@
             simplelists: SimplelistVuexModule
         },
         state: {
-            group_pk: '{{ object.pk|escapejs }}',
-            group_name: '{{ object.name|escapejs }}',
-            group_description: '{{ object.group_description|escapejs }}',
+            group_pk: null,
+            group_name: "",
+            group_description: "",
+            user_pk: null,
+            user_name: "",
             urls: {},
         },
         getters: {
@@ -48,26 +50,39 @@
             }
         },
         mutations: {
+            UPDATE_GROUP_PK (state, data) { state.group_pk = data.group_pk },
             UPDATE_GROUP_NAME (state, data) { state.group_name = data.group_name },
             UPDATE_GROUP_DESCRIPTION (state, data) { state.group_description = data.group_description },
-            SET_URL_MAP(state, data) { state.urls = data.urls }
+            SET_URL_MAP(state, data) { state.urls = data.urls },
+            UPDATE_USER_PK (state, data) { state.user_pk = data.user_pk },
+            UPDATE_USER_NAME (state, data) { state.user_name = data.user_name }
         },
         actions: {
 
             // Initialization actions
 
+            initialize_group_data({ commit, state, dispatch }, payload) {
+                commit('SET_URL_MAP', { urls : payload.urls })
+                commit('UPDATE_GROUP_NAME', { group_name : payload.group_name })
+                commit('UPDATE_GROUP_DESCRIPTION', { group_description : payload.group_description })
+                commit('UPDATE_GROUP_PK', { group_pk : payload.group_pk })
+                commit('UPDATE_USER_PK', { user_pk: payload.user_pk })
+                commit('UPDATE_USER_NAME', { user_name: payload.user_name })
+            },
+
             get_url_data({ commit, state, dispatch }, payload) {
+                // possibly delete this since we're getting urls another way
                 url = "/groups/api/get_urls/" + state.group_pk + "/"
                 return axios.post(url).then(response => {
-                    commit('SET_URL_MAP', { urls : response.data.urls })
+                    commit('SET_URL_MAP', { urls : payload.urls })
                 })
                 .catch(error => { console.log(error); throw error })
             },
 
             // Group info actions
 
-            changeGroupName({ commit, getters, state, dispatch }, payload) {
-                url = getters.url_lookup('change_group_name')
+            async changeGroupName({ commit, getters, state, dispatch }, payload) {
+                url = await getters.url_lookup('change_group_name')
                 params = { group_pk : payload.group_pk, new_name : payload.new_name }
                 implementationCallback = (response) => {
                     commit('UPDATE_GROUP_NAME', { group_name : response.data.group_name })
@@ -75,8 +90,8 @@
                 return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
             },
 
-            changeGroupDescription({ commit, getters, state, dispatch }, payload) {
-                url = getters.url_lookup('change_group_description')
+            async changeGroupDescription({ commit, getters, state, dispatch }, payload) {
+                url = await getters.url_lookup('change_group_description')
                 params = { group_pk : payload.group_pk, group_description : payload.group_description }
                 implementationCallback = (response) => {
                     commit('UPDATE_GROUP_DESCRIPTION', { group_description : response.data.group_description })
@@ -101,7 +116,7 @@
                         implementationCallback(response)
                     } else {
                         if (response.data.action_status == "waiting") {
-                            link = "/groups/" + {{ object.pk}} + "/#/actions/detail/" + response.data.action_pk
+                            link = "/groups/" + state.group_pk + "/#/actions/detail/" + response.data.action_pk
                             error_to_throw = "<span>There is a <a id='condition_link' href='" + link + "'>condition</a> " +
                                 "on your action which must be  resolved before your action can be implemented.</span>"
                         } else {

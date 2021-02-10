@@ -2,7 +2,7 @@
 
 const ForumsVuexModule = {
     state: {
-        forums: {{ forums|safe }},      // [ { pk: pk, name: name, description: description }],
+        forums: [],                     // [ { pk: pk, name: name, description: description }],
         posts: []                       // [ { pk: pk, forum_pk: forum_pk, title: title, content: content, author: author, etc } ] }
     },
     getters: {
@@ -17,6 +17,10 @@ const ForumsVuexModule = {
         }
     },
     mutations: {
+
+        SET_FORUMS (state, data) {
+            Vue.set(state, "forums", data.forums)
+        },
 
         ADD_OR_UPDATE_FORUM (state, data) {
             for (index in state.forums) {
@@ -58,6 +62,13 @@ const ForumsVuexModule = {
         }
     },
     actions: {
+        async getForumData({ commit, state, dispatch, getters}, payload) {
+            var url = await getters.url_lookup('get_forum_data')
+            implementationCallback = (response) => {
+                commit('SET_FORUMS', { forums: response.data.forums })
+            }
+            return dispatch('getAPIcall', { url: url, implementationCallback: implementationCallback})
+        },
         async getForum({ commit, state, dispatch, getters }, payload) {
             var url = await getters.url_lookup('get_forum')
             params = { forum_pk: payload.forum_pk }

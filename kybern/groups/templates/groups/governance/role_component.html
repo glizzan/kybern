@@ -13,7 +13,7 @@
                         v-b-modal.add_role_modal id="add_role_button">add a role</b-button>
 
                     <router-link v-if="user_permissions.apply_template"
-                        :to="{ name: 'item-templates', params: {scope: 'role', target_id: {{object.pk}}, target_model: 'group'} }">
+                        :to="{ name: 'item-templates', params: {scope: 'role', target_id: group_pk, target_model: 'group'} }">
                         <b-button class="btn-sm" id="apply_role_templates">role templates</b-button>
                     </router-link>
                 </span>
@@ -96,7 +96,8 @@
             ...Vuex.mapState({
                 roles: state => state.governance.roles,
                 group_members: state => state.governance.members,
-                user_permissions: state => state.permissions.current_user_permissions
+                user_permissions: state => state.permissions.current_user_permissions,
+                group_pk: state => state.group_pk
             })
         },
         methods: {

@@ -144,6 +144,7 @@ class GroupBasicsTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5)[0].click()
+        time.sleep(2)
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "1 people")
         self.browser.find_by_id('group_membership_display_button', wait_time=5).first.click()
@@ -229,6 +230,7 @@ class PermissionsTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button')[0].click()
         self.browser.find_by_id('members_member_count').scroll_to()
+        time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count').text, "9 people")
         self.browser.find_by_id('group_membership_display_button').first.click()
         time.sleep(1)
@@ -645,6 +647,7 @@ class ConsensusConditionTestCase(BaseTestCase):
         # change is implemented
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button').first.click()
+        time.sleep(2)
         roles = [item.text for item in self.browser.find_by_css(".role_name_display")]
         self.assertEquals(roles, ["members", "forwards", "defense", "captains", "midfielders"])
 
@@ -1022,6 +1025,7 @@ class MembershipTestCase(BaseTestCase):
 
         # we should now have 5 members, not 4
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
+        time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "5 people")
 
     def test_invite_only(self):
@@ -1031,11 +1035,12 @@ class MembershipTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('members_member_count')[0].scroll_to()
+        time.sleep(3)
         self.assertEquals(self.browser.find_by_id('members_member_count')[0].text, "4 people")
 
         # apply the template
         self.browser.find_by_id('group_membership_settings_button').first.click()
-        time.sleep(1)
+        time.sleep(2)
         self.browser.find_by_id('membership_templates_link').first.click()
         self.browser.find_by_id('select_template_invite_only').first.click()
         roles_that_can_invite_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
@@ -1086,6 +1091,7 @@ class MembershipTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
+        time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5).text, "5 people")
 
     def test_anyone_can_request_to_join(self):
@@ -1094,8 +1100,8 @@ class MembershipTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
-        time.sleep(1)
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
+        time.sleep(3)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "4 people")
 
         # apply anyone can join template
@@ -1139,6 +1145,7 @@ class MembershipTestCase(BaseTestCase):
         self.browser.back()
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
+        time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "5 people")
 
     # TODO: suite of comments test cases
@@ -1357,7 +1364,7 @@ class DependentFieldTestCase(BaseTestCase):
             if permission.change_type == Changes().Communities.AddMembers:
                 permission.delete()
 
-    def test_dependent_field_created_by_posters_control_posts_template_works(self):
+    def test_the_dependent_field_created_by_posters_control_posts_template_works(self):
 
         # Delete existing comment permission on Forum
         from concord.permission_resources.models import PermissionsItem
@@ -1392,6 +1399,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.assertEquals(len(self.browser.find_by_id("depend_on_model_post")), 1)
         self.assertTrue(self.browser.find_by_id("depend_on_model_post").first.has_class('btn-info'))
         field_select = self.browser.find_by_css(".dependent-field-select").first
+        time.sleep(1)
         self.assertEquals(field_select.value, "author")
 
         # User makes a post
@@ -1464,7 +1472,9 @@ class DependentFieldTestCase(BaseTestCase):
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5)[0].click()
+        time.sleep(2)
         self.browser.find_by_id('group_membership_display_button', wait_time=5).first.click()
+        time.sleep(2)
         self.browser.find_by_id('add_member_button', wait_time=5).first.click()
         self.select_from_multiselect(selection="midgepurce")
         self.browser.find_by_id('save_add_member_button', wait_time=5).first.click()
@@ -1490,6 +1500,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
+        time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5).text, "5 people")
 
 

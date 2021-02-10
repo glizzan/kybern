@@ -24,6 +24,13 @@
 
     <script type="application/javascript">
 
+        let urls = {{ urls|safe }}
+        let group_pk = {{ object.pk|escapejs }}
+        let group_name = '{{ object.name|escapejs }}'
+        let group_description = '{{ object.group_description|escapejs }}'
+        let user_pk = {{ request.user.pk }}
+        let user_name = '{{ request.user.username }}'
+
         const router = new VueRouter({
         routes: [
             {
@@ -293,10 +300,14 @@
             store,
             router,
             methods: {
-            ...Vuex.mapActions(['get_url_data']),
+            ...Vuex.mapActions(['initialize_group_data', 'getPermissionData', 'getGovernanceData', 'getForumData']),
             },
             created: function () {
-                this.get_url_data()
+                this.initialize_group_data({urls: urls, group_pk: group_pk, group_name: group_name,user_pk: user_pk,
+                                            group_description: group_description, user_name: user_name })
+                this.getPermissionData()
+                this.getGovernanceData()
+                this.getForumData()
             }
         })
 

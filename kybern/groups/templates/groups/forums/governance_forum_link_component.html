@@ -5,13 +5,13 @@
             <b-card-title>[[ name ]]<b-icon-star-fill v-if=star class="ml-2"></b-icon-star-fill>
             </b-card-title>
             <p class="mb-1 text-secondary forum-description">
-                [[ description ]] of {{ object.get_name }}</p>
+                [[ description ]] of [[ group_name ]]</p>
         </b-card>
     </router-link>
 
 </script>
 
-<script type="application/javascript"> 
+<script type="application/javascript">
 
 governanceForumLinkComponent = Vue.component('governance-forum-link-component', {
     delimiters: ['[[', ']]'],
@@ -21,7 +21,8 @@ governanceForumLinkComponent = Vue.component('governance-forum-link-component', 
     mixins: [utilityMixin],
     data: function() { return {} },
     computed: {
-        name: function() { 
+        ...Vuex.mapState({ group_name: state => state.group_name }),
+        name: function() {
             if (this.forum) { return this.forum.name } else { return "Governance Forum" }
         },
         pk: function() {

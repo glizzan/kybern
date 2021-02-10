@@ -7,16 +7,16 @@
         state: {
 
             // Roles & members
-            members: {{ current_members|safe }},    // [ pk, pk, pk, pk ]
-            roles: {{ roles|safe }},                // [ 'rolename', 'rolename', 'rolename' ]
-            users: {{ users|safe }},                // [ { name: 'username', pk: pk } ]
+            members: [],    // [ pk, pk, pk, pk ]
+            roles: [],              // [ 'rolename', 'rolename', 'rolename' ]
+            users: [],              // [ { name: 'username', pk: pk } ]
             current_membership_option: "",         // ie "invite only", "anyone can join"
             membership_config_data: { "permission": null, "condition": null },         // { permission: null, condition: null }
 
             // Leadership data
-            governance_info: {{ governance_info|safe }},                    // Text string explaining governance structure
-            owners: {{ owners|safe }},              // { actors: [pk, pk], roles: ['rolename', 'rolename'] }
-            governors: {{ governors|safe }},        // { actors: [pk, pk], roles: ['rolename', 'rolename'] }
+            governance_info: "",                    // Text string explaining governance structure
+            owners: {},              // { actors: [pk, pk], roles: ['rolename', 'rolename'] }
+            governors: {},        // { actors: [pk, pk], roles: ['rolename', 'rolename'] }
 
         },
         getters: {
@@ -80,6 +80,19 @@
             }
         },
         mutations: {
+            SET_USERS (state, data) {
+                Vue.set(state, 'users', data.users);
+            },
+            SET_ROLES (state, data) {
+                Vue.set(state, 'roles', data.roles);
+            },
+            SET_LEADERS(state, data) {
+                Vue.set(state, "owners", data.owners);
+                Vue.set(state, "governors", data.governors)
+            },
+            SET_GOVERNANCE_INFO(state, data) {
+                Vue.set(state, "governance_info", data.governance_info)
+            },
             ADD_ROLE (state, data) {
                 role_exists = state.roles.find(role => role.name == data.role_name)
                 if (!role_exists) {
@@ -177,6 +190,18 @@
         },
 
         actions: {
+            async getGovernanceData ({ commit, state, dispatch, getters}, payload) {
+                var url = await getters.url_lookup('get_governance_data')
+                implementationCallback = (response) => {
+                    commit('SET_USERS', { users: response.data.governance_data.users })
+                    commit('SET_ROLES', { roles: response.data.governance_data.roles })
+                    commit('SET_LEADERS', { owners: response.data.governance_data.owners,
+                                            governors: response.data.governance_data.governors })
+                    commit('ADD_MEMBERS', { user_pks: response.data.governance_data.current_members })
+                    commit('SET_GOVERNANCE_INFO', { governance_info: response.data.governance_data.governance_info })
+                }
+                return dispatch('getAPIcall', { url: url, implementationCallback: implementationCallback})
+            },
             async addMembers ({ commit, state, dispatch, getters}, payload) {
                 var url = await getters.url_lookup('add_members')
                 params = { user_pks : payload.user_pks }

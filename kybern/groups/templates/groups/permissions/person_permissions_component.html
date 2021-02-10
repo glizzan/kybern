@@ -90,14 +90,14 @@
             }
         },
         created: function () {
-            console.log("GET IT")
-            this.getPermissionsForItem({ item_id: {{ object.pk}}, item_model: 'group' })
+            this.getPermissionsForItem({ item_id: this.group_pk, item_model: 'group' })
                 .catch(error => {  this.error_message = error; console.log(error) })
         },
         computed: {
             ...Vuex.mapState({
                 user_permissions: state => state.permissions.current_user_permissions,
                 group_name: state => state.group_name,
+                group_pk: state => state.group_pk,
                 roles: state => state.governance.roles
             }),
             ...Vuex.mapGetters(['permissionsForItem', 'getUser', 'permissionsForRole']),

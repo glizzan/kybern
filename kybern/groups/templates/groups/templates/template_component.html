@@ -61,7 +61,7 @@
         created (){
             this.getTemplatesForScope({ scope: this.scope })
             if (this.target_model) { target_model = this.target_model } else { target_model = "group" }
-            if (this.target_id) { target_id = this.target_id } else { target_id = '{{ object.pk }}' }
+            if (this.target_id) { target_id = this.target_id } else { target_id = store.state.group_pk }
             alt_target = target_model + "_" + target_id
             if (!this.create_group) {
                 this.checkPermissions({permissions: {"apply_template": {alt_target:alt_target}}})

@@ -2,9 +2,9 @@
 
     <span>
 
-        <h4 class="text-secondary pb-3">{{ object.name }}'s Forums   
+        <h4 class="text-secondary pb-3">[[ group_name ]]'s Forums
             <router-link :to="{ name: 'add-new-forum'}">
-                <b-button v-if="user_permissions.add_forum" variant="outline-secondary" 
+                <b-button v-if="user_permissions.add_forum" variant="outline-secondary"
                     class="btn-sm ml-3" id="new_forum_button">+ add new</b-button>
             </router-link>
         </h4>
@@ -22,11 +22,11 @@
         <span v-if="Object.keys(forums).length === 0">You do not have any forums yet.</span>
 
     </span>
-       
+
 </script>
 
 
-<script type="application/javascript"> 
+<script type="application/javascript">
 
     // Main vue instance for forums app
     var forumsListComponent = Vue.component('forums-list-component', {
@@ -39,9 +39,10 @@
             }
         },
         computed: {
-            ...Vuex.mapState({ 
+            ...Vuex.mapState({
                 forums: state => state.forums.forums,
-                user_permissions: state => state.permissions.current_user_permissions
+                user_permissions: state => state.permissions.current_user_permissions,
+                group_name: state => state.group_name
             }),
             regular_forums: function() {
                 regular_forums = []

@@ -31,7 +31,7 @@ and history -->
                 resources</b-button>
         </router-link>
 
-        <router-link id="group_history_button" :to="{ name: 'action-history', params: { item_id: {{ object.pk }},
+        <router-link id="group_history_button" :to="{ name: 'action-history', params: { item_id: group_pk,
         item_model: 'group', item_name: group_name }}">
             <b-button block class="mt-3"
                 :variant="$route.meta.highlight == 'history' ? 'secondary' : 'outline-secondary'">
@@ -44,7 +44,7 @@ and history -->
                 governance</b-button>
         </router-link>
 
-        <router-link class="button" :to="{ name: 'item-permissions', params: { item_id: {{ object.pk }},
+        <router-link class="button" :to="{ name: 'item-permissions', params: { item_id: group_pk,
         item_model: 'group', item_name: group_name }}">
             <b-button id="group_permissions_button" block class="mt-3"
                 :variant="$route.meta.highlight == 'permissions' ? 'secondary' : 'outline-secondary'">
@@ -68,25 +68,28 @@ and history -->
             }
         },
         created () {
-            this.checkPermissions({permissions:
-                {join_group: {member_pk_list:[{{ request.user.pk }}]},
-                 leave_group: {member_pk_list:[{{ request.user.pk }}] }}})
+            this.checkPermissions({ permissions:
+                { join_group: { member_pk_list: [ store.state.user_pk ] },
+                  leave_group: { member_pk_list: [ store.state.user_pk ] }
+                }
+            })
         },
         computed: {
             ...Vuex.mapState({
                 group_name: state => state.group_name,
                 group_description: state => state.group_description,
+                group_pk: state => state.group_pk,
                 user_permissions: state => state.permissions.current_user_permissions
             })
         },
         methods: {
             ...Vuex.mapActions(['checkPermissions', 'addMembers', 'removeMembers']),
             join_group() {
-                this.addMembers({ user_pks: [{{ request.user.pk }}] }).then(response => window.location.reload())
+                this.addMembers({ user_pks: [store.state.user_pk] }).then(response => window.location.reload())
                 .catch(error => {  this.error_message = error; console.log(error) })
             },
             leave_group() {
-                this.removeMembers({ user_pks: [{{ request.user.pk }}] }).then(response => window.location.reload())
+                this.removeMembers({ user_pks: [store.state.user_pk] }).then(response => window.location.reload())
                 .catch(error => {  this.error_message = error; console.log(error) })
             }
         }
