@@ -1,13 +1,14 @@
-from django.views import generic
-from django.http import HttpResponseRedirect, JsonResponse
 import json, logging
+from contextlib import suppress
 
-from django.urls import reverse
+from django.urls import reverse, get_resolver, exceptions
 from django.apps import apps
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
+from django.views import generic
+from django.http import HttpResponseRedirect, JsonResponse
 
 from concord.actions.models import TemplateModel
 from concord.resources.models import Comment, SimpleList, CommentCatcher
@@ -23,9 +24,37 @@ from .decorators import reformat_input_data
 logger = logging.getLogger(__name__)
 
 
+
 ##################################
 ### Helper methods and classes ###
 ##################################
+
+
+def get_urls(target=None):
+
+    resolver = get_resolver(None)
+    url_map = {}
+
+    for url_name in resolver.reverse_dict.keys():
+
+        if isinstance(url_name, str):
+
+            with suppress(exceptions.NoReverseMatch):
+                url = resolver.reverse(url_name)
+                url_map.update({url_name: url})
+                continue
+
+            with suppress(exceptions.NoReverseMatch):
+                if target:
+                    url = resolver.reverse(url_name, target=target)
+                    url_map.update({url_name: url})
+                    continue
+
+    return {key:value for key, value in url_map.items() if "groups/" in value}
+
+
+def generate_url_map(request, target=None):
+    return JsonResponse({"urls": get_urls(target)})
 
 
 def get_model(model_name):
@@ -210,133 +239,169 @@ def serialize_lists_for_vue(simple_lists):
 ############################
 
 
-class GroupListView(LoginRequiredMixin, generic.ListView):
+class GroupDetailView(generic.DetailView):
     model = Group
-    template_name = 'groups/groups/group_list.html'
-
-
-class GroupCreateView(LoginRequiredMixin, generic.edit.CreateView):
-    model = Group
-    template_name = 'groups/groups/group_create.html'
-    fields = ['name', 'group_description', 'governing_permission_enabled',
-              'foundational_permission_enabled']
-
-    def form_valid(self, form):
-        self.object = form.save(commit=False)
-        self.object.owner = self.request.user
-        self.object.roles.initialize_with_creator(creator=self.request.user.pk)
-        self.object.save()
-        return HttpResponseRedirect(reverse('group_detail', kwargs={'pk': self.object.pk}))
-
-
-class GroupDetailView(LoginRequiredMixin, generic.DetailView):
-    model = Group
-    template_name = 'groups/groups/group_detail.html'
-
-    def add_user_data_to_context(self, context):
-
-        # Governance info
-        context['owners'] = self.client.Community.target.roles.get_owners()
-        context['governors'] = self.client.Community.target.roles.get_governors()
-        context['governance_info'] = json.dumps(self.client.Community.get_governance_info_as_text())
-        context['owner_condition'] = json.dumps(self.client.Community.get_condition_data(leadership_type="owner"))
-        context['governor_condition'] = json.dumps(self.client.Community.get_condition_data(leadership_type="governor"))
-
-        # Role/Member info
-        context['username_map'] = {person.pk: person.username for person in User.objects.all()}
-        context['current_members'] = [member.pk for member in self.client.Community.get_members()]
-        user_set = set(context['username_map'].keys())
-        member_set = set(context['current_members'])
-        context['potential_members'] = list(user_set.difference(member_set))
-
-        # Role Info
-        context['roles'] = [
-            {'name': role_name, 'current_members': role_data}
-            for role_name, role_data in self.client.Community.get_custom_roles().items()
-        ]
-        # Added for vuex store
-        context["users"] = [{'name': person.username, 'pk': person.pk} for person in User.objects.all()]
-        return context
-
-    def add_permission_data_to_context(self, context):
-        """  This method gets permission *options* and permission configuration *options*, not the permission
-        data itself, which is fetched as needed based on user action.
-
-        (note: this matches format specified in vuex store)
-        permission_options: {{ permission_options}},
-            // {model_name: [ { value: x , text: x} ], model_name: [ { value: x , text: x}  ]}
-        permission_configuration_options: {{ permission_configuration_options}},
-            // { fieldname: { display: x, type: x, required: x, value: x, field_name: x}}
-        """
-
-        context["permission_options"] = {}
-        context["permission_configuration_options"] = {}
-
-        for model_class in [Group, Forum, Post, Comment, PermissionsItem, SimpleList]:
-
-            # get settable permissions given model class
-            settable_permissions = self.client.PermissionResource.get_settable_permissions_for_model(model_class)
-
-            # get a list of permission options and save to permission_options under the model name
-            model_string = model_class.__name__.lower()
-            context["permission_options"][model_string] = []
-            for permission in settable_permissions:
-                context["permission_options"][model_string].append({
-                    "value": permission.get_change_type(),
-                    "text": permission.change_description(),
-                    "group": permission.section
-                })
-
-            # get permission configuration options & save, it's ok if things overwrite because they're the same
-            for permission in settable_permissions:
-                context["permission_configuration_options"].update({
-                    permission.get_change_type(): permission.get_configurable_form_fields()
-                })
-
-        # get dependent field options
-        context["dependent_field_options"] = json.dumps(get_all_dependent_fields())
-
-        # make everything json
-        context["permission_options"] = json.dumps(context["permission_options"])
-        context["permission_configuration_options"] = json.dumps(context["permission_configuration_options"])
-
-        return context
-
-    def add_condition_data_to_context(self, context):
-        """ This method gets condition *options* and configuration *options*, not data for
-        existing conditions. (note: this matches format specified in vuex store)
-
-        condition_options: {{ condition_options }},
-            // [ { value: x , text: x } ]
-        condition_configuration_options: {{ condition_configuration_options }},
-            // { fieldname: { display: x, type: x, required: x, value: x, field_name: x } }
-        """
-
-        # Get condition options
-        settable_conditions = self.client.Conditional.get_possible_conditions()
-        condition_options = [{'value': cond.__name__, 'text': cond.descriptive_name} for cond in settable_conditions]
-        context["condition_options"] = json.dumps(condition_options)
-
-        # Create condition configuration
-        condition_configuration = {}
-        for condition in settable_conditions:
-            condition_configuration.update({condition.__name__: condition.get_configurable_fields()})
-        context["condition_configuration_options"] = json.dumps(condition_configuration)
-
-        return context
-
-    def add_forum_data_to_context(self, context):
-        context['forums'] = serialize_forums_for_vue(self.client.Forum.get_forums_owned_by_target())
-        return context
+    template_name = 'groups/group_detail.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        self.client = Client(actor=self.request.user, target=self.object)
-        context = self.add_user_data_to_context(context)
-        context = self.add_permission_data_to_context(context)
-        context = self.add_condition_data_to_context(context)
-        context = self.add_forum_data_to_context(context)
+        initial_state = {
+            "urls": get_urls(target=self.object.pk),
+            "group_pk": self.object.pk,
+            "group_name": self.object.name,
+            "group_description": self.object.group_description,
+            "user_pk": self.request.user.pk,
+            "user_name": self.request.user.username,
+            "is_authenticated": self.request.user.is_authenticated
+        }
+        context["initial_state"] = json.dumps(initial_state)
         return context
+
+
+class GroupCreateView(LoginRequiredMixin, generic.TemplateView):
+    template_name = "groups/group_create.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        initial_state = {
+            "urls": get_urls(),
+            "user_name": self.request.user.username,
+            "user_pk": self.request.user.pk,
+            "is_authenticated": self.request.user.is_authenticated
+        }
+        context["initial_state"] = json.dumps(initial_state)
+        return context
+
+
+class GroupListView(LoginRequiredMixin, generic.ListView):
+    model = Group
+    template_name = 'groups/group_list.html'
+
+
+
+##############################
+### Views for getting data ###
+##############################
+
+@login_required
+def get_governance_data(request, target):
+
+    client = Client(actor=request.user)
+    default_target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=default_target)
+
+    roles = [ {'name': role_name, 'current_members': role_data}
+              for role_name, role_data in client.Community.get_custom_roles().items() ]
+
+    governance_data = {
+
+        # leadership info
+        "owners": client.Community.target.roles.get_owners(),
+        "governors": client.Community.target.roles.get_governors(),
+        "governance_info": json.dumps(client.Community.get_governance_info_as_text()),
+
+        # role/member info
+        "roles": roles,
+        "current_members": [member.pk for member in client.Community.get_members()],
+        "users": [{'name': person.username, 'pk': person.pk} for person in User.objects.all()]
+
+    }
+
+    return JsonResponse({"governance_data": governance_data})
+
+
+def get_permission_options(client):
+    """  This method gets permission *options* and permission configuration *options*, not the permission
+    data itself, which is fetched as needed based on user action.
+
+    (note: this matches format specified in vuex store)
+    permission_options: {{ permission_options}},
+        // {model_name: [ { value: x , text: x} ], model_name: [ { value: x , text: x}  ]}
+    permission_configuration_options: {{ permission_configuration_options}},
+        // { fieldname: { display: x, type: x, required: x, value: x, field_name: x}}
+    """
+
+    permission_options, permission_configuration_options = {}, {}
+
+    for model_class in [Group, Forum, Post, Comment, PermissionsItem, SimpleList]:
+
+        # get settable permissions given model class
+        settable_permissions = client.PermissionResource.get_settable_permissions_for_model(model_class)
+
+        # get a list of permission options and save to permission_options under the model name
+        model_string = model_class.__name__.lower()
+        permission_options[model_string] = []
+        for permission in settable_permissions:
+            permission_options[model_string].append({
+                "value": permission.get_change_type(),
+                "text": permission.change_description(),
+                "group": permission.section
+            })
+
+        # get permission configuration options & save, it's ok if things overwrite because they're the same
+        for permission in settable_permissions:
+            permission_configuration_options.update({
+                permission.get_change_type(): permission.get_configurable_form_fields()
+            })
+
+    return permission_options, permission_configuration_options
+
+
+def get_condition_options(client):
+    """ This method gets condition *options* and configuration *options*, not data for
+    existing conditions. (note: this matches format specified in vuex store)
+
+    condition_options: {{ condition_options }},
+        // [ { value: x , text: x } ]
+    condition_configuration_options: {{ condition_configuration_options }},
+        // { fieldname: { display: x, type: x, required: x, value: x, field_name: x } }
+    """
+
+    # Get condition options
+    settable_conditions = client.Conditional.get_possible_conditions()
+    condition_options = [{'value': cond.__name__, 'text': cond.descriptive_name} for cond in settable_conditions]
+
+    # Create condition configuration
+    condition_configuration = {}
+    for condition in settable_conditions:
+        condition_configuration.update({condition.__name__: condition.get_configurable_fields()})
+
+    return condition_options, condition_configuration
+
+@login_required
+def get_permission_data(request, target):
+
+    client = Client(actor=request.user)
+    default_target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=default_target)
+
+    permission_options, permission_configuration_options = get_permission_options(client)
+    condition_options, condition_configuration_options = get_condition_options(client)
+    dependent_field_options = get_all_dependent_fields()
+    owner_condition = client.Community.get_condition_data(leadership_type="owner")
+    governor_condition = client.Community.get_condition_data(leadership_type="governor")
+
+    return JsonResponse({
+        "permission_options": permission_options,
+        "permission_configuration_options": permission_configuration_options,
+        "condition_options": condition_options,
+        "condition_configuration_options": condition_configuration_options,
+        "dependent_field_options": dependent_field_options,
+        "owner_condition": owner_condition,
+        "governor_condition": governor_condition
+    })
+
+
+@login_required
+def get_forum_data(request, target):
+
+    client = Client(actor=request.user)
+    default_target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=default_target)
+
+    return JsonResponse({
+        "forums": serialize_forums_for_vue(client.Forum.get_forums_owned_by_target())
+    })
 
 
 ####################

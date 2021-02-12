@@ -1,0 +1,42 @@
+<template>
+
+    <router-link v-if=forum :to="{ name: 'governance-forum-detail', params: { forum_id: pk } }">
+        <b-card class="bg-light text-info border-secondary mb-3">
+            <b-card-title>{{ name }}<b-icon-star-fill v-if=star class="ml-2"></b-icon-star-fill>
+            </b-card-title>
+            <p class="mb-1 text-secondary forum-description">
+                {{ description }} of {{ group_name }}</p>
+        </b-card>
+    </router-link>
+
+</template>
+
+<script>
+
+import Vuex from 'vuex'
+import store from '../../store'
+import { UtilityMixin } from '../utils/Mixins'
+
+
+export default {
+
+    props: ['forum', 'star'],
+    store,
+    mixins: [UtilityMixin],
+    data: function() { return {} },
+    computed: {
+        ...Vuex.mapState({ group_name: state => state.group_name }),
+        name: function() {
+            if (this.forum) { return this.forum.name } else { return "Governance Forum" }
+        },
+        pk: function() {
+            if (this.forum) { return this.forum.pk } else { return null }
+        },
+        description: function() {
+            if (this.forum) { return this.forum.description } else { return null }
+        }
+    }
+
+}
+
+</script>

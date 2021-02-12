@@ -11,8 +11,17 @@ urlpatterns = [
     # catch all for single-page vue app
     path('<int:pk>/<path:resource>', views.GroupDetailView.as_view(), name='group_detail_catchall'),
 
+    # API/AJAX views
+
     # create group ajax view
     path('create-group/', views.create_group, name='create_group'),
+
+    # initial data views
+    path('api/get_urls/', views.generate_url_map, name='generate_url_map'),
+    path('api/get_urls/<int:target>/', views.generate_url_map, name='generate_url_map_with_target'),
+    path('api/get_governance_data/<int:target>/', views.get_governance_data, name='get_governance_data'),
+    path('api/get_permission_data/<int:target>/', views.get_permission_data, name='get_permission_data'),
+    path('api/get_forum_data/<int:target>/', views.get_forum_data, name='get_forum_data'),
 
     # group change views
     path('api/change_group_name/', views.change_group_name, name='change_group_name'),

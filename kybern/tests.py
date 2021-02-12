@@ -29,6 +29,7 @@ class BaseTestCase(StaticLiveServerTestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.browser = Browser('chrome', options=chrome_options)
+        cls.browser.wait_time = 10
         # print("running ", cls.__name__)
 
     @classmethod
@@ -143,19 +144,20 @@ class GroupBasicsTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5)[0].click()
+        time.sleep(2)
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "1 people")
         self.browser.find_by_id('group_membership_display_button', wait_time=5).first.click()
-        time.sleep(.5)
+        time.sleep(2)
         names = [item.text for item in self.browser.find_by_css("span#current_member_list>span.badge", wait_time=5)]
         self.assertEquals(names, ["meganrapinoe"])
         self.browser.find_by_id('add_member_button', wait_time=5).first.click()
-        time.sleep(.25)
+        time.sleep(2)
         self.select_from_multiselect(selection="christenpress")
-        time.sleep(.5)
+        time.sleep(2)
         self.assertEquals(["christenpress"], self.get_selected_in_multiselect())
         self.browser.find_by_id('save_add_member_button', wait_time=5).first.click()
-        time.sleep(.5)
+        time.sleep(2)
         names = [item.text for item in self.browser.find_by_css("span#current_member_list>span.badge", wait_time=5)]
         self.assertEquals(names, ["meganrapinoe", "christenpress"])
         self.browser.find_by_css(".close", wait_time=5).first.click()  # close modal
@@ -170,7 +172,7 @@ class GroupBasicsTestCase(BaseTestCase):
         self.browser.fill('role_name', 'forwards')
         self.browser.find_by_id('save_role_button', wait_time=5).first.click()
         self.browser.find_by_css(".close", wait_time=5).first.click()  # close modal
-        time.sleep(.5)
+        time.sleep(2)
         roles = [item.text for item in self.browser.find_by_css(".role_name_display")]
         self.assertEquals(roles, ["members", "forwards"])
 
@@ -183,6 +185,7 @@ class GroupBasicsTestCase(BaseTestCase):
         self.assertEquals(["christenpress"], self.get_selected_in_multiselect())
         self.browser.find_by_id('save_member_changes', wait_time=5).first.click()
         self.browser.find_by_css(".close", wait_time=5).first.click()  # close modal
+        time.sleep(2)
         self.assertEquals(self.browser.find_by_id('forwards_member_count', wait_time=5).text, "1 people")
 
 
@@ -227,18 +230,19 @@ class PermissionsTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button')[0].click()
         self.browser.find_by_id('members_member_count').scroll_to()
+        time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count').text, "9 people")
         self.browser.find_by_id('group_membership_display_button').first.click()
-        time.sleep(.25)
+        time.sleep(1)
         self.browser.find_by_id('remove_member_button').first.click()
-        time.sleep(.25)
+        time.sleep(1)
         self.select_from_multiselect(selection="tobinheath")
-        time.sleep(.25)
+        time.sleep(1)
         self.assertEquals(["tobinheath"], self.get_selected_in_multiselect())
         self.browser.find_by_id('save_remove_member_button').first.click()
-        time.sleep(.25)
+        time.sleep(1)
         self.browser.find_by_css(".close").first.click()  # close modal
-        time.sleep(.5)
+        time.sleep(1)
         self.assertEquals(self.browser.find_by_id('members_member_count').text, "8 people")
 
         # Emily Sonnett, not a forward, cannot remove members
@@ -246,7 +250,7 @@ class PermissionsTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button')[0].click()
         self.browser.find_by_id('group_membership_display_button').first.click()
-        time.sleep(.25)
+        time.sleep(1)
         self.assertEquals(len(self.browser.find_by_id('remove_member_button')), 0)
 
 
@@ -317,7 +321,7 @@ class ActionConditionsTestCase(BaseTestCase):
         element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield", wait_time=5)[0]
         self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
         self.browser.find_by_id('save_condition_button', wait_time=5).first.click()
-        time.sleep(.3)
+        time.sleep(3)
 
         # Someone with the permission tries to take action (use asserts to check for condition error text)
         self.login_user("christenpress", "badlands2020")
@@ -378,13 +382,13 @@ class ApprovalConditionsTestCase(BaseTestCase):
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span").first.click()
         time.sleep(.25)
         self.browser.find_by_id('save_approve_choice').first.click()
-        time.sleep(.25)
+        time.sleep(2)
         text = "You have approved tobinheath's action. Nothing further is needed from you."
         self.assertTrue(self.browser.is_text_present(text))
 
         # Check action is implemented
         self.browser.back()
-        time.sleep(.25)
+        time.sleep(2)
         css_str = "#action_history_table_element > tbody > tr:nth-child(1)"
         self.assertTrue("implemented" in self.browser.find_by_css(css_str)[0].text)
 
@@ -399,13 +403,13 @@ class ApprovalConditionsTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.'))
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(2) > span").first.click()
         self.browser.find_by_id('save_approve_choice').first.click()
-        time.sleep(.25)
+        time.sleep(2)
         text = "You have rejected tobinheath's action. Nothing further is needed from you."
         self.assertTrue(self.browser.is_text_present(text))
 
         # Check action is rejected
         self.browser.back()
-        time.sleep(.25)
+        time.sleep(2)
         css_str = "#action_history_table_element > tbody > tr:nth-child(1)"
         self.assertTrue("rejected" in self.browser.find_by_css(css_str)[0].text)
 
@@ -459,9 +463,9 @@ class VotingConditionTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present('The results so far are 0 yeas and 0 nays with 0 abstentions.'))
         self.assertTrue(self.browser.is_text_present('Please cast your vote'))
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span").first.click()
-        time.sleep(.25)
+        time.sleep(1)
         self.browser.find_by_id('save_vote_choice').first.click()
-        time.sleep(.25)
+        time.sleep(1)
         self.assertTrue(self.browser.is_text_present('The results so far are 1 yeas and 0 nays with 0 abstentions.'))
         self.assertTrue(self.browser.is_text_present("Thank you for voting! No further action from you is needed."))
 
@@ -476,9 +480,9 @@ class VotingConditionTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present('The results so far are 0 yeas and 0 nays with 0 abstentions.'))
         self.assertTrue(self.browser.is_text_present('Please cast your vote'))
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(2) > span").first.click()
-        time.sleep(.25)
+        time.sleep(1)
         self.browser.find_by_id('save_vote_choice').first.click()
-        time.sleep(.25)
+        time.sleep(1)
         self.assertTrue(self.browser.is_text_present('The results so far are 0 yeas and 1 nays with 0 abstentions.'))
         self.assertTrue(self.browser.is_text_present("Thank you for voting! No further action from you is needed."))
 
@@ -493,9 +497,9 @@ class VotingConditionTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present('The results so far are 0 yeas and 0 nays with 0 abstentions.'))
         self.assertTrue(self.browser.is_text_present('Please cast your vote'))
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(3) > span").first.click()
-        time.sleep(.25)
+        time.sleep(1)
         self.browser.find_by_id('save_vote_choice').first.click()
-        time.sleep(.25)
+        time.sleep(1)
         self.assertTrue(self.browser.is_text_present('The results so far are 0 yeas and 0 nays with 1 abstentions.'))
         self.assertTrue(self.browser.is_text_present("Thank you for voting! No further action from you is needed."))
 
@@ -591,7 +595,7 @@ class ConsensusConditionTestCase(BaseTestCase):
         self.browser.find_by_id('add_role_button').first.click()
         self.browser.fill('role_name', 'midfielders')
         self.browser.find_by_id('save_role_button').first.click()
-        time.sleep(.5)
+        time.sleep(2)
         self.assertTrue(self.browser.is_text_present(
             "There is a condition on your action which must be resolved before your action can be implemented."))
         self.browser.back()
@@ -605,7 +609,7 @@ class ConsensusConditionTestCase(BaseTestCase):
         self.browser.find_by_id('user_response_radio_buttons')[0].scroll_to()
         self.browser.find_by_css("#user_response_radio_buttons > label:first-child").first.click()
         self.browser.find_by_id('submit_response').first.click()
-        time.sleep(.5)
+        time.sleep(3)
         self.assertEquals(self.browser.find_by_id('support_names').first.value, "crystaldunn")
         self.assertTrue(self.browser.is_text_present(
             'The minimum duration of has passed. If the discussion was resolved right now, the result would be: approved.'))
@@ -618,7 +622,7 @@ class ConsensusConditionTestCase(BaseTestCase):
         self.browser.find_by_id('user_response_radio_buttons')[0].scroll_to()
         self.browser.find_by_css("#user_response_radio_buttons > label:nth-child(4)").first.click()
         self.browser.find_by_id('submit_response').first.click()
-        time.sleep(.5)
+        time.sleep(3)
         self.assertEquals(self.browser.find_by_id('block_names').first.value, "tobinheath")
         self.assertTrue(self.browser.is_text_present(
             'The minimum duration of has passed. If the discussion was resolved right now, the result would be: rejected.'))
@@ -643,6 +647,7 @@ class ConsensusConditionTestCase(BaseTestCase):
         # change is implemented
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button').first.click()
+        time.sleep(2)
         roles = [item.text for item in self.browser.find_by_css(".role_name_display")]
         self.assertEquals(roles, ["members", "forwards", "defense", "captains", "midfielders"])
 
@@ -684,7 +689,7 @@ class ConsensusConditionTestCase(BaseTestCase):
         self.browser.find_by_id('user_response_radio_buttons')[0].scroll_to()
         self.browser.find_by_css("#user_response_radio_buttons > label:first-child").first.click()
         self.browser.find_by_id('submit_response').first.click()
-        time.sleep(.5)
+        time.sleep(3)
         self.assertEquals(self.browser.find_by_id('support_names').first.value, "crystaldunn")
         self.assertTrue(self.browser.is_text_present(
             'The minimum duration of has passed. If the discussion was resolved right now, the result would be: rejected.'))
@@ -696,7 +701,7 @@ class ConsensusConditionTestCase(BaseTestCase):
         self.browser.find_by_id('user_response_radio_buttons')[0].scroll_to()
         self.browser.find_by_css("#user_response_radio_buttons > label:first-child").first.click()
         self.browser.find_by_id('submit_response').first.click()
-        time.sleep(.5)
+        time.sleep(3)
         self.assertEquals(self.browser.find_by_id('support_names').first.value, "christenpress, crystaldunn")
         self.assertTrue(self.browser.is_text_present(
             'The minimum duration of has passed. If the discussion was resolved right now, the result would be: rejected.'))
@@ -766,7 +771,7 @@ class ForumsTestCase(BaseTestCase):
         self.browser.fill('forum_name', 'Strategy Sessions')
         self.browser.fill('forum_description', 'A place to discuss strategy')
         self.browser.find_by_id('add_forum_button').first.click()
-        time.sleep(.5)
+        time.sleep(2)
         self.browser.find_by_css(".close").first.click()  # close modal
 
         # can't delete first (governance) forum
@@ -776,9 +781,9 @@ class ForumsTestCase(BaseTestCase):
 
         # delete forum
         self.browser.find_by_css(".forum-description").last.click()
-        time.sleep(.5)
+        time.sleep(2)
         self.browser.find_by_id('delete_forum_button').first.click()
-        time.sleep(.5)
+        time.sleep(2)
         self.assertFalse(self.browser.is_text_present('A place to discuss strategy'))
 
     def test_add_edit_and_delete_post(self):
@@ -803,15 +808,15 @@ class ForumsTestCase(BaseTestCase):
         # Edit post
         self.browser.find_by_css(".post-content").first.click()
         self.browser.find_by_id('edit_post_button').first.click()
-        time.sleep(.5)
+        time.sleep(2)
         self.browser.fill('post_title', 'I have a great idea')
         self.browser.find_by_id('edit_post_save_button').first.click()
-        time.sleep(.25)
+        time.sleep(2)
         self.assertTrue(self.browser.is_text_present('I have a great idea'))
 
         # Delete post
         self.browser.find_by_id('delete_post_button').first.click()
-        time.sleep(.5)
+        time.sleep(2)
         self.assertFalse(self.browser.is_text_present('I have a great idea'))
 
     def test_add_permission_to_forum(self):
@@ -825,7 +830,6 @@ class ForumsTestCase(BaseTestCase):
         self.browser.find_by_id('add_forum_button').first.click()
         self.browser.find_by_css(".close").first.click()  # close modal
         self.browser.find_by_css(".forum-description").first.click()
-        time.sleep(.25)
         time.sleep(3)
 
         # Add permissions - we start with only default permissions, but then have one more
@@ -835,7 +839,7 @@ class ForumsTestCase(BaseTestCase):
                                             'those with role members have permission to add post'])
         self.browser.find_by_id('add_permission_button').first.click()
         self.select_from_multiselect("Edit forum")
-        time.sleep(.25)
+        time.sleep(1)
         element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
         self.browser.find_by_id('save_permission_button').first.click()
@@ -872,11 +876,11 @@ class TemplatesTestCase(BaseTestCase):
         self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
         self.browser.find_by_id('membership_templates_link', wait_time=5).first.click()
         self.browser.find_by_id('select_template_invite_only', wait_time=5).first.click()
-        time.sleep(.2)
+        time.sleep(1)
         roles_that_can_invite_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=roles_that_can_invite_dropdown)
         self.browser.find_by_id('submit_apply_template', wait_time=5).first.click()
-        time.sleep(.75)
+        time.sleep(1)
 
         # check that the template has been applied
         self.browser.reload()
@@ -937,7 +941,7 @@ class TemplatesTestCase(BaseTestCase):
         roles_that_can_invite_dropdown = self.browser.find_by_css(".permissionrolefield", wait_time=5)[0]
         self.select_from_multiselect("forwards", search_within=roles_that_can_invite_dropdown)
         self.browser.find_by_id('submit_apply_template', wait_time=5).first.click()
-        time.sleep(.2)
+        time.sleep(1)
         self.assertTrue(self.browser.is_text_present("There is a condition"))
         self.browser.back()
 
@@ -951,13 +955,13 @@ class TemplatesTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         self.browser.find_by_id('group_history_button', wait_time=5).first.click()
         self.browser.find_by_text("link", wait_time=5)[0].click()
-        time.sleep(.25)
+        time.sleep(1)
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.'))
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span", wait_time=5).first.click()
         self.browser.find_by_id('save_approve_choice', wait_time=5).first.click()
 
         # check that the template has been applied
-        time.sleep(.25)
+        time.sleep(1)
         self.browser.reload()
         self.browser.back()
         self.browser.back()
@@ -997,6 +1001,7 @@ class MembershipTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
+        time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "4 people")
 
         # apply anyone can join template
@@ -1013,14 +1018,15 @@ class MembershipTestCase(BaseTestCase):
         # random person can join
         self.login_user("midgepurce", "badlands2020")
         self.go_to_group("USWNT")
-        time.sleep(.5)
+        time.sleep(1)
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
-        time.sleep(.5)
+        time.sleep(1)
         self.browser.find_by_id("join_group_button", wait_time=5).first.click()
-        time.sleep(1)  # needs a moment to query backend and update
+        time.sleep(2)  # needs a moment to query backend and update
 
         # we should now have 5 members, not 4
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
+        time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "5 people")
 
     def test_invite_only(self):
@@ -1030,11 +1036,12 @@ class MembershipTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button').first.click()
         self.browser.find_by_id('members_member_count')[0].scroll_to()
+        time.sleep(3)
         self.assertEquals(self.browser.find_by_id('members_member_count')[0].text, "4 people")
 
         # apply the template
         self.browser.find_by_id('group_membership_settings_button').first.click()
-        time.sleep(.2)
+        time.sleep(2)
         self.browser.find_by_id('membership_templates_link').first.click()
         self.browser.find_by_id('select_template_invite_only').first.click()
         roles_that_can_invite_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
@@ -1057,12 +1064,12 @@ class MembershipTestCase(BaseTestCase):
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
         self.browser.find_by_id('group_membership_display_button', wait_time=5).first.click()
         self.browser.find_by_id('add_member_button', wait_time=5).first.click()
-        time.sleep(.25)
+        time.sleep(1)
         self.select_from_multiselect(selection="midgepurce")
-        time.sleep(.5)
+        time.sleep(1)
         self.assertEquals(["midgepurce"], self.get_selected_in_multiselect())
         self.browser.find_by_id('save_add_member_button', wait_time=5).first.click()
-        time.sleep(.25)
+        time.sleep(1)
         self.assertTrue(self.browser.is_text_present(
             "There is a condition on your action which must be resolved before your action can be implemented.", wait_time=5))
 
@@ -1070,7 +1077,7 @@ class MembershipTestCase(BaseTestCase):
         self.browser.back()
         self.browser.find_by_id('group_history_button', wait_time=5).first.click()
         self.browser.find_by_text("link", wait_time=5).first.click()
-        time.sleep(.25)
+        time.sleep(1)
         self.assertTrue(self.browser.is_text_present('You do not have permission to approve or reject this action.'))
 
         # Midge approves, and now there are 5 members
@@ -1081,10 +1088,11 @@ class MembershipTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.', wait_time=5))
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span", wait_time=5).first.click()
         self.browser.find_by_id('save_approve_choice', wait_time=5).first.click()
-        time.sleep(.25)
+        time.sleep(1)
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
+        time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5).text, "5 people")
 
     def test_anyone_can_request_to_join(self):
@@ -1093,8 +1101,8 @@ class MembershipTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
-        time.sleep(1)
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
+        time.sleep(3)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "4 people")
 
         # apply anyone can join template
@@ -1138,6 +1146,7 @@ class MembershipTestCase(BaseTestCase):
         self.browser.back()
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
+        time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "5 people")
 
     # TODO: suite of comments test cases
@@ -1193,7 +1202,7 @@ class ListTestCase(BaseTestCase):
         self.browser.find_by_id('add_row_button').first.click()
         self.browser.fill('content', 'Washington Spirit')
         self.browser.find_by_id('add_row_save_button').first.click()
-        time.sleep(.5)
+        time.sleep(2)
         teams = [team.text for team in self.browser.find_by_xpath("//td")]
         teams = list(filter(lambda x: x not in ["edit\ndelete\nmove", "0", "1", "2", "3"], teams))
         self.assertEquals(teams, ["Washington Spirit", "Chicago Red Stars", "NJ Sky Blue"])
@@ -1201,14 +1210,15 @@ class ListTestCase(BaseTestCase):
         # edit a row
         self.browser.find_by_id('edit_row_2').first.click()
         self.browser.fill('content', 'Sky Blue FC')
-        self.browser.find_by_id('edit_row_save_button').first.click()
-        teams = [team.text for team in self.browser.find_by_xpath("//td")]
+        self.browser.find_by_id('edit_row_save_button', wait_time=5).first.click()
+        time.sleep(2)
+        teams = [team.text for team in self.browser.find_by_xpath("//td", wait_time=5)]
         teams = list(filter(lambda x: x not in ["edit\ndelete\nmove", "0", "1", "2", "3"], teams))
         self.assertEquals(teams, ["Washington Spirit", "Chicago Red Stars", "Sky Blue FC"])
 
         # delete a row
         self.browser.find_by_id('delete_row_2').first.click()
-        time.sleep(.5)
+        time.sleep(2)
         teams = [team.text for team in self.browser.find_by_xpath("//td")]
         teams = list(filter(lambda x: x not in ["edit\ndelete\nmove", "0", "1", "2", "3"], teams))
         self.assertEquals(teams, ["Washington Spirit", "Chicago Red Stars"])
@@ -1306,7 +1316,7 @@ class ListTestCase(BaseTestCase):
 
         # rapinoe edits configuration but can't add a required field without default
         self.browser.find_by_id('edit_list_button').first.click()
-        time.sleep(.25)
+        time.sleep(3)
         self.browser.find_by_id('column_required').check()
         self.browser.fill('column_name', "Is Reigning Champion")
         self.browser.find_by_id('add_new_col_button').first.click()
@@ -1318,7 +1328,7 @@ class ListTestCase(BaseTestCase):
         self.browser.find_by_id('edit_list_save_button').first.click()
 
         # upated list missing removed field, has new field
-        time.sleep(.5)
+        time.sleep(3)
         teams = [team.text for team in self.browser.find_by_xpath("//td")]
         teams = list(filter(lambda x: x not in ["edit\ndelete\nmove", "0", "1", "2", "3"], teams))
         self.assertEquals(teams, ['Spirit', 'Washington', 'DC', 'No', 'Sky Blue', '', 'NJ', 'No'])
@@ -1355,7 +1365,7 @@ class DependentFieldTestCase(BaseTestCase):
             if permission.change_type == Changes().Communities.AddMembers:
                 permission.delete()
 
-    def test_dependent_field_created_by_posters_control_posts_template_works(self):
+    def test_the_dependent_field_created_by_posters_control_posts_template_works(self):
 
         # Delete existing comment permission on Forum
         from concord.permission_resources.models import PermissionsItem
@@ -1367,16 +1377,17 @@ class DependentFieldTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_css(".forum-description", wait_time=5).first.click()
-        time.sleep(1) # for some bizarre reason, without this sleep splinter confuses permissions button for history button
+        time.sleep(3) # for some bizarre reason, without this sleep splinter confuses permissions button for history button
         self.browser.find_by_id("forum_permissions_button", wait_time=5).first.click()
         self.browser.find_by_id("apply_templates", wait_time=5).first.click()
+        time.sleep(2)
         self.browser.find_by_id("select_template_posters_control_posts", wait_time=5).first.click()
         self.browser.find_by_id("submit_apply_template", wait_time=5).first.click()
-        time.sleep(1)
+        time.sleep(4)
         self.browser.find_by_css(".permission-display", wait_time=5)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(len(permissions), 9)
-        time.sleep(.5)
+        time.sleep(3)
         self.assertTrue(self.browser.is_text_present(
             "anyone has permission to edit comment, but only if the user is the commenter"))
 
@@ -1390,6 +1401,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.assertEquals(len(self.browser.find_by_id("depend_on_model_post")), 1)
         self.assertTrue(self.browser.find_by_id("depend_on_model_post").first.has_class('btn-info'))
         field_select = self.browser.find_by_css(".dependent-field-select").first
+        time.sleep(1)
         self.assertEquals(field_select.value, "author")
 
         # User makes a post
@@ -1398,9 +1410,9 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.find_by_id('add_post_button', wait_time=5).first.click()
         time.sleep(3)  # this seems to be the important sleep
         self.browser.fill('post_title', 'I have an idea')
-        time.sleep(.5)
+        time.sleep(3)
         self.browser.fill('post_content', "It's a good one")
-        time.sleep(.5)
+        time.sleep(3)
         self.browser.find_by_id('add_post_save_button', wait_time=5).first.click()
         time.sleep(3)
         self.assertTrue(self.browser.is_text_present('I have an idea', wait_time=5))
@@ -1421,13 +1433,13 @@ class DependentFieldTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         self.browser.find_by_css(".forum-description", wait_time=5).first.click()
         self.browser.find_by_css(".post-content", wait_time=5).first.click()
-        time.sleep(1) # again, without this sleep splinter confuses forum button for history button
+        time.sleep(2) # again, without this sleep splinter confuses forum button for history button
         self.browser.find_by_id("post_history_button", wait_time=5).first.click()
         self.browser.find_by_css(".action-link-button", wait_time=5)[0].click()
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.', wait_time=5))
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span", wait_time=5).first.click()
         self.browser.find_by_id('save_approve_choice', wait_time=5).first.click()
-        time.sleep(.5)
+        time.sleep(3)
         self.browser.back()
         self.browser.back()
         self.assertTrue(self.browser.is_text_present("it's ok I guess", wait_time=5))
@@ -1442,7 +1454,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
         self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
         self.browser.find_by_id('add_permission_button', wait_time=5).first.click()
-        time.sleep(1)
+        time.sleep(4)
         self.select_from_multiselect("members")
         self.browser.find_by_id('save_permission_button', wait_time=5).first.click()
 
@@ -1451,17 +1463,20 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.find_by_id("new_condition", wait_time=5).first.click()
         self.browser.select("condition_select", "ApprovalCondition")
         self.browser.find_by_css('.add-dependent-field', wait_time=5)[1].click()
-        time.sleep(.25)
+        time.sleep(6)
         self.browser.find_by_id('depend_on_model_action', wait_time=5).first.click()
         self.browser.select('dependent-field-select', 'member_pk_list')
         self.browser.find_by_id('save-dependent-field', wait_time=5).first.click()
         self.browser.find_by_id('save_condition_button', wait_time=5).first.click()
+        time.sleep(3)
 
         # sets approve permission via dependency field as member_pk_list
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5)[0].click()
+        time.sleep(2)
         self.browser.find_by_id('group_membership_display_button', wait_time=5).first.click()
+        time.sleep(2)
         self.browser.find_by_id('add_member_button', wait_time=5).first.click()
         self.select_from_multiselect(selection="midgepurce")
         self.browser.find_by_id('save_add_member_button', wait_time=5).first.click()
@@ -1483,10 +1498,11 @@ class DependentFieldTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.'))
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span", wait_time=5).first.click()
         self.browser.find_by_id('save_approve_choice', wait_time=5).first.click()
-        time.sleep(.25)
+        time.sleep(3)
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
+        time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5).text, "5 people")
 
 
@@ -1545,13 +1561,14 @@ class MultipleConditionsTestCase(BaseTestCase):
         self.select_from_multiselect("crystaldunn", search_within=element_containing_role_dropdown)
         self.browser.find_by_id('save_condition_button', wait_time=5).first.click()
 
-        time.sleep(.5)
+        time.sleep(2)
 
         # delete third condition
         self.browser.find_by_css(".edit-condition-button", wait_time=5).last.click()
+        time.sleep(10)
         self.browser.find_by_id("delete_condition_button", wait_time=5).first.click()
 
-        time.sleep(.5)
+        time.sleep(1)
 
         # edit one of the two remaining conditions
         self.browser.find_by_css(".edit-condition-button", wait_time=5).first.click()
@@ -1559,7 +1576,7 @@ class MultipleConditionsTestCase(BaseTestCase):
         self.select_from_multiselect("tobinheath", search_within=element_containing_role_dropdown)
         self.browser.find_by_id("save_edit_condition_button", wait_time=5).first.click()
 
-        time.sleep(.5)
+        time.sleep(2)
 
         # take action to trigger the new conditions
         self.login_user("christenpress", "badlands2020")
@@ -1579,24 +1596,25 @@ class MultipleConditionsTestCase(BaseTestCase):
         self.browser.find_by_css(".action-link-button", wait_time=5)[0].click()
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.', wait_time=5))
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span", wait_time=5).first.click()
-        time.sleep(.25)
+        time.sleep(2)
         self.browser.find_by_id('save_approve_choice', wait_time=5).first.click()
-        time.sleep(.25)
+        time.sleep(2)
         text = "You have approved christenpress's action. Nothing further is needed from you."
         self.assertTrue(self.browser.is_text_present(text, wait_time=5))
         self.browser.find_by_css('.card-header-tabs li a', wait_time=5).last.click()
+        time.sleep(2)
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.', wait_time=5))
         self.browser.find_by_css("#btn-radios-1 > label:nth-child(1) > span", wait_time=5).first.click()
-        time.sleep(.25)
+        time.sleep(2)
         self.browser.find_by_id('save_approve_choice', wait_time=5).first.click()
-        time.sleep(.25)
+        time.sleep(2)
         text = "You have approved christenpress's action. Nothing further is needed from you."
         self.assertTrue(self.browser.is_text_present(text, wait_time=5))
-        time.sleep(.5)
+        time.sleep(2)
 
         # action implemented
         self.browser.reload()
-        time.sleep(1)
+        time.sleep(2)
         self.browser.find_by_id('governance_button', wait_time=5)[0].click()
         roles = [item.text for item in self.browser.find_by_css(".role_name_display", wait_time=5)]
         self.assertEquals(roles, ["members", "forwards", "midfielders"])

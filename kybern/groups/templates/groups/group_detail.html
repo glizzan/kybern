@@ -1,0 +1,17 @@
+{% extends 'accounts/alt_base.html' %}
+
+{% block content %}
+
+    {% load render_bundle from webpack_loader %}
+
+    <div id="kybernApp">
+    </div>
+
+    <script type="text/javascript">
+        window.__INITIAL_STATE__ = '{{ initial_state|safe }}'
+    </script>
+
+    {% render_bundle 'chunk-vendors' %}
+    {% render_bundle 'group_detail_vue' %}
+
+{% endblock content %}
