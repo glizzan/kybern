@@ -1001,6 +1001,7 @@ class MembershipTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
+        time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "4 people")
 
         # apply anyone can join template
@@ -1379,6 +1380,7 @@ class DependentFieldTestCase(BaseTestCase):
         time.sleep(3) # for some bizarre reason, without this sleep splinter confuses permissions button for history button
         self.browser.find_by_id("forum_permissions_button", wait_time=5).first.click()
         self.browser.find_by_id("apply_templates", wait_time=5).first.click()
+        time.sleep(2)
         self.browser.find_by_id("select_template_posters_control_posts", wait_time=5).first.click()
         self.browser.find_by_id("submit_apply_template", wait_time=5).first.click()
         time.sleep(4)
@@ -1461,7 +1463,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.find_by_id("new_condition", wait_time=5).first.click()
         self.browser.select("condition_select", "ApprovalCondition")
         self.browser.find_by_css('.add-dependent-field', wait_time=5)[1].click()
-        time.sleep(4)
+        time.sleep(6)
         self.browser.find_by_id('depend_on_model_action', wait_time=5).first.click()
         self.browser.select('dependent-field-select', 'member_pk_list')
         self.browser.find_by_id('save-dependent-field', wait_time=5).first.click()

@@ -24,6 +24,7 @@ from .decorators import reformat_input_data
 logger = logging.getLogger(__name__)
 
 
+
 ##################################
 ### Helper methods and classes ###
 ##################################
@@ -238,33 +239,44 @@ def serialize_lists_for_vue(simple_lists):
 ############################
 
 
-class GroupListView(LoginRequiredMixin, generic.ListView):
+class GroupDetailView(generic.DetailView):
     model = Group
-    template_name = 'groups/groups/group_list.html'
-
-
-class GroupCreateView(LoginRequiredMixin, generic.edit.CreateView):
-    model = Group
-    template_name = 'groups/groups/group_create.html'
-    fields = ['name', 'group_description', 'governing_permission_enabled',
-              'foundational_permission_enabled']
-
-    def form_valid(self, form):
-        self.object = form.save(commit=False)
-        self.object.owner = self.request.user
-        self.object.roles.initialize_with_creator(creator=self.request.user.pk)
-        self.object.save()
-        return HttpResponseRedirect(reverse('group_detail', kwargs={'pk': self.object.pk}))
-
-
-class GroupDetailView(LoginRequiredMixin, generic.DetailView):
-    model = Group
-    template_name = 'groups/groups/group_detail.html'
+    template_name = 'groups/group_detail.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["urls"] = get_urls(target=self.object.pk)
+        initial_state = {
+            "urls": get_urls(target=self.object.pk),
+            "group_pk": self.object.pk,
+            "group_name": self.object.name,
+            "group_description": self.object.group_description,
+            "user_pk": self.request.user.pk,
+            "user_name": self.request.user.username,
+            "is_authenticated": self.request.user.is_authenticated
+        }
+        context["initial_state"] = json.dumps(initial_state)
         return context
+
+
+class GroupCreateView(LoginRequiredMixin, generic.TemplateView):
+    template_name = "groups/group_create.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        initial_state = {
+            "urls": get_urls(),
+            "user_name": self.request.user.username,
+            "user_pk": self.request.user.pk,
+            "is_authenticated": self.request.user.is_authenticated
+        }
+        context["initial_state"] = json.dumps(initial_state)
+        return context
+
+
+class GroupListView(LoginRequiredMixin, generic.ListView):
+    model = Group
+    template_name = 'groups/group_list.html'
+
 
 
 ##############################

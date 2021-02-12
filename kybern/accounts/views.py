@@ -10,17 +10,9 @@ from accounts.models import Profile
 from accounts.forms import RegistrationFormWithCode
 
 
-def myview(request):
-    return HttpResponseRedirect(reverse('arch-summary', args=[1945]))
-
-
 class RegistrationViewWithCode(RegistrationView):
     form_class = RegistrationFormWithCode
     success_url = "/register/complete/"
-
-
-class TestJSView(generic.TemplateView):
-    template_name = 'accounts/test_js.html'
 
 
 class IndexView(generic.TemplateView):

@@ -11,6 +11,8 @@ urlpatterns = [
     # catch all for single-page vue app
     path('<int:pk>/<path:resource>', views.GroupDetailView.as_view(), name='group_detail_catchall'),
 
+    # API/AJAX views
+
     # create group ajax view
     path('create-group/', views.create_group, name='create_group'),
 
