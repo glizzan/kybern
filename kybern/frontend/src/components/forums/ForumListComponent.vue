@@ -37,11 +37,6 @@ export default {
 
     store,
     components: { GovernanceForumLinkComponent },
-    data: function() {
-        return {
-            governance_forum: null
-        }
-    },
     computed: {
         ...Vuex.mapState({
             forums: state => state.forums.forums,
@@ -51,13 +46,15 @@ export default {
         regular_forums: function() {
             var regular_forums = []
             for (let index in this.forums) {
-                if (this.forums[index].special == "Gov") {
-                    this.governance_forum = this.forums[index]
-                } else {
-                    regular_forums.push(this.forums[index])
-                }
+                if (this.forums[index].special != "Gov") { regular_forums.push(this.forums[index]) }
             }
             return regular_forums
+        },
+        governance_forum: function() {
+            for (let index in this.forums) {
+                if (this.forums[index].special == "Gov") { return this.forums[index] }
+            }
+            return null
         }
     },
     created () {
