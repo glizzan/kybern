@@ -93,11 +93,11 @@ export default {
         ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'leadershipAsOptions']),
         owner_condition_display: function() {
             if (this.owner_condition) { return this.owner_condition.how_to_pass_overall }
-            else { "No condition has been set on owners." }
+            else { return "No condition has been set on owners." }
         },
         governor_condition_display: function() {
             if (this.governor_condition) { return this.governor_condition.how_to_pass_overall }
-            else { "No condition has been set on governors." }
+            else { return "No condition has been set on governors." }
         }
     },
     methods: {
