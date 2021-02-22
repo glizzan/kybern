@@ -1305,6 +1305,7 @@ class ListTestCase(BaseTestCase):
         self.browser.find_by_id('link_to_list_0').first.click()
 
         # rapinoe adds two rows with original configuration
+        time.sleep(2)
         self.browser.find_by_id('add_row_button', wait_time=5).first.click()
         time.sleep(1)
         self.browser.fill('Team Name', 'Sky Blue')
