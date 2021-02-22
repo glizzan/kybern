@@ -72,8 +72,8 @@ jobs:
         npm run build
         cd ..
         python manage.py collectstatic
-        python manage.py test
+        python manage.py test tests.ListTestCase
     - name: Lint Python code
       run: |
         cd kybern
-        flake8 --extend-ignore=E401,W291,E266,I001,I002,I003,I004 .
+        flake8 --extend-ignore=E401,W291,E266,I001,I002,I003,I004,F405 .

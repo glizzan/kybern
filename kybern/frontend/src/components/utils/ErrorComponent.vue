@@ -1,12 +1,12 @@
 <template>
 
     <div :id="unique_identifier" :class="styleclass">
-        <span v-if="dismissable && message">
+        <span v-if="dismissable && message" class="error-message">
             <b-alert variant="danger" dismissible class="my-2 error-alert"
                 :show="show_dismissible_alert" @dismissed="show_dismissible_alert=false" >
                 {{ message }}</b-alert>
         </span>
-        <span v-else>
+        <span v-else class="error-message">
             {{ message }}
         </span>
     </div>
