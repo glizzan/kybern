@@ -1308,7 +1308,7 @@ class ListTestCase(BaseTestCase):
         self.browser.fill('Team Name', 'Sky Blue')
         self.browser.fill('State', 'NJ')
         self.browser.find_by_id('add_row_save_button').first.click()
-        self.browser.find_by_id('add_row_button', wait_time=5)[0].scroll_to()  # help prevent not-clickable error?
+        time.sleep(2)  # prevent confusing error?
         self.browser.find_by_id('add_row_button').first.click()
         self.browser.fill('Team Name', 'Spirit')
         self.browser.fill('City', 'Washington')
