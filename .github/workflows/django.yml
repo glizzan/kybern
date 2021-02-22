@@ -64,10 +64,13 @@ jobs:
       run: |
         cd kybern/frontend
         npm run test:unit
-    # Python tests
+    # Python tests (need to re-build Javascript so it can be used in integration tests)
     - name: Run Python Tests
       run: |
-        cd kybern
+        cd kybern/frontend
+        npm install
+        npm run build
+        cd ..
         python manage.py test
     - name: Lint Python code
       run: |
