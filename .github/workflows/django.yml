@@ -55,13 +55,15 @@ jobs:
         pip install -U selenium
     # Javascript setup & tests
     - uses: actions/setup-node@v1
-    - name: Set up & test Javascript
+    - name: Set up Javascript
       run: |
-        cd frontend
+        cd kybern/frontend
         npm install
         npm run build
+    - name: Test Javascript
+      run: |
+        cd kybern/frontend
         npm run test:unit
-        cd ..
     # Python tests
     - name: Run Python Tests
       run: |
