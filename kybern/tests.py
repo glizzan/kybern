@@ -1309,7 +1309,9 @@ class ListTestCase(BaseTestCase):
         self.browser.fill('Team Name', 'Sky Blue')
         self.browser.fill('State', 'NJ')
         self.browser.find_by_id('add_row_save_button').first.click()
-        time.sleep(3)
+        time.sleep(4)
+        if self.browser.is_element_present_by_css(".close"):
+            self.browser.find_by_css(".close", wait_time=5).first.click()
         self.browser.find_by_id('add_row_button', wait_time=5).first.click()
         self.browser.fill('Team Name', 'Spirit')
         self.browser.fill('City', 'Washington')
