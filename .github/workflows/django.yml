@@ -72,7 +72,7 @@ jobs:
         npm run build
         cd ..
         python manage.py collectstatic
-        python manage.py test tests.ListTestCase
+        python manage.py test
     - name: Lint Python code
       run: |
         cd kybern
