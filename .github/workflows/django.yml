@@ -54,13 +54,14 @@ jobs:
         python -m pip install git+https://github.com/glizzan/glizzan-concord
         pip install -U selenium
     # Javascript setup & tests
-    - name: Use Node.js
+    - name: Set up & test Javascript
       uses: actions/setup-node@v1
-    - run: npm install
-    - run: npm run build
-    - run: cd frontend
-    - run: npm run test:unit
-    - run: cd ..
+      run: |
+        cd frontend
+        npm install
+        npm run build
+        npm run test:unit
+        cd ..
     # Python tests
     - name: Run Python Tests
       run: |
