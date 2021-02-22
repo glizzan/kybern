@@ -58,7 +58,9 @@ jobs:
       uses: actions/setup-node@v1
     - run: npm install
     - run: npm run build
+    - run: cd frontend
     - run: npm run test:unit
+    - run: cd ..
     # Python tests
     - name: Run Python Tests
       run: |
