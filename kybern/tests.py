@@ -1313,7 +1313,9 @@ class ListTestCase(BaseTestCase):
             print("HEY THE MODAL IS STILL OPEN!!!!!!!!!!!!!!!!!!!")
             error = self.browser.find_by_css("error-message")
             if error:
-                print(error.first.end=text)
+                print(error)
+                if hasattr(error, "first") and hasattr(error.first, "text"):
+                    print(error.first.text)
             self.browser.find_by_css(".close", wait_time=5).first.click()  # close modal
         self.browser.find_by_id('add_row_button', wait_time=5).first.click()
         self.browser.fill('Team Name', 'Spirit')
