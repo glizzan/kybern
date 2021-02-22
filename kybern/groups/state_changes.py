@@ -49,7 +49,7 @@ class AddForumStateChange(BaseStateChange):
     allowable_targets = ["all_community_models"]
     settable_classes = ["all_community_models", Forum]
 
-    #fields
+    # Fields
     name = field_utils.CharField(label="Name of forum", required=True)
     description = field_utils.CharField(label="Forum description", null_value="")
 

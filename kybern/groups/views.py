@@ -24,7 +24,6 @@ from .decorators import reformat_input_data
 logger = logging.getLogger(__name__)
 
 
-
 ##################################
 ### Helper methods and classes ###
 ##################################
@@ -50,7 +49,7 @@ def get_urls(target=None):
                     url_map.update({url_name: url})
                     continue
 
-    return {key:value for key, value in url_map.items() if "groups/" in value}
+    return {key: value for key, value in url_map.items() if "groups/" in value}
 
 
 def generate_url_map(request, target=None):
@@ -278,7 +277,6 @@ class GroupListView(LoginRequiredMixin, generic.ListView):
     template_name = 'groups/group_list.html'
 
 
-
 ##############################
 ### Views for getting data ###
 ##############################
@@ -290,8 +288,8 @@ def get_governance_data(request, target):
     default_target = client.Community.get_community(community_pk=target)
     client.update_target_on_all(target=default_target)
 
-    roles = [ {'name': role_name, 'current_members': role_data}
-              for role_name, role_data in client.Community.get_custom_roles().items() ]
+    roles = [{'name': role_name, 'current_members': role_data}
+             for role_name, role_data in client.Community.get_custom_roles().items()]
 
     governance_data = {
 
@@ -367,6 +365,7 @@ def get_condition_options(client):
         condition_configuration.update({condition.__name__: condition.get_configurable_fields()})
 
     return condition_options, condition_configuration
+
 
 @login_required
 def get_permission_data(request, target):
