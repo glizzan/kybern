@@ -8,7 +8,7 @@ from unittest import skip
 
 from django import db
 from django.contrib.auth.models import User
-from concord.utils.helpers  import Changes, Client
+from concord.utils.helpers import Changes, Client
 from groups.models import Forum
 from concord.actions.models import TemplateModel
 
@@ -1012,7 +1012,8 @@ class MembershipTestCase(BaseTestCase):
 
         # check template was applied
         permission_display = self.browser.find_by_css("#add_member_permissions * .permission-display", wait_time=5)
-        self.assertEquals([item.text for item in permission_display],
+        self.assertEquals(
+            [item.text for item in permission_display],
             ["anyone has permission to add members to community, but only if the user is adding themselves"])
 
         # random person can join
@@ -1125,7 +1126,7 @@ class MembershipTestCase(BaseTestCase):
         time.sleep(1)
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
         self.browser.find_by_id("join_group_button", wait_time=5).first.click()
-        time.sleep(1) # may be necessary for scroll_tos?
+        time.sleep(1)  # may be necessary for scroll_tos?
         self.browser.find_by_id('members_member_count')[0].scroll_to()
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "4 people")
 
@@ -1304,11 +1305,16 @@ class ListTestCase(BaseTestCase):
         self.browser.find_by_id('link_to_list_0').first.click()
 
         # rapinoe adds two rows with original configuration
-        self.browser.find_by_id('add_row_button').first.click()
+        time.sleep(2)
+        self.browser.find_by_id('add_row_button', wait_time=5).first.click()
+        time.sleep(1)
         self.browser.fill('Team Name', 'Sky Blue')
         self.browser.fill('State', 'NJ')
         self.browser.find_by_id('add_row_save_button').first.click()
-        self.browser.find_by_id('add_row_button').first.click()
+        time.sleep(4)
+        if self.browser.is_element_present_by_css(".close"):
+            self.browser.find_by_css(".close", wait_time=5).first.click()
+        self.browser.find_by_id('add_row_button', wait_time=5).first.click()
         self.browser.fill('Team Name', 'Spirit')
         self.browser.fill('City', 'Washington')
         self.browser.fill('State', 'DC')
@@ -1377,7 +1383,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_css(".forum-description", wait_time=5).first.click()
-        time.sleep(3) # for some bizarre reason, without this sleep splinter confuses permissions button for history button
+        time.sleep(3)  # for some bizarre reason, without this sleep splinter confuses perm button for history button
         self.browser.find_by_id("forum_permissions_button", wait_time=5).first.click()
         self.browser.find_by_id("apply_templates", wait_time=5).first.click()
         time.sleep(2)
@@ -1433,7 +1439,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         self.browser.find_by_css(".forum-description", wait_time=5).first.click()
         self.browser.find_by_css(".post-content", wait_time=5).first.click()
-        time.sleep(2) # again, without this sleep splinter confuses forum button for history button
+        time.sleep(2)  # again, without this sleep splinter confuses forum button for history button
         self.browser.find_by_id("post_history_button", wait_time=5).first.click()
         self.browser.find_by_css(".action-link-button", wait_time=5)[0].click()
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.', wait_time=5))

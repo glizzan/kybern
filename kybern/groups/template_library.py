@@ -1,7 +1,7 @@
 """Define templates targeting models in this app."""
 
 from concord.actions.template_library import TemplateLibraryObject
-from concord.utils.helpers  import Changes
+from concord.utils.helpers import Changes
 
 
 class EmpowerPostersForumTemplate(TemplateLibraryObject):
