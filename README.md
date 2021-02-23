@@ -25,15 +25,20 @@ Kybern has been released under a custom license, the [Concord Cooperative Licens
 
 You should now be able to view the site. You will need to register on the site and then log in before you can use most of the functionality.  Registration involves an email confirmation step, so before registering on the site you will need to set up a local email server.  To do this, open a separate terminal window and type:
 
-`python -m smtpd -n -c DebuggingServer localhost:1025` 
+`python -m smtpd -n -c DebuggingServer localhost:1025`
 
 Now when you register on the site, an email will be sent to the local server, and will
-be viewable in that separate tab.  Go ahead and register via the browser, using an 
-access code from `accounts/forms.py`.  
+be viewable in that separate tab.  Go ahead and register via the browser, using an
+access code from `accounts/forms.py`.
 
 The email sent to the local server should include an activation link. Cut and paste this activation link into your browser to active your user. You should see a response in the browser telling you that you are know able to log in - go ahead and do so.  You should
 be all set!
 
+### Working with Javascript
+
+By default, our Javascript is saved as staticfiles and loaded using the static template utility. When making changes to the Javascript, you'll want to re-build the files with the command `npm run build`. You'll then need to collect the new files with `python manage.py collectstatic`.
+
+This can be tedious when working intensively with the Javascript files, so there's another option: webpack_loader. To switch from staticfiles to webpack_loader, go to `settings.py` and change the variable LOAD_JS_WITH_WEBPACK to true. This will temporarily break the site as we need our Javascript files served from somewhere. Open up a new terminal window, cd into the frontend directory, and type `npm run serve` to serve the files. The site should work again, and should automatically update when you change or add Vue components, routes, etc.
 
 ### Updating Concord and re-installing in Kybern
 
@@ -47,7 +52,7 @@ Remember that if you make a db change in Concord, you'll need to run makemigrati
 ### Installing postgres and setting up the database
 
 1. download postgres
-1. to start postgres, type `sudo -u postgres -i` 
+1. to start postgres, type `sudo -u postgres -i`
 1. to start psql, type `psql`
 1. type `CREATE DATABASE kybern_db; CREATE USER kybern_db_superuser WITH PASSWORD 'elephant'; GRANT ALL PRIVILEGES ON DATABASE kybern_db TO kybern_db_superuser; ALTER USER kybern_db_superuser CREATEDB; ALTER ROLE kybern_db_superuser SET client_encoding TO 'utf8'; ALTER ROLE kybern_db_superuser SET default_transaction_isolation TO 'read committed'; ALTER ROLE kybern_db_superuser SET timezone TO 'UTC';`
 1. to leave psql, type `\q`

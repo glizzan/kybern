@@ -1,7 +1,5 @@
 {% extends 'accounts/alt_base.html' %}
 
-{% load static %}
-
 {% block content %}
 
     <div id="kybernApp">
@@ -11,7 +9,18 @@
         window.__INITIAL_STATE__ = '{{ initial_state|safe }}'
     </script>
 
-    <script type="text/javascript" src="{% static 'js/chunk-vendors.js' %}"></script>
-    <script type="text/javascript" src="{% static 'js/group_detail_vue.js' %}"></script>
+    {% if LOAD_JS_WITH_WEBPACK %}
+
+        {% load render_bundle from webpack_loader %}
+        {% render_bundle 'chunk-vendors' %}
+        {% render_bundle 'group_detail_vue' %}
+
+    {% else %}
+
+        {% load static %}
+        <script type="text/javascript" src="{% static 'js/chunk-vendors.js' %}"></script>
+        <script type="text/javascript" src="{% static 'js/group_detail_vue.js' %}"></script>
+
+    {% endif %}
 
 {% endblock content %}
