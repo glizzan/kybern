@@ -2,7 +2,7 @@
 
     <span>
 
-        <h4 class="text-secondary pb-3">{{ group_name }}'s Lists
+        <h4 class="text-secondary pb-3">Lists
 
         <router-link :to="{ name: 'add-new-list'}">
             <b-button variant="outline-secondary"

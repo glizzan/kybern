@@ -2,7 +2,7 @@
 
     <span>
 
-        <h4 class="text-secondary pb-3">{{ group_name }}'s Forums
+        <h4 class="text-secondary pb-3">Forums
             <router-link :to="{ name: 'add-new-forum'}">
                 <b-button v-if="user_permissions.add_forum" variant="outline-secondary"
                     class="btn-sm ml-3" id="new_forum_button">+ add new</b-button>
