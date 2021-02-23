@@ -23,7 +23,6 @@ import ForumListComponent from '../components/forums/ForumListComponent'
 import ForumComponent from '../components/forums/ForumComponent'
 import PostComponent from '../components/forums/PostComponent'
 import PostFormComponent from '../components/forums/PostFormComponent'
-import GovernanceForumComponent from '../components/forums/GovernanceForumComponent'
 // templates
 import TemplateComponent from '../components/templates/TemplateComponent'
 // lists
@@ -200,15 +199,6 @@ const routes = [
         components: {
             sidebar: GroupConfigComponent,
             main: ForumComponent
-        }
-    },
-    {
-        name: 'governance-forum-detail',
-        path: '/forums/governance/:forum_id',
-        props: { sidebar: false, main: true },
-        components: {
-            sidebar: GroupConfigComponent,
-            main: GovernanceForumComponent
         }
     },
     {

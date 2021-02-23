@@ -4,7 +4,7 @@ from splinter import Browser
 from django.conf import settings
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
-from unittest import skip
+from unittest import skipIf
 
 from django import db
 from django.contrib.auth.models import User
@@ -21,6 +21,25 @@ if os.environ.get("GITHUB_ACTIONS") or settings.RUN_HEADLESS:
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--window-size=1200,1100')
 
+display_test_cases = False
+
+test_cases_to_skip = [
+    # "AccountsTestCase",
+    # "ActionsTestCase",
+    # "ActionConditionsTestCase",
+    # "ApprovalConditionsTestCase",
+    # "ConsensusConditionTestCase",
+    # "DependentFieldTestCase",
+    # "ForumsTestCase",
+    # "GroupBasicsTestCase",
+    # "ListTestCase",
+    # "MembershipTestCase",
+    # "PermissionsTestCase",
+    # "MultipleConditionsTestCase",
+    # "TemplatesTestCase",
+    # "VotingConditionTestCase",
+]
+
 
 class BaseTestCase(StaticLiveServerTestCase):
     """BaseTestCase contains all setup & teardown used universally by tests."""
@@ -30,7 +49,8 @@ class BaseTestCase(StaticLiveServerTestCase):
         super().setUpClass()
         cls.browser = Browser('chrome', options=chrome_options)
         cls.browser.wait_time = 10
-        # print("running ", cls.__name__)
+        if display_test_cases:
+            print("running ", cls.__name__)
 
     @classmethod
     def tearDownClass(cls):
@@ -89,6 +109,7 @@ class BaseTestCase(StaticLiveServerTestCase):
         self.browser.find_by_text(group_name).first.click()
 
 
+@skipIf("AccountsTestCase" in test_cases_to_skip, "")
 class AccountsTestCase(BaseTestCase):
 
     def setUp(self):
@@ -120,6 +141,7 @@ class AccountsTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present('username: meganrapinoe'))
 
 
+@skipIf("GroupBasicsTestCase" in test_cases_to_skip, "")
 class GroupBasicsTestCase(BaseTestCase):
 
     def setUp(self):
@@ -138,7 +160,7 @@ class GroupBasicsTestCase(BaseTestCase):
         self.browser.find_by_id('start_from_scratch', wait_time=5).first.click()
         self.browser.find_by_id('create_group_button', wait_time=5).first.click()
         self.assertTrue(self.browser.is_text_present('edit group', wait_time=5))  # shows we're on group detail page now
-        self.assertTrue(self.browser.is_text_present("NWSL's Forums", wait_time=5))  # shows we're on newly created detail page now
+        self.assertTrue(self.browser.is_text_present("For NWSL players", wait_time=5))  # shows we're on newly created detail page now
 
     def test_add_members_to_group(self):
         self.login_user("meganrapinoe", "badlands2020")
@@ -189,6 +211,7 @@ class GroupBasicsTestCase(BaseTestCase):
         self.assertEquals(self.browser.find_by_id('forwards_member_count', wait_time=5).text, "1 people")
 
 
+@skipIf("PermissionsTestCase" in test_cases_to_skip, "")
 class PermissionsTestCase(BaseTestCase):
 
     def setUp(self):
@@ -254,6 +277,7 @@ class PermissionsTestCase(BaseTestCase):
         self.assertEquals(len(self.browser.find_by_id('remove_member_button')), 0)
 
 
+@skipIf("ActionsTestCase" in test_cases_to_skip, "")
 class ActionsTestCase(BaseTestCase):
 
     def setUp(self):
@@ -282,6 +306,7 @@ class ActionsTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present('meganrapinoe added role forwards'))
 
 
+@skipIf("ActionConditionsTestCase" in test_cases_to_skip, "")
 class ActionConditionsTestCase(BaseTestCase):
 
     def setUp(self):
@@ -338,6 +363,7 @@ class ActionConditionsTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present('Please cast your vote', wait_time=5))
 
 
+@skipIf("ApprovalConditionsTestCase" in test_cases_to_skip, "")
 class ApprovalConditionsTestCase(BaseTestCase):
 
     def setUp(self):
@@ -422,6 +448,7 @@ class ApprovalConditionsTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present('You do not have permission to approve or reject this action.'))
 
 
+@skipIf("VotingConditionTestCase" in test_cases_to_skip, "")
 class VotingConditionTestCase(BaseTestCase):
 
     def setUp(self):
@@ -513,6 +540,7 @@ class VotingConditionTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present('You are not eligible to vote.'))
 
 
+@skipIf("ConsensusConditionTestCase" in test_cases_to_skip, "")
 class ConsensusConditionTestCase(BaseTestCase):
 
     def setUp(self):
@@ -711,6 +739,7 @@ class ConsensusConditionTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present('The condition was resolved with resolution rejected. Your response was support.'))
 
 
+@skipIf("ForumsTestCase" in test_cases_to_skip, "")
 class ForumsTestCase(BaseTestCase):
 
     def setUp(self):
@@ -753,7 +782,7 @@ class ForumsTestCase(BaseTestCase):
 
         # Edit forum
         self.browser.reload()
-        self.browser.find_by_css(".forum-description", wait_time=5).last.click()
+        self.browser.find_by_css(".forum-link", wait_time=5).last.click()
         self.browser.find_by_id("edit_forum_button", wait_time=5).last.click()
         self.browser.fill('forum_description', 'A place to make strategy')
         self.browser.find_by_id('edit_forum_save_button').first.click()
@@ -775,12 +804,12 @@ class ForumsTestCase(BaseTestCase):
         self.browser.find_by_css(".close").first.click()  # close modal
 
         # can't delete first (governance) forum
-        self.browser.find_by_css(".forum-description").first.click()
+        self.browser.find_by_css(".forum-link").first.click()
         self.assertFalse(self.browser.is_text_present('delete forum'))
         self.browser.back()
 
         # delete forum
-        self.browser.find_by_css(".forum-description").last.click()
+        self.browser.find_by_css(".forum-link").last.click()
         time.sleep(2)
         self.browser.find_by_id('delete_forum_button').first.click()
         time.sleep(2)
@@ -796,7 +825,7 @@ class ForumsTestCase(BaseTestCase):
         self.browser.fill('forum_description', 'A place to discuss strategy')
         self.browser.find_by_id('add_forum_button').first.click()
         self.browser.find_by_css(".close").first.click()  # close modal
-        self.browser.find_by_css(".forum-description").first.click()
+        self.browser.find_by_css(".forum-link").first.click()
 
         # Add post
         self.browser.find_by_id('add_post_button').first.click()
@@ -806,7 +835,7 @@ class ForumsTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present('I have an idea'))
 
         # Edit post
-        self.browser.find_by_css(".post-content").first.click()
+        self.browser.find_by_css(".post-link").first.click()
         self.browser.find_by_id('edit_post_button').first.click()
         time.sleep(2)
         self.browser.fill('post_title', 'I have a great idea')
@@ -829,7 +858,7 @@ class ForumsTestCase(BaseTestCase):
         self.browser.fill('forum_description', 'A place to discuss strategy')
         self.browser.find_by_id('add_forum_button').first.click()
         self.browser.find_by_css(".close").first.click()  # close modal
-        self.browser.find_by_css(".forum-description").first.click()
+        self.browser.find_by_css(".forum-link").first.click()
         time.sleep(3)
 
         # Add permissions - we start with only default permissions, but then have one more
@@ -850,6 +879,7 @@ class ForumsTestCase(BaseTestCase):
                                             'those with role members have permission to add post'])
 
 
+@skipIf("TemplatesTestCase" in test_cases_to_skip, "")
 class TemplatesTestCase(BaseTestCase):
 
     def setUp(self):
@@ -971,6 +1001,7 @@ class TemplatesTestCase(BaseTestCase):
         self.assertTrue("those with role forwards have permission to add members to community" in permissions)
 
 
+@skipIf("MembershipTestCase" in test_cases_to_skip, "")
 class MembershipTestCase(BaseTestCase):
 
     def setUp(self):
@@ -1153,6 +1184,7 @@ class MembershipTestCase(BaseTestCase):
     # TODO: suite of comments test cases
 
 
+@skipIf("ListTestCase" in test_cases_to_skip, "")
 class ListTestCase(BaseTestCase):
 
     def setUp(self):
@@ -1348,6 +1380,7 @@ class ListTestCase(BaseTestCase):
         self.assertTrue(self.browser.is_text_present('The default value for this column is No.'))
 
 
+@skipIf("DependentFieldTestCase" in test_cases_to_skip, "")
 class DependentFieldTestCase(BaseTestCase):
 
     def setUp(self):
@@ -1382,7 +1415,7 @@ class DependentFieldTestCase(BaseTestCase):
         # Creator applies "posters control posts" template to Governance Forum
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_css(".forum-description", wait_time=5).first.click()
+        self.browser.find_by_css(".forum-link", wait_time=5).first.click()
         time.sleep(3)  # for some bizarre reason, without this sleep splinter confuses perm button for history button
         self.browser.find_by_id("forum_permissions_button", wait_time=5).first.click()
         self.browser.find_by_id("apply_templates", wait_time=5).first.click()
@@ -1427,8 +1460,8 @@ class DependentFieldTestCase(BaseTestCase):
         # Another user makes a comment on the post
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_css(".forum-description").first.click()
-        self.browser.find_by_css(".post-content").first.click()
+        self.browser.find_by_css(".forum-link").first.click()
+        self.browser.find_by_css(".post-link").first.click()
         self.browser.find_by_css(".add-comment").first.click()
         self.browser.fill('comment_text', "it's ok I guess")
         self.browser.find_by_id('submit_comment_button', wait_time=5).first.click()
@@ -1437,9 +1470,9 @@ class DependentFieldTestCase(BaseTestCase):
         # User approves it
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_css(".forum-description", wait_time=5).first.click()
-        self.browser.find_by_css(".post-content", wait_time=5).first.click()
-        time.sleep(2)  # again, without this sleep splinter confuses forum button for history button
+        self.browser.find_by_css(".forum-link", wait_time=5).first.click()
+        self.browser.find_by_css(".post-link", wait_time=5).first.click()
+        time.sleep(4)  # again, without this sleep splinter confuses forum button for history button
         self.browser.find_by_id("post_history_button", wait_time=5).first.click()
         self.browser.find_by_css(".action-link-button", wait_time=5)[0].click()
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.', wait_time=5))
@@ -1512,6 +1545,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5).text, "5 people")
 
 
+@skipIf("MultipleConditionsTestCase" in test_cases_to_skip, "")
 class MultipleConditionsTestCase(BaseTestCase):
 
     def setUp(self):
