@@ -6,7 +6,7 @@
             <b-card v-if="governance_forum" class="bg-light border-secondary" no-body>
                 <b-card-header>
                     <router-link v-if=governance_forum class="text-info"
-                            :to="{ name: 'governance-forum-detail', params: { forum_id: governance_forum.pk } }">
+                            :to="{ name: 'forum-detail', params: { forum_id: governance_forum.pk } }">
                         {{ governance_forum.name }} </router-link>
                 </b-card-header>
                 <b-card-text id="forum-description" class="text-muted p-3">

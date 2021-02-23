@@ -21,7 +21,7 @@ if os.environ.get("GITHUB_ACTIONS") or settings.RUN_HEADLESS:
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--window-size=1200,1100')
 
-display_test_cases = False
+display_test_cases = True
 
 test_cases_to_skip = [
     # "AccountsTestCase",
@@ -1258,7 +1258,7 @@ class ListTestCase(BaseTestCase):
 
         # delete list
         self.browser.find_by_id('delete_list_button').first.click()
-        self.assertTrue(self.browser.is_text_present('You do not have any lists yet.'))
+        self.assertTrue(self.browser.is_text_present('There are no lists yet.'))
 
     def test_list_check_permissions(self):
 

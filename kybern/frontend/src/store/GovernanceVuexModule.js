@@ -40,6 +40,9 @@ const GovernanceVuexModule = {
         getUserName: (state, getters) => (pk) => {
             return getters.getUser(pk).name
         },
+        userInGroup: (state, getters) => (pk) => {
+            return pk in state.members
+        },
         membersInRole: (state, getters) => (role_name) => {
             return state.roles.find(role => role.name == role_name).current_members
         },
