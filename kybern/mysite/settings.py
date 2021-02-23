@@ -83,6 +83,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'accounts.context_processors.load_js_with_webpack',
             ],
         },
     },
@@ -218,6 +219,7 @@ WEBPACK_LOADER = {
     }
 }
 
+LOAD_JS_WITH_WEBPACK = False
 
 RUN_HEADLESS = False
-# RUN_HEADLESS = True
+RUN_HEADLESS = True

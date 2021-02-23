@@ -1,6 +1,6 @@
 <template>
 
-    <span>
+    <span v-if="forum_name">
 
         <h3 class="mt-3">{{ forum_name }}</h3>
         <p>{{ forum_description }}</p>
@@ -10,8 +10,8 @@
                 edit forum info</b-button>
         </router-link>
 
-        <b-button variant="outline-secondary" class="btn-sm" id="delete_forum_button" v-if="user_permissions.delete_forum"
-            @click="delete_forum(forum_id)">delete forum</b-button>
+        <b-button v-if="user_permissions.delete_forum && !is_governance_forum" variant="outline-secondary"
+            class="btn-sm" id="delete_forum_button" @click="delete_forum(forum_id)">delete forum</b-button>
 
         <router-link :to="{ name: 'action-history', params: {item_id: forum_id, item_model: 'forum', item_name: forum_name }}">
             <b-button variant="outline-secondary" class="btn-sm" id="forum_history_button">forum history</b-button>
@@ -32,12 +32,13 @@
 
             <error-component :message="list_post_error_message"></error-component>
 
-            <router-link v-for="{ pk, title, content } in posts" v-bind:key=pk
-                                :to="{ name: 'post-detail', params: { forum_id: forum_id, post_id: pk } }">
-                <b-card :title=title v-bind:key=pk class="bg-light text-info border-secondary mb-3">
-                    <p class="mb-1 text-secondary post-content">  {{ shorten_text(content, 100) }} </p>
-                </b-card>
-            </router-link>
+            <b-card v-for="{ pk, title, content, author, created } in posts" v-bind:key=pk
+                                                class="bg-light text-info border-secondary mb-3">
+                <router-link :to="{ name: 'post-detail', params: { forum_id: forum_id, post_id: pk } }">
+                    <b-card-title class="post-link">{{ title }}</b-card-title></router-link>
+                <p class="mb-1 text-secondary post-content">  {{ shorten_text(content, 100) }} </p>
+                <small class="text-muted">Posted by {{ author }} on {{ display_date(created) }}</small>
+            </b-card>
 
             <span v-if="Object.keys(posts).length === 0">There are no posts yet in this forum.</span>
 
@@ -81,18 +82,32 @@ export default {
         ...Vuex.mapState({user_permissions: state => state.permissions.current_user_permissions}),
         ...Vuex.mapGetters(['getForumData', 'getPostsDataForForum', 'getUserName']),
         posts: function() {
-            if (this.forum_id) { return this.getPostsDataForForum(this.forum_id) } return undefined
+            var forum = this.get_forum()
+            if (forum) { return this.getPostsDataForForum(this.forum_id) } return undefined
         },
         forum_name: function() {
-            if (this.forum_id) { return this.getForumData(this.forum_id).name } return undefined
+            var forum = this.get_forum()
+            if (forum) { return forum.name } return undefined
         },
         forum_description: function() {
-            if (this.forum_id) { return this.getForumData(this.forum_id).description } return undefined
+            var forum = this.get_forum()
+            if (forum) { return forum.description } return undefined
+        },
+        is_governance_forum: function() {
+            var forum = this.get_forum()
+            if (forum) { return forum.special == "Gov" } return undefined
         }
     },
     methods: {
         ...Vuex.mapActions(['checkPermissions', 'getPosts', 'addPost', 'deleteForum']),
         display_date(date) { return Date(date) },
+        get_forum() {
+            if (this.forum_id) {
+                var forum = this.getForumData(this.forum_id)
+                if (forum) { return forum }
+            }
+            return undefined
+        },
         delete_forum(forum_pk) {
             this.deleteForum({ pk: forum_pk })
             .then(response => { console.log(response); this.$router.push({name: 'home'}) })

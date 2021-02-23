@@ -17,13 +17,13 @@
             <b-button class="rounded-right btn-sm">
                 <span v-if="permission.condition" :id="'condition_' + pair_element_id + '_existing'">
                     <span>on the condition that {{ permission.condition.how_to_pass_overall }}</span>
-                    <router-link v-if=user_permissions.remove_permission_condition
+                    <router-link v-if=user_permissions.remove_condition
                         :to="{name: 'conditions', params: {conditioned_on: permission.pk, dependency_scope: item_model}}">
                         <span class="badge badge-secondary ml-1 edit-condition" :class="css_name(permission.change_name)">🖉</span>
                     </router-link>
                 </span>
                 <span v-else :id="'condition_' + pair_element_id">
-                    <router-link v-if="user_permissions.add_permission_condition"
+                    <router-link v-if="user_permissions.add_condition"
                         :to="{name: 'conditions', params: {conditioned_on: permission.pk, dependency_scope: item_model}}">
                     <b-button class="add-condition btn-sm">add condition</b-button></router-link>
                     <span v-else>no condition</span>
@@ -147,17 +147,18 @@ export default {
     },
     created () {
         var alt_target = "permissionsitem_" + this.permission.pk
-        this.checkPermissions({permissions: {
-            remove_permission: {alt_target:alt_target},
-            add_permission_condition: {alt_target:alt_target},
-            remove_permission_condition: {alt_target:alt_target},
-            add_actor_to_permission: {alt_target:alt_target},
-            remove_actor_from_permission: {alt_target:alt_target},
-            add_role_to_permission: {alt_target:alt_target},
-            remove_role_from_permission: {alt_target:alt_target},
-            give_anyone_permission: {alt_target:alt_target},
-            remove_anyone_from_permission: {alt_target:alt_target},
-            change_configuration_of_permission: {alt_target:alt_target}}
+        this.checkPermissions({
+            permissions: {
+                remove_permission: {alt_target:alt_target},
+                add_condition: {alt_target:alt_target},
+                remove_condition: {alt_target:alt_target},
+                add_actor_to_permission: {alt_target:alt_target},
+                remove_actor_from_permission: {alt_target:alt_target},
+                add_role_to_permission: {alt_target:alt_target},
+                remove_role_from_permission: {alt_target:alt_target},
+                give_anyone_permission: {alt_target:alt_target},
+                remove_anyone_from_permission: {alt_target:alt_target},
+                change_configuration_of_permission: {alt_target:alt_target}}
         }).catch(error => {  this.error_message = error; console.log(error) })
     },
     watch: {

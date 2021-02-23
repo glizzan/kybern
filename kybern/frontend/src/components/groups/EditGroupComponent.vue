@@ -4,16 +4,20 @@
 
         <template v-slot:modal-header><h5>Edit Your Group</h5></template>
 
-        <b-form-group id="name" label="Group name:" label-for="group_name">
+        <b-form-group v-if=user_permissions.change_name id="name"
+                                                label="Group name:" label-for="group_name">
             <b-form-input id="group_name" v-model="edited_group_name" required>
             </b-form-input>
         </b-form-group>
+        <span v-else>{{ edited_group_name }}</span>
 
-        <b-form-group id="description" label="Group description:" label-for="group_description">
+        <b-form-group v-if=user_permissions.change_description id="description"
+                                label="Group description:" label-for="group_description">
             <b-form-textarea id="group_description" v-model="edited_group_description" required
                 placeholder="Add a group description">
             </b-form-textarea>
         </b-form-group>
+        <span v-else>{{ edited_group_description }}</span>
 
         <error-component :message=error_message></error-component>
 
@@ -51,14 +55,21 @@ export default {
     created () {
         this.edited_group_name = this.group_name
         this.edited_group_description = this.group_description
+        this.checkPermissions({
+            permissions:
+                {change_name_of_community: null, change_group_description: null},
+            aliases:
+                {change_name_of_community: "change_name", change_group_description: "change_description"}})
     },
     computed: {
-        ...Vuex.mapState({ group_name: state => state.group_name,
-                            group_description: state => state.group_description,
-                            item_id: state => state.group_pk })
+        ...Vuex.mapState({
+            group_name: state => state.group_name,
+            group_description: state => state.group_description,
+            user_permissions: state => state.permissions.current_user_permissions,
+            item_id: state => state.group_pk })
     },
     methods: {
-        ...Vuex.mapActions(['changeGroupName', 'changeGroupDescription']),
+        ...Vuex.mapActions(['changeGroupName', 'changeGroupDescription', 'checkPermissions']),
         save_edited_group() {
 
             if (this.group_name != this.edited_group_name ) {

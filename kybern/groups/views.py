@@ -1457,14 +1457,6 @@ def delete_row(request, target, list_pk, index):
 ######################################################################
 
 
-permission_aliases = {
-    "join_group": "add_members_to_community",
-    "leave_group": "remove_members_from_community",
-    "add_permission_condition": "add_condition",  # just use this
-    "remove_permission_condition": "remove_condition"  # just use this
-}
-
-
 def update_leaders(client, pass_in_client, params, methods_to_try):
     for new_name in methods_to_try:
         result = client.PermissionResource.has_permission(pass_in_client, new_name, params)
@@ -1489,9 +1481,10 @@ def get_alt_target(client, params):
 @reformat_input_data
 @login_required
 def check_permissions(request, target, permissions):
-    """Given a list of zero or more permission names, gets the function call to check if we have
-    that permission and calls it.  Returns a list of permissions with boolean values indicating
-    whether or not the use has the permissions."""
+    """
+    Recieves a list of dicts, permissions. Each has a method name and, optionally, parameters and
+    an alias. For each permission, check if we have it. Store result under alias if supplied.
+    Returns a list of permission names with boolean values indicating whether user has the permissions."""
 
     client = Client(actor=request.user)
     default_target = client.Community.get_community(community_pk=target)
@@ -1509,8 +1502,7 @@ def check_permissions(request, target, permissions):
         if alt_target is not None:
             pass_in_client.update_target_on_all(alt_target)
 
-        name_to_use = permission_aliases.get(permission_name, permission_name)
-        result = client.PermissionResource.has_permission(pass_in_client, name_to_use, params, exclude_conditional=True)
+        result = client.PermissionResource.has_permission(pass_in_client, permission_name, params, exclude_conditional=True)
         permission_dict.update({permission_name: result})
 
     return JsonResponse({"user_permissions": permission_dict})

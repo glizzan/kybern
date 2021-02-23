@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import { swap_aliases } from '../utilities/utils'
 
 
 const PermissionsVuexModule = {
@@ -432,7 +433,13 @@ const PermissionsVuexModule = {
             var url = await getters.url_lookup('check_permissions')
             var params = { permissions: payload.permissions }
             var implementationCallback = (response) => {
-                commit('ADD_OR_UPDATE_CURRENT_USER_PERMISSIONS', { user_permissions: response.data.user_permissions })
+                var permissions = null
+                if (payload.aliases) {
+                    permissions = swap_aliases(payload.aliases, response.data.user_permissions)
+                } else {
+                    permissions = response.data.user_permissions
+                }
+                commit('ADD_OR_UPDATE_CURRENT_USER_PERMISSIONS', { user_permissions: permissions })
             }
             return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },

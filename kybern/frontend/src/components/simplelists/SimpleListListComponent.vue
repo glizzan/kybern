@@ -2,9 +2,9 @@
 
     <span>
 
-        <h4 class="text-secondary pb-3">{{ group_name }}'s Lists
+        <h4 class="text-secondary pb-3">Lists
 
-        <router-link :to="{ name: 'add-new-list'}">
+        <router-link :to="{ name: 'add-new-list'}" v-if="user_permissions.add_list">
             <b-button variant="outline-secondary"
                 class="btn-sm ml-3" id="new_list_button">+ add new</b-button>
         </router-link>
@@ -19,7 +19,7 @@
             </b-card>
         </router-link>
 
-        <span v-if="Object.keys(lists).length === 0">You do not have any lists yet.</span>
+        <span v-if="Object.keys(lists).length === 0">There are no lists yet.</span>
 
     </span>
 

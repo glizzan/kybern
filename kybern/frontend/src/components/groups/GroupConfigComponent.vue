@@ -11,13 +11,13 @@
 
         <error-component :message=error_message></error-component>
 
-        <b-button v-if="user_permissions.join_group" block class="mt-3" id="join_group_button" @click="join_group()"
+        <b-button v-if="user_permissions.join_group && !user_in_group" block class="mt-3" id="join_group_button" @click="join_group()"
             variant="outline-secondary">join group</b-button>
 
-        <b-button v-if="user_permissions.leave_group" block class="mt-3" id="leave_group_button" @click="leave_group()"
+        <b-button v-if="user_permissions.leave_group && user_in_group" block class="mt-3" id="leave_group_button" @click="leave_group()"
             variant="outline-secondary">leave group</b-button>
 
-        <router-link :to="{ name: 'edit-group'}">
+        <router-link :to="{ name: 'edit-group'}" v-if="user_permissions.change_name || user_permissions.change_description">
             <b-button id="edit_group_button" block class="mt-3"
                 :variant="$route.meta.highlight === 'edit-group' ? 'secondary' : 'outline-secondary'">
                 edit group</b-button>
@@ -70,19 +70,27 @@ export default {
         }
     },
     created () {
-        this.checkPermissions({ permissions:
-            { join_group: { member_pk_list: [ store.state.user_pk ] },
-                leave_group: { member_pk_list: [ store.state.user_pk ] }
-            }
-        })
+        this.checkPermissions({
+            permissions:
+                {add_members_to_community: {member_pk_list: [store.state.user_pk]},
+                 remove_members_from_community: {member_pk_list: [store.state.user_pk]},
+                 change_name_of_community: null, change_group_description: null},
+            aliases:
+                {add_members_to_community: "join_group", remove_members_from_community: "leave_group",
+                change_name_of_community: "change_name", change_group_description: "change_description"} })
     },
     computed: {
         ...Vuex.mapState({
             group_name: state => state.group_name,
             group_description: state => state.group_description,
             group_pk: state => state.group_pk,
+            user_pk: state => state.user_pk,
             user_permissions: state => state.permissions.current_user_permissions
-        })
+        }),
+        ...Vuex.mapGetters(['userInGroup']),
+        user_in_group: function() {
+            return this.userInGroup(this.user_pk)
+        }
     },
     methods: {
         ...Vuex.mapActions(['checkPermissions', 'addMembers', 'removeMembers']),
