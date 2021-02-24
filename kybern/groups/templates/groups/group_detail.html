@@ -6,7 +6,7 @@
     </div>
 
     <script type="text/javascript">
-        window.__INITIAL_STATE__ = '{{ initial_state|safe }}'
+        window.__INITIAL_STATE__ = '{{ initial_state|escapejs|safe }}'
     </script>
 
     {% if LOAD_JS_WITH_WEBPACK %}
