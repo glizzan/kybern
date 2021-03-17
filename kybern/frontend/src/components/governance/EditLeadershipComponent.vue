@@ -38,7 +38,7 @@ import ErrorComponent from '../utils/ErrorComponent'
 export default {
 
     props: ['leadership_type'],
-    components: { Multiselect, ErrorComponent },
+    components: { "vue-multiselect": Multiselect, ErrorComponent },
     store,
     data: function() {
         return {
@@ -48,7 +48,12 @@ export default {
         }
     },
     created (){
-        this.checkPermissions({permissions: {"update_owners": null, "update_governors": null}}).catch(error => {this.error_message = error})
+        this.checkPermissions({permissions: {
+            "add_owner_to_community": null, "remove_owner_from_community": null,
+            "add_owner_role_to_community": null, "remove_owner_role_from_community": null,
+            "add_governor_to_community": null, "remove_governor_from_community": null,
+            "add_governor_role_to_community": null, "remove_governor_role_from_community": null
+        }}).catch(error => {this.error_message = error})
         this.get_existing_roles_and_actors()
     },
     computed: {
@@ -56,13 +61,21 @@ export default {
         ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'leadershipAsOptions']),
         edit_leadership_id: function() { return this.leadership_type + "_actors_and_roles" },
         has_permission: function() {
-            if (this.leadership_type == "owner" && this.user_permissions.update_owners) { return true }
-            if (this.leadership_type == "governor" && this.user_permissions.update_governors) { return true }
+            if (this.leadership_type == "owner" && this.user_permissions) { return this.permission_to_update_owners() }
+            if (this.leadership_type == "governor" && this.user_permissions) { return this.permission_to_update_governors() }
             return false
         }
     },
     methods: {
         ...Vuex.mapActions(['checkPermissions', 'updateOwners', 'updateGovernors']),
+        permission_to_update_owners: function() {
+            return this.user_permissions.add_owner_to_community || this.user_permissions.remove_owner_from_community ||
+                   this.user_permissions.add_owner_role_to_community || this.user_permissions.remove_owner_role_from_community
+        },
+        permission_to_update_governors: function() {
+            return this.user_permissions.add_governor_to_community || this.user_permissions.remove_governor_from_community ||
+                    this.user_permissions.add_governor_role_to_community || this.user_permissions.remove_governor_role_from_community
+        },
         get_existing_roles_and_actors() {
             if (this.leadership_type == "owner") {
                 this.roles_selected = this.leadershipAsOptions.owner_role_options

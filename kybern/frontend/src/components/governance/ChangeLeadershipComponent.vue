@@ -74,14 +74,32 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
+import EditLeadershipComponent from '../governance/EditLeadershipComponent'
 
 
 export default {
 
+    components: { EditLeadershipComponent },
     store,
     mounted () {
-        this.checkPermissions({permissions: { add_owner_condition: null, remove_owner_condition: null,
-            add_governor_condition: null, remove_governor_condition: null }}).catch(error => { console.log(error) })
+        this.checkPermissions({
+            permissions: {
+                add_condition: {leadership_type: 'owner'},
+                remove_condition: {leadership_type: 'owner'}
+            },
+            aliases: {
+                add_condition: "add_owner_condition", remove_condition: "remove_owner_condition"
+            }
+        }).catch(error => { console.log(error) })
+        this.checkPermissions({
+            permissions: {
+                add_condition: {leadership_type: 'governor'},
+                remove_condition: {leadership_type: 'governor'}
+            },
+            aliases: {
+                add_condition: "add_governor_condition", remove_condition: "remove_governor_condition"
+            }
+        }).catch(error => { console.log(error) })
     },
     computed: {
         ...Vuex.mapState({

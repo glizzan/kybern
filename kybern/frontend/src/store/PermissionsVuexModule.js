@@ -27,6 +27,7 @@ const PermissionsVuexModule = {
         // Permissions associated with roles and items
         role_permissions: {},           // { role_name: [pk, pk, pk], role_name: [pk, pk, pk] }
         item_permissions: {},           // { item_pk + "_" + item_model: [pk, pk, pk] }
+        nested_item_permissions: {},     // { item_pk + "_" + item_model: [pk, pk, pk] }
 
         // Governance conditions
         owner_condition: null,
@@ -52,13 +53,30 @@ const PermissionsVuexModule = {
             }
             return matching_permissions
         },
+        permissionsForGroup: (state, getters) => () => {
+            var permissions = []
+
+            Object.keys(state.permissions).forEach(function(key) {
+                var data = state.permissions[key]
+                if (data.target == "community" || data.target.substring(0, 5) == "Forum" ||
+                    data.target.substring(0, 10) == "SimpleList") {
+                        permissions.push(data)
+                    }
+            });
+
+            return permissions
+        },
         permissionsForRole: (state, getters) => (role_name) => {
             var permission_pks = state.role_permissions[role_name]
             return getters.get_list_of_permissions_given_pks(permission_pks)
         },
-        permissionsForItem: (state, getters) => (item_key) => {
+        permissionsForItem: (state, getters) => (item_key, nested) => {
             var permission_pks = state.item_permissions[item_key]
-            return getters.get_list_of_permissions_given_pks(permission_pks)
+            permission_pks = permission_pks ? permission_pks : []
+            if (nested == true) {
+                permission_pks = permission_pks.concat(state.nested_item_permissions[item_key]);
+            }
+            return getters.get_list_of_permissions_given_pks(permission_pks).filter(e => e != undefined);
         },
         getPermissionConfigurationFields: (state, getters) => (permission_type) => {
             // JSON stringify + parse create a new copy of the fields so we don't accidentally mutate state by reference
@@ -105,8 +123,10 @@ const PermissionsVuexModule = {
             return fields
         },
         getLeadershipConditionConfigurationFieldsWithData: (state, getters) => (leadership_type, element_id) => {
+            var fields = {}
             if (leadership_type == "owner") { fields = state.owner_condition[element_id]["fields"] }
             else if (leadership_type == "governor") { fields = state.governor_condition[element_id]["fields"] }
+
             for (let field_index in fields) {
                 fields[field_index] = getters.fix_permission_field_values(fields[field_index])
             }
@@ -186,6 +206,10 @@ const PermissionsVuexModule = {
         REPLACE_ITEM_PERMISSIONS (state, data) {
             var item_key = data.item_id + "_" + data.item_model
             Vue.set(state.item_permissions, item_key, data.pks)
+        },
+        REPLACE_NESTED_ITEM_PERMISSIONS (state, data) {
+            var item_key = data.item_id + "_" + data.item_model
+            Vue.set(state.nested_item_permissions, item_key, data.pks)
         },
         ADD_PERMISSION_TO_ITEM (state, data ) {
             var item_key = data.item_id + "_" + data.item_model
@@ -389,6 +413,9 @@ const PermissionsVuexModule = {
                 commit('REPLACE_ITEM_PERMISSIONS', { item_id: response.data.item_id,
                                                      item_model: response.data.item_model,
                                                      pks: response.data.permission_pks })
+                commit('REPLACE_NESTED_ITEM_PERMISSIONS', { item_id: response.data.item_id,
+                                                            item_model: response.data.item_model,
+                                                            pks: response.data.nested_pks })
                 for (let key in response.data.permissions) {
                     commit('ADD_OR_UPDATE_PERMISSION', { pk : key, data : response.data.permissions[key] })
                     commit('UPDATE_ROLE_WITH_PERMISSION', { permission: response.data.permissions[key] })

@@ -1,53 +1,49 @@
 <template>
 
-    <span>
+    <span class="d-flex my-3">
 
-        <div class="card">
-            <h5 class="card-header">{{ group_name }}</h5>
-            <div class="card-body">
-                <p class="card-text">{{ group_description }}</p>
-            </div>
-        </div>
+        <!-- left aligned nav -->
+        <span class="flex-grow-1">
 
-        <error-component :message=error_message></error-component>
+            <span class="font-weight-bold"><b-icon-people-fill class="mr-2"></b-icon-people-fill>{{group_name}}</span>
 
-        <b-button v-if="user_permissions.join_group && !user_in_group" block class="mt-3" id="join_group_button" @click="join_group()"
-            variant="outline-secondary">join group</b-button>
+            <router-link id="resources_button" :to="{ name: 'home'}" :exact-active-class="'selected-link'">
+                <b-icon-grid class="ml-3 mr-1"></b-icon-grid>Resources
+            </router-link>
 
-        <b-button v-if="user_permissions.leave_group && user_in_group" block class="mt-3" id="leave_group_button" @click="leave_group()"
-            variant="outline-secondary">leave group</b-button>
+            <router-link id="group_history_button" :to="{ name: 'action-history', params: { item_id: group_pk,
+            item_model: 'group', item_name: group_name }}" :exact-active-class="'selected-link'">
+                <b-icon-clock-history class="ml-3 mr-1"></b-icon-clock-history>History
+            </router-link>
 
-        <router-link :to="{ name: 'edit-group'}" v-if="user_permissions.change_name || user_permissions.change_description">
-            <b-button id="edit_group_button" block class="mt-3"
-                :variant="$route.meta.highlight === 'edit-group' ? 'secondary' : 'outline-secondary'">
-                edit group</b-button>
-        </router-link>
+            <router-link id="governance_button" :to="{ name: 'governance'}" :exact-active-class="'selected-link'">
+                <b-icon-person-lines-fill class="ml-3 mr-1"></b-icon-person-lines-fill>Group Roles
+            </router-link>
 
-        <router-link :to="{ name: 'home'}">
-            <b-button id="resources_button" block class="mt-3"
-                :variant="($route.meta.highlight) ? 'outline-secondary' : 'secondary'">
-                resources</b-button>
-        </router-link>
+            <router-link id="group_permissions_button" :exact-active-class="'selected-link'"
+                :to="{ name: 'group-permissions', params: { group_pk: group_pk}}">
+                <b-icon-shield-lock-fill class="ml-3 mr-1"></b-icon-shield-lock-fill>Permissions
+            </router-link>
 
-        <router-link id="group_history_button" :to="{ name: 'action-history', params: { item_id: group_pk,
-        item_model: 'group', item_name: group_name }}">
-            <b-button block class="mt-3"
-                :variant="$route.meta.highlight == 'history' ? 'secondary' : 'outline-secondary'">
-                history</b-button>
-        </router-link>
+        </span>
 
-        <router-link :to="{ name: 'governance'}">
-            <b-button id="governance_button" block class="mt-3"
-                :variant="$route.meta.highlight == 'governance' ? 'secondary' : 'outline-secondary'">
-                governance</b-button>
-        </router-link>
 
-        <router-link class="button" :to="{ name: 'item-permissions', params: { item_id: group_pk,
-        item_model: 'group', item_name: group_name }}">
-            <b-button id="group_permissions_button" block class="mt-3"
-                :variant="$route.meta.highlight == 'permissions' ? 'secondary' : 'outline-secondary'">
-                permissions</b-button>
-        </router-link>
+        <!-- right aligned nav -->
+        <span>
+
+            <b-button v-if="user_permissions.join_group && !user_in_group" id="join_group_button" class="py-0"
+                variant="link" @click="join_group()">join</b-button>
+
+            <b-button v-if="user_permissions.leave_group && user_in_group" id="leave_group_button" class="py-0"
+                variant="link" @click="leave_group()">leave</b-button>
+
+            <span v-if="user_permissions.change_name || user_permissions.change_description">
+                <router-link :to="{ name: 'edit-group'}" id="edit_group_button">
+                    <b-button variant="link" class="py-0">edit</b-button>
+                </router-link>
+            </span>
+
+        </span>
 
     </span>
 
@@ -57,13 +53,11 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
-import ErrorComponent from '../utils/ErrorComponent'
 
 
 export default {
 
     store,
-    components: { ErrorComponent },
     data: function() {
         return {
             error_message: null
@@ -107,3 +101,16 @@ export default {
 }
 
 </script>
+
+<style scoped>
+
+a, a button {
+color: black
+}
+
+.selected-link {
+    font-weight: bold;
+    color: #17a2b8;   /* info */
+}
+
+</style>

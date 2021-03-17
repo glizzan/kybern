@@ -1,0 +1,338 @@
+[
+    {
+      "name": "add comment, but only if the target is of type action",
+      "display": "those with role members have permission to add comment, but only if the target is of type action",
+      "change_name": "add comment",
+      "change_type": "concord.resources.state_changes.AddCommentStateChange",
+      "actors": [],
+      "is_foundational": false,
+      "section": "Comment",
+      "roles": [
+        "members"
+      ],
+      "anyone": false,
+      "fields": {
+        "target_type": "action"
+      },
+      "pk": 77,
+      "change_field_options": [
+        {
+          "value": "text",
+          "text": "text",
+          "type": "CharField"
+        }
+      ],
+      "dependent_field_options": [
+        "action",
+        "group",
+        "commented_object"
+      ],
+      "configuration": ", but only if the target is of type action",
+      "owner_permission": false,
+      "governor_permission": true,
+      "target": "community",
+      "condition": null
+    },
+    {
+      "name": "apply template, but only if the user is the creator of the template's target",
+      "display": "those with role members have permission to apply template, but only if the user is the creator of the template's target",
+      "change_name": "apply template",
+      "change_type": "concord.actions.state_changes.ApplyTemplateStateChange",
+      "actors": [],
+      "is_foundational": false,
+      "section": "Miscellaneous",
+      "roles": [
+        "members"
+      ],
+      "anyone": false,
+      "fields": {
+        "original_creator_only": true
+      },
+      "pk": 78,
+      "change_field_options": [
+        {
+          "value": "template_model_pk",
+          "text": "template_model_pk",
+          "type": "IntegerField"
+        }
+      ],
+      "dependent_field_options": [
+        "action",
+        "group"
+      ],
+      "configuration": ", but only if the user is the creator of the template's target",
+      "owner_permission": false,
+      "governor_permission": true,
+      "target": "community",
+      "condition": null
+    },
+    {
+      "name": "add members to community, but only if the user is adding themselves",
+      "display": "anyone has permission to add members to community, but only if the user is adding themselves",
+      "change_name": "add members to community",
+      "change_type": "concord.communities.state_changes.AddMembersStateChange",
+      "actors": [],
+      "is_foundational": false,
+      "section": "Community",
+      "roles": [],
+      "anyone": true,
+      "fields": {
+        "self_only": true
+      },
+      "pk": 79,
+      "change_field_options": [
+        {
+          "value": "member_pk_list",
+          "text": "member_pk_list",
+          "type": "ActorListField"
+        }
+      ],
+      "dependent_field_options": [
+        "action",
+        "group"
+      ],
+      "configuration": ", but only if the user is adding themselves",
+      "owner_permission": false,
+      "governor_permission": true,
+      "target": "community",
+      "condition": {
+        "15509": {
+          "type": "ApprovalCondition",
+          "display_name": "Approval Condition",
+          "how_to_pass": "those with role governors needs to approve this action, without those with role governors rejecting.",
+          "fields": {
+            "self_approval_allowed": {
+              "field_name": "self_approval_allowed",
+              "type": "BooleanField",
+              "required": "",
+              "value": false,
+              "can_depend": false,
+              "display": "Can individuals approve their own actions?"
+            },
+            "approve_roles": {
+              "can_depend": true,
+              "field_name": "approve_roles",
+              "type": "RoleListField",
+              "required": false,
+              "full_name": "concord.conditionals.state_changes.ApproveStateChange",
+              "display": "Roles who can approve",
+              "value": [
+                "governors"
+              ]
+            },
+            "approve_actors": {
+              "can_depend": true,
+              "field_name": "approve_actors",
+              "type": "ActorListField",
+              "required": false,
+              "full_name": "concord.conditionals.state_changes.ApproveStateChange",
+              "display": "People who can approve",
+              "value": null
+            },
+            "reject_roles": {
+              "can_depend": true,
+              "field_name": "reject_roles",
+              "type": "RoleListField",
+              "required": false,
+              "full_name": "concord.conditionals.state_changes.RejectStateChange",
+              "display": "Roles who can reject",
+              "value": [
+                "governors"
+              ]
+            },
+            "reject_actors": {
+              "can_depend": true,
+              "field_name": "reject_actors",
+              "type": "ActorListField",
+              "required": false,
+              "full_name": "concord.conditionals.state_changes.RejectStateChange",
+              "display": "People who can reject",
+              "value": null
+            }
+          },
+          "element_id": "15509"
+        },
+        "how_to_pass_overall": "those with role governors needs to approve this action, without those with role governors rejecting."
+      }
+    },
+    {
+      "name": "add post",
+      "display": "those with role members have permission to add post",
+      "change_name": "add post",
+      "change_type": "groups.state_changes.AddPostStateChange",
+      "actors": [],
+      "is_foundational": false,
+      "section": "Forum",
+      "roles": [
+        "members"
+      ],
+      "anyone": false,
+      "fields": {},
+      "pk": 80,
+      "change_field_options": [
+        {
+          "value": "title",
+          "text": "title",
+          "type": "CharField"
+        },
+        {
+          "value": "content",
+          "text": "content",
+          "type": "CharField"
+        }
+      ],
+      "dependent_field_options": [
+        "action",
+        "group",
+        "forum"
+      ],
+      "configuration": "",
+      "owner_permission": false,
+      "governor_permission": true,
+      "target": "community",
+      "condition": {
+        "90244": {
+          "type": "ApprovalCondition",
+          "display_name": "Approval Condition",
+          "how_to_pass": "those with role members needs to approve this action",
+          "fields": {
+            "self_approval_allowed": {
+              "field_name": "self_approval_allowed",
+              "type": "BooleanField",
+              "required": "",
+              "value": true,
+              "can_depend": false,
+              "display": "Can individuals approve their own actions?"
+            },
+            "approve_roles": {
+              "can_depend": true,
+              "field_name": "approve_roles",
+              "type": "RoleListField",
+              "required": false,
+              "full_name": "concord.conditionals.state_changes.ApproveStateChange",
+              "display": "Roles who can approve",
+              "value": [
+                "members"
+              ]
+            },
+            "approve_actors": {
+              "can_depend": true,
+              "field_name": "approve_actors",
+              "type": "ActorListField",
+              "required": false,
+              "full_name": "concord.conditionals.state_changes.ApproveStateChange",
+              "display": "People who can approve",
+              "value": null
+            },
+            "reject_roles": {
+              "can_depend": true,
+              "field_name": "reject_roles",
+              "type": "RoleListField",
+              "required": false,
+              "full_name": "concord.conditionals.state_changes.RejectStateChange",
+              "display": "Roles who can reject",
+              "value": null
+            },
+            "reject_actors": {
+              "can_depend": true,
+              "field_name": "reject_actors",
+              "type": "ActorListField",
+              "required": false,
+              "full_name": "concord.conditionals.state_changes.RejectStateChange",
+              "display": "People who can reject",
+              "value": null
+            }
+          },
+          "element_id": "90244"
+        },
+        "how_to_pass_overall": "those with role members needs to approve this action"
+      }
+    },
+    {
+      "name": "add members to community, but only if the user is adding themselves",
+      "display": "anyone has permission to add members to community, but only if the user is adding themselves",
+      "change_name": "add members to community",
+      "change_type": "concord.communities.state_changes.AddMembersStateChange",
+      "actors": [],
+      "is_foundational": false,
+      "section": "Community",
+      "roles": [],
+      "anyone": true,
+      "fields": {
+        "self_only": true
+      },
+      "pk": 92,
+      "change_field_options": [
+        {
+          "value": "member_pk_list",
+          "text": "member_pk_list",
+          "type": "ActorListField"
+        }
+      ],
+      "dependent_field_options": [
+        "action",
+        "group"
+      ],
+      "configuration": ", but only if the user is adding themselves",
+      "owner_permission": false,
+      "governor_permission": true,
+      "target": "community",
+      "condition": {
+        "784240": {
+          "type": "ApprovalCondition",
+          "display_name": "Approval Condition",
+          "how_to_pass": "those with role friends needs to approve this action",
+          "fields": {
+            "self_approval_allowed": {
+              "field_name": "self_approval_allowed",
+              "type": "BooleanField",
+              "required": "",
+              "value": false,
+              "can_depend": false,
+              "display": "Can individuals approve their own actions?"
+            },
+            "approve_roles": {
+              "can_depend": true,
+              "field_name": "approve_roles",
+              "type": "RoleListField",
+              "required": false,
+              "full_name": "concord.conditionals.state_changes.ApproveStateChange",
+              "display": "Roles who can approve",
+              "value": [
+                "friends"
+              ]
+            },
+            "approve_actors": {
+              "can_depend": true,
+              "field_name": "approve_actors",
+              "type": "ActorListField",
+              "required": false,
+              "full_name": "concord.conditionals.state_changes.ApproveStateChange",
+              "display": "People who can approve",
+              "value": null
+            },
+            "reject_roles": {
+              "can_depend": true,
+              "field_name": "reject_roles",
+              "type": "RoleListField",
+              "required": false,
+              "full_name": "concord.conditionals.state_changes.RejectStateChange",
+              "display": "Roles who can reject",
+              "value": null
+            },
+            "reject_actors": {
+              "can_depend": true,
+              "field_name": "reject_actors",
+              "type": "ActorListField",
+              "required": false,
+              "full_name": "concord.conditionals.state_changes.RejectStateChange",
+              "display": "People who can reject",
+              "value": null
+            }
+          },
+          "element_id": "784240"
+        },
+        "how_to_pass_overall": "those with role friends needs to approve this action"
+      }
+    }
+  ]

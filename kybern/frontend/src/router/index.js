@@ -12,7 +12,8 @@ import GovernanceComponent from '../components/governance/GovernanceComponent'
 import ChangeLeadershipComponent from '../components/governance/ChangeLeadershipComponent'
 import MembershipSettingsComponent from '../components/governance/MembershipSettingsComponent'
 // permissions
-import ItemPermissionsComponent from '../components/permissions/ItemPermissionsComponent'
+import GroupPermissionsComponent from '../components/permissions/GroupPermissionsComponent'
+import NonGroupPermissionsComponent from '../components/permissions/NonGroupPermissionsComponent'
 import RolePermissionsComponent from '../components/permissions/RolePermissionsComponent'
 import PersonPermissionsComponent from '../components/permissions/PersonPermissionsComponent'
 import AdvancedPermissionsComponent from '../components/permissions/AdvancedPermissionsComponent'
@@ -132,18 +133,28 @@ const routes = [
 
     // Permissions
     {
-        name: 'item-permissions',
+        name: 'group-permissions',
+        path: '/permissions/:group_pk',
+        meta: { highlight: 'permissions'},
+        props: { sidebar: false, main: true },
+        components: {
+            sidebar: GroupConfigComponent,
+            main: GroupPermissionsComponent
+        }
+    },
+    {
+        name: 'item-permissions',  // non-group permissions
         path: '/permissions/:item_id/:item_model/:item_name',
         meta: { highlight: 'permissions'},
         props: { sidebar: false, main: true },
         components: {
             sidebar: GroupConfigComponent,
-            main: ItemPermissionsComponent
+            main: NonGroupPermissionsComponent
         }
     },
     {
         name: 'role-permissions',
-        path: '/permissions/:role_to_edit',
+        path: '/permissions/roles/:role_to_edit',
         meta: { highlight: 'permissions'},
         props: { sidebar: false, main: true },
         components: {

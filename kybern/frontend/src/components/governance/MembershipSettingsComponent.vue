@@ -13,25 +13,25 @@
             <error-component :message=error_message></error-component>
 
             <span id="add_member_permissions">
+
                 <p class="pb-1 font-weight-bold">Permissions for Adding Members</p>
-                <edit-permission-component v-for="permission in addmember_permissions" v-bind:key="permission.pk"
-                    :permission=permission :item_id=item_id :item_model=item_model> </edit-permission-component>
-                <p v-if="!addmember_permissions.length">No permissions for adding members have been
-                    set yet. This means only people with foundational or governing permission can
-                    add members.</p>
-                <add-permission-component :default_selection=add_member_state_change :item_id=item_id
-                    :item_model=item_model> </add-permission-component>
+
+                <simple-permissions-display-component :permissions=addmember_permissions :item_id=item_id
+                    :item_model=item_model :item_name="'Adding Members'"
+                    :default_selection=add_member_state_change :modal_id="'addmember'">
+                </simple-permissions-display-component>
+
             </span>
 
             <span id="remove_member_permissions">
+
                 <p class="pt-4 pb-1 font-weight-bold">Permissions for Removing Members</p>
-                <edit-permission-component v-for="permission in removemember_permissions" v-bind:key="permission.pk"
-                    :permission=permission :item_id=item_id :item_model=item_model> </edit-permission-component>
-                <p v-if="!removemember_permissions.length">No permissions for removing members have
-                    been set yet. This means only people with foundational or governing permission can
-                    remove members.</p>
-                <add-permission-component :default_selection=remove_member_state_change :item_id=item_id
-                    :item_model=item_model></add-permission-component>
+
+                <simple-permissions-display-component :permissions=removemember_permissions :item_id=item_id
+                    :item_model=item_model :item_name="'Removing Members'"
+                    :default_selection=remove_member_state_change :modal_id="'removemember'">
+                </simple-permissions-display-component>
+
             </span>
 
     </span>
@@ -43,14 +43,13 @@
 import Vuex from 'vuex'
 import store from '../../store'
 import ErrorComponent from '../utils/ErrorComponent'
-import AddPermissionComponent from '../permissions/AddPermissionComponent'
-import EditPermissionComponent from '../permissions/EditPermissionComponent'
+import SimplePermissionsDisplayComponent from '../permissions/SimplePermissionsDisplayComponent'
 
 
 export default {
 
     store,
-    components: { ErrorComponent, AddPermissionComponent, EditPermissionComponent },
+    components: { ErrorComponent, SimplePermissionsDisplayComponent },
     data: function() {
         return {
             item_model: 'group',  // group model
