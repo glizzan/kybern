@@ -160,7 +160,7 @@ class GroupBasicsTestCase(BaseTestCase):
         self.browser.find_by_id('start_from_scratch', wait_time=5).first.click()
         self.browser.find_by_id('create_group_button', wait_time=5).first.click()
         self.assertTrue(self.browser.is_text_present('edit', wait_time=5))  # shows we're on group detail page now
-        self.assertTrue(self.browser.is_text_present("For NWSL players", wait_time=5))  # shows we're on newly created detail page now
+        self.assertTrue(self.browser.is_text_present("NWSL", wait_time=5))  # shows we're on newly created detail page now
 
     def test_add_members_to_group(self):
         self.login_user("meganrapinoe", "badlands2020")
@@ -866,26 +866,27 @@ class ForumsTestCase(BaseTestCase):
         self.browser.fill('forum_description', 'A place to discuss strategy')
         self.browser.find_by_id('add_forum_button').first.click()
         self.browser.find_by_css(".close").first.click()  # close modal
-        self.browser.find_by_css(".forum-link").first.click()
+        self.browser.find_by_css(".forum-link").last.click()
         time.sleep(3)
 
         # Add permissions - we start with only default permissions, but then have one more
+        forum = Forum.objects.last()
         self.browser.find_by_id("forum_permissions_button", wait_time=5).first.click()
-        self.browser.find_by_id("edit_permissions_button_default", wait_time=5).first.click()
+        self.browser.find_by_id("edit_permissions_button", wait_time=5).first.click()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display", wait_time=5)]
         self.assertCountEqual(permissions, ["those with role members have permission to apply template, but only if the user is the creator of the template's target",
                                             'those with role members have permission to add comment',
                                             'those with role members have permission to add post'])
         self.browser.find_by_css(".close").first.click()  # close modal
-        self.browser.find_by_id('add_permission_button_default').first.click()
+        self.browser.find_by_id('add_permission_button').first.click()
         self.select_from_multiselect("Edit forum")
-        time.sleep(1)
+        time.sleep(2)
         element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
         self.browser.find_by_id('save_permission_button').first.click()
-        time.sleep(1.5)
+        time.sleep(3)
         self.browser.find_by_css(".close").first.click()  # close modal
-        self.browser.find_by_id("edit_permissions_button_default", wait_time=5).first.click()
+        self.browser.find_by_id("edit_permissions_button", wait_time=5).first.click()
         time.sleep(3)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertCountEqual(permissions, ['those with role forwards have permission to edit forum',
@@ -1448,7 +1449,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.find_by_id("select_template_posters_control_posts", wait_time=5).first.click()
         self.browser.find_by_id("submit_apply_template", wait_time=5).first.click()
         time.sleep(4)
-        self.browser.find_by_id("edit_permissions_button_default").first.click()
+        self.browser.find_by_id("edit_permissions_button").first.click()
         self.browser.find_by_css(".permission-display", wait_time=5)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(len(permissions), 10)
@@ -1498,7 +1499,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         self.browser.find_by_css(".forum-link", wait_time=5).first.click()
         self.browser.find_by_css(".post-link", wait_time=5).first.click()
-        time.sleep(4)  # again, without this sleep splinter confuses forum button for history button
+        time.sleep(6)  # again, without this sleep splinter confuses forum button for history button
         self.browser.find_by_id("post_history_button", wait_time=5).first.click()
         self.browser.find_by_css(".action-link-button", wait_time=5)[0].click()
         self.assertTrue(self.browser.is_text_present('Please approve or reject this action.', wait_time=5))

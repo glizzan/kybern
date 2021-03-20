@@ -45,7 +45,7 @@
                 </router-link>
 
                 <b-iconstack font-scale="1.5" v-b-tooltip.hover title="Add permission" class="mr-2"
-                    :id="'add_permission_button_' + modal" v-b-modal="'add_permission_modal_'  + modal">
+                    :id="'add_permission_button'" v-b-modal="'add_permission_modal_'  + modal">
                 <b-icon stacked icon="shield-lock-fill" variant="warning"></b-icon>
                 <b-icon stacked icon="plus" variant="info" shift-h="-3" shift-v="-4"></b-icon>
                 </b-iconstack>
@@ -55,7 +55,7 @@
                 </add-permission-modal-component>
 
                 <b-iconstack font-scale="1.5" v-b-tooltip.hover title="Edit permissions" class="mr-2"
-                    :id="'edit_permissions_button_' + modal" v-b-modal="'edit_permissions_modal_'  + modal">
+                    :id="'edit_permissions_button'" v-b-modal="'edit_permissions_modal_'  + modal">
                     <b-icon stacked icon="shield-lock-fill" variant="warning"></b-icon>
                     <b-icon stacked icon="pencil-fill" scale=.5 variant="info" shift-h="-3" shift-v="-4"></b-icon>
                 </b-iconstack>
@@ -112,7 +112,7 @@ export default {
         ...Vuex.mapGetters(['allRoleNames']),
         title_string: function() { return "Permissions for " + this.item_name },
         item_key: function() { return this.item_id + "_" + this.item_model },
-        modal_id: function() { return "item_permission_modal" + "_" + this.item_key },
+        modal_id: function() { return this.item_key },
         modal: function() { if (this.modal_id) { return this.modal_id } else {return "default" } },
         role_names: function() { return [""].concat(this.allRoleNames) },
         target_names: function() { return this.get_array("target") },
