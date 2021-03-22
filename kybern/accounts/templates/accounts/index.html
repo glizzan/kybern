@@ -2,51 +2,112 @@
 
 {% block content %}
 
-<div class="row">
+<div class="row" id="IndexVueApp">
 
-    <div class="col-2"></div>
-    <div class="col-8"><h3>Welcome to Kybern!</h3>
+    <div class="col-1"></div>
+    <div class="col-10">
 
-    <p class="text-justify">
-        Kybern is a website which helps communities explore new, non-hierarchical forms of governance and manage
-        their resources in collaborative ways.
-    </p>
+        <div class="alert alert-warning text-dark" role="alert">
 
-    <p class="text-justify mt-2">
-        Most websites assume a hierarchical model of user governance.  Each person's posts, comments, content are theirs and 
-        theirs alone, to do with as they please.  This works out well some of the time, but what about communities that don't 
-        want a single all-powerful leader?  What about when consensus is important, or when community buy-in is necessary?  
-        When systemic problems arise, like the spread of misinformation or harrassment?
-    </p>
+            <div class="row">
+                <div class="col-11">
+                    <h3>Welcome to Kybern!</h3>
+                </div>
+                <div class="col-1 text-right">
+                    <span @click="info_visible = !info_visible">
+                        <b-icon-chevron-down v-if="!info_visible"></b-icon-chevron-down>
+                        <b-icon-chevron-up v-if="info_visible"></b-icon-chevron-up>
+                    </span>
+                </div>
+            </div>
 
-    <p class="text-justify">
-        Kybern is currently in early alpha, which means we <b><u><i>cannot</i></u></b> promise anything with regard to your data.
-        Please do not assume that it will be kept private or that the data will not disappear suddenly.  Instead,
-        treat this site like a playground, and poke around the features.  Do let us know if you find bugs of any
-        kind, or if you have feature suggestions.  Thank you so much for your patience!
-    </p>
+            <div class="row">
+                <div class="col-12">
+                    <p class="text-justify font-weight-bold" style="font-size: .9rem;">
+                    Kybern is a website which helps communities explore new, non-hierarchical
+                    forms of governance and manage their resources in collaborative ways.</p>
+                </div>
+            </div>
 
-    <p class="text-justify">
-        To get access to the site, please email glizzanplatform at gmail dot com.  If you just want to see what the 
-        platform does, check out <a href="https://www.glizzan.com/governance/projects/2020/09/08/a-sneak-peak-at-kybern.html">this blog post</a>.
-    </p>
+            <b-collapse id="more-info" v-model="info_visible">
 
-    <p class="text-justify">Ready to get started?</p>
+                <div class="row text-justify" style="font-size: .9rem;">
 
-    {% if user.is_authenticated %}
+                    <div class="col-6">
+                        <p class="pr-3">Most websites assume a hierarchical model of user governance.  Each person's
+                        posts, comments, content are theirs and theirs alone, to do with as they please.  This works
+                        out ok some of the time, but what about communities that don't want a single all-powerful
+                        leader?  What about when consensus is important, or when community buy-in is necessary? When
+                        systemic problems arise, like the spread of misinformation or harrassment?</p>
 
-        <a class="btn btn-info" href="/groups/create/" role="button">Create a group</a></h5>
+                        <p class="pr-3">We're trying something different - a platform where governance is customizable.
+                        Ready to get started?</p>
+                    </div>
 
-    {% else %}
+                    <div class="col-6 font-italic">
+                        <p class="pl-3">Kybern is currently in early alpha, which means we <b><u><i>cannot</i></u></b>
+                        promise anything with regard to your data. Please do not assume that it will be kept private
+                        or that the data will not disappear suddenly. Instead, treat this site like a playground,
+                        and poke around the features. Let us know if you run into any problems, or if you have
+                        feature suggestions.  Thank you so much for your patience!</p>
 
-        <a class="btn btn-info" href="/login" role="button">Sign In</a></h5>
-        <a class="btn btn-info" href="/register/" role="button">Register</a></h5>
+                        <p class="pl-3">To get access to the site, please email glizzanplatform at gmail dot com.  If
+                        you just want to see what the platform does, check out <a class="alert-link"
+                        href="https://www.glizzan.com/2020/09/08/a-sneak-peak-at-kybern.html">this blog post</a>.</p>
+                    </div>
 
-    {% endif %}
+                </div>
 
+            </b-collapse>
+
+        </div>
+
+        <div v-if=signed_in class="mt-5">
+            <h4 class="mb-4">
+                <b-icon-people-fill class="mr-2"></b-icon-people-fill>
+                Groups
+                <a class="btn btn-sm btn-info ml-2" href="/groups/create/" role="button">Add New</a>
+            </h4>
+
+            <b-card-group columns>
+
+                {% for group in groups %}
+
+                    <b-card>
+                        <b-card-text>
+                            <div class="font-weight-bold mb-2">
+                                <a class="text-info" href="{% url 'group_detail' pk=group.pk %}">{{group.name}}</a>
+                            </div>
+                            {{group.group_description|truncatechars:50}}
+                        </b-card-text>
+                    </b-card>
+
+                {% endfor %}
+
+            </b-card-group>
+
+        </div>
+
+        <div v-else class="mt-5">
+            <a class="btn btn-info" href="/login" role="button">Sign In</a></h5>
+            <a class="btn btn-info" href="/register/" role="button">Register</a></h5>
+        </div>
 
     </div>
 
 </div>
+
+<script type="application/javascript">
+
+    var IndexVueApp = new Vue({
+      delimiters: ['[[', ']]'],
+      el: '#IndexVueApp',
+      data: {
+        signed_in: {{ user.is_authenticated|lower }},
+        user_name: "{{ user.username }}",
+        info_visible: true
+      }
+    });
+</script>
 
 {% endblock %}
