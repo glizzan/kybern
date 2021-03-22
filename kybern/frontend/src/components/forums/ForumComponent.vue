@@ -1,6 +1,6 @@
 <template>
 
-    <span v-if="forum_name">
+    <div v-if="forum_name" class="bg-white p-3">
 
         <h3 class="mt-3">{{ forum_name }}</h3>
         <p>{{ forum_description }}</p>
@@ -42,7 +42,7 @@
 
             <span v-if="Object.keys(posts).length === 0">There are no posts yet in this forum.</span>
 
-    </span>
+    </div>
 
 </template>
 

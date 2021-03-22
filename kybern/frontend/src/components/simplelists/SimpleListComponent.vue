@@ -1,8 +1,8 @@
 <template>
 
-    <span>
+    <div class="bg-white p-3">
 
-        <h3 class="mt-3">{{ list_name }}</h3>
+        <h3>{{ list_name }}</h3>
         <p>{{ list_description }}</p>
 
         <router-link v-if="user_permissions.edit_list"
@@ -79,7 +79,7 @@
 
         </b-modal>
 
-    </span>
+    </div>
 
 </template>
 

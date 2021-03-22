@@ -21,6 +21,7 @@ import ConditionManagerComponent from '../components/conditions/ConditionManager
 // forums
 import ForumFormComponent from '../components/forums/ForumFormComponent'
 import ForumListComponent from '../components/forums/ForumListComponent'
+import ForumDetailComponent from '../components/forums/ForumDetailComponent'
 import ForumComponent from '../components/forums/ForumComponent'
 import PostComponent from '../components/forums/PostComponent'
 import PostFormComponent from '../components/forums/PostFormComponent'
@@ -30,6 +31,7 @@ import TemplateComponent from '../components/templates/TemplateComponent'
 import ListFormComponent from '../components/simplelists/ListFormComponent'
 import RowFormComponent from '../components/simplelists/RowFormComponent'
 import SimpleListComponent from '../components/simplelists/SimpleListComponent'
+import SimpleListDetailComponent from '../components/simplelists/SimpleListDetailComponent'
 
 
 Vue.use(VueRouter)
@@ -209,7 +211,7 @@ const routes = [
         props: { sidebar: false, main: true },
         components: {
             sidebar: GroupConfigComponent,
-            main: ForumComponent
+            main: ForumDetailComponent
         }
     },
     {
@@ -278,7 +280,7 @@ const routes = [
         props: { sidebar: false, main: true},
         components: {
             sidebar: GroupConfigComponent,
-            main: SimpleListComponent
+            main: SimpleListDetailComponent
         }
     },
     {
