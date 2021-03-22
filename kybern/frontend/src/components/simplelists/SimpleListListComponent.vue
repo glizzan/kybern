@@ -2,22 +2,30 @@
 
     <span>
 
-        <h4 class="text-secondary pb-3">Lists
+        <h5 class="pb-3">
+            <span class="font-weight-bold">Lists</span>
+            <router-link :to="{ name: 'add-new-list'}">
+                <b-button v-if="user_permissions.add_list" variant="light"
+                    class="btn-sm ml-3" id="new_list_button">+ add new</b-button>
+            </router-link>
+        </h5>
 
-        <router-link :to="{ name: 'add-new-list'}" v-if="user_permissions.add_list">
-            <b-button variant="outline-secondary"
-                class="btn-sm ml-3" id="new_list_button">+ add new</b-button>
-        </router-link>
-        </h4>
+        <b-card-group columns>
 
-        <router-link v-for="({ pk, name, description, rows }, index) in lists" v-bind:key=pk
-                :to="{ name: 'list-detail', params: { list_id: pk } }" :id="'link_to_list_' + index">
-            <b-card v-bind:key=pk class="bg-light text-info border-secondary mb-3">
-                <b-card-title>{{ name }}<span class="text-dark ml-2"><small>
-                    {{ rows.length }} items</small></span></b-card-title>
-                <p class="mb-1 text-secondary list-description"> {{ description }} </p>
+            <b-card v-for="({ pk, name, description, rows }, index) in lists" v-bind:key=pk class="bg-white">
+                <b-card-text>
+                    <div class="font-weight-bold text-info">
+                        <router-link :to="{ name: 'list-detail', params: { list_id: pk } }" :id="'link_to_list_' + index"
+                            class="text-info">
+                            {{ name }}
+                            <span class="text-dark ml-2"><small>{{ rows.length }} items</small></span>
+                        </router-link>
+                    </div>
+                    <div class="list-description mt-1">{{ description }}</div>
+                </b-card-text>
             </b-card>
-        </router-link>
+
+        </b-card-group>
 
         <span v-if="Object.keys(lists).length === 0">There are no lists yet.</span>
 

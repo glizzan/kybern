@@ -58,6 +58,7 @@ export default {
 
 <style>
 body {
-  background-color: lightgray;
+  /* background-color: lightgray; */
+  background-color: #ededed;
 }
 </style>
