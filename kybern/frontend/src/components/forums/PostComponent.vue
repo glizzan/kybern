@@ -1,43 +1,53 @@
 <template>
 
-    <span>
+    <b-row>
+        <b-col cols=3>
+            <resource-sidebar-component :highlight_model="'forum'" :highlight_pk=forum_id>
+            </resource-sidebar-component>
+        </b-col>
+        <b-col cols=9>
 
-        <h3>{{ post.title }}</h3>
-        <small class="text-muted">Posted in {{ forum_name }} on {{ display_date(post.created) }}
-            by {{ post.author }}</small>
+            <div class="bg-white p-3">
 
-        <!-- Nav links -->
+                <h3>{{ post.title }}</h3>
+                <small class="text-muted">Posted in {{ forum_name }} on {{ display_date(post.created) }}
+                    by {{ post.author }}</small>
 
-        <div class="my-3">
+                <!-- Nav links -->
 
-            <router-link :to="{ name: 'edit-post', params: { forum_id: forum_id, post_id: post_id } }"
-                v-if="user_permissions.edit_post">
-                <b-button variant="outline-secondary" class="btn-sm" id="edit_post_button">
-                    edit post</b-button>
-            </router-link>
+                <div class="my-3">
 
-            <b-button v-if="user_permissions.delete_post" variant="outline-secondary" class="btn-sm"
-                id="delete_post_button"
-                @click="delete_post(post_id)">delete post</b-button>
+                    <router-link :to="{ name: 'edit-post', params: { forum_id: forum_id, post_id: post_id } }"
+                        v-if="user_permissions.edit_post">
+                        <b-button variant="outline-secondary" class="btn-sm" id="edit_post_button">
+                            edit post</b-button>
+                    </router-link>
 
-            <router-link :to="{ name: 'action-history', params: {item_id: post_id, item_model: 'post', item_name: post.title }}">
-                <b-button variant="outline-secondary" id="post_history_button" class="btn-sm">post history</b-button>
-            </router-link>
+                    <b-button v-if="user_permissions.delete_post" variant="outline-secondary" class="btn-sm"
+                        id="delete_post_button"
+                        @click="delete_post(post_id)">delete post</b-button>
 
-            <router-link :to="{ name: 'item-permissions', params: {item_id: post_id, item_model: 'post', item_name: post.title }}">
-                <b-button variant="outline-secondary" class="btn-sm">post permissions</b-button>
-            </router-link>
+                    <router-link :to="{ name: 'action-history', params: {item_id: post_id, item_model: 'post', item_name: post.title }}">
+                        <b-button variant="outline-secondary" id="post_history_button" class="btn-sm">post history</b-button>
+                    </router-link>
 
-            <error-component :message="delete_error_message"></error-component>
+                    <router-link :to="{ name: 'item-permissions', params: {item_id: post_id, item_model: 'post', item_name: post.title }}">
+                        <b-button variant="outline-secondary" class="btn-sm">post permissions</b-button>
+                    </router-link>
 
-        </div>
+                    <error-component :message="delete_error_message"></error-component>
 
-        <!-- Content -->
-        <error-component :message="get_post_error_message"></error-component>
-        <p class="mb-3 text-secondary">  {{ post.content }}  </p>
-        <CommentListComponent :item_id=post_id :item_model="'post'" class="mt-3"></CommentListComponent>
+                </div>
 
-    </span>
+                <!-- Content -->
+                <error-component :message="get_post_error_message"></error-component>
+                <p class="mb-3 text-secondary">  {{ post.content }}  </p>
+                <CommentListComponent :item_id=post_id :item_model="'post'" class="mt-3"></CommentListComponent>
+
+            </div>
+
+        </b-col>
+    </b-row>
 
 </template>
 
@@ -48,13 +58,14 @@ import store from '../../store'
 import { UtilityMixin } from '../utils/Mixins'
 import ErrorComponent from '../utils/ErrorComponent'
 import CommentListComponent from '../comments/CommentListComponent'
+import ResourceSidebarComponent from '../groups/ResourceSidebarComponent'
 
 
 export default {
 
     props: ['forum_id', 'post_id'],
     store,
-    components: { ErrorComponent, CommentListComponent },
+    components: { ErrorComponent, CommentListComponent, ResourceSidebarComponent },
     mixins: [UtilityMixin],
     data: function() {
             return {
