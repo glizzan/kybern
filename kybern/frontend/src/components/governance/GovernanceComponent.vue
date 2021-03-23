@@ -1,38 +1,41 @@
 <template>
-    <span>
 
-        <b-card-group deck class="mb-4">
+    <b-row>
+        <b-col cols=3 class="p-3">
 
-            <b-card v-if="governance_forum" class="bg-light border-secondary" no-body>
-                <b-card-header>
-                    <router-link v-if=governance_forum class="text-info"
-                            :to="{ name: 'forum-detail', params: { forum_id: governance_forum.pk } }">
-                        {{ governance_forum.name }} </router-link>
-                </b-card-header>
-                <b-card-text id="forum-description" class="text-muted p-3">
-                    {{ governance_forum.description }} of {{ group_name }}
-                </b-card-text>
+            <b-list-group class="mb-3">
+                <b-list-group-item :active="selected_component=='leadership'" @click="selected_component='leadership'">
+                    Leadership</b-list-group-item>
+                <b-list-group-item :active="selected_component=='membership'" @click="selected_component='membership'">
+                    Members</b-list-group-item>
+                <b-list-group-item :active="selected_component=='customroles'" @click="selected_component='customroles'">
+                    Custom Roles</b-list-group-item>
+            </b-list-group>
+
+            <b-card v-if="governance_forum" class="bg-white mb-3">
+                <router-link :to="{ name: 'forum-detail', params: { forum_id: governance_forum.pk } }"
+                    class="text-info">{{ governance_forum.name }}</router-link>
+                <p id="forum-description" class="my-2"> {{ governance_forum.description }} of {{ group_name }}</p>
             </b-card>
 
-            <b-card class="bg-light border-secondary" no-body>
-                <b-card-header>
-                    <router-link class="text-info" :to="{ name: 'templates', params: {scope: 'community'}}">
-                        Community Templates </router-link>
-                </b-card-header>
-                <b-card-text id="community_templates_link" class="text-muted p-3">
-                    Browse pre-existing governance setups and apply them to your community.
-                </b-card-text>
+            <b-card class="bg-white mb-3">
+                <router-link class="text-info" :to="{ name: 'templates', params: {scope: 'community'}}">
+                    Community Templates </router-link>
+                <p id="community_templates_link" class="my-2">
+                    Browse pre-existing governance setups and apply them to your community.</p>
+
             </b-card>
 
-        </b-card-group>
+        </b-col>
+        <b-col cols=9>
+                <leadership-component v-if="selected_component=='leadership'"></leadership-component>
 
-        <leadership-component></leadership-component>
+                <group-membership-component v-if="selected_component=='membership'"></group-membership-component>
 
-        <group-membership-component></group-membership-component>
+                <role-component v-if="selected_component=='customroles'"></role-component>
+        </b-col>
+    </b-row>
 
-        <role-component></role-component>
-
-    </span>
 
 </template>
 
@@ -52,6 +55,7 @@ export default {
     data: function() {
         return {
             error_message: null,
+            selected_component: "leadership"
         }
     },
     computed: {
@@ -66,3 +70,23 @@ export default {
 }
 
 </script>
+
+
+<style scoped>
+
+    .list-group-item a {
+        color: #17a2b8;
+    }
+
+    .list-group-item.active {
+        z-index: 2;
+        color: #fff;
+        background-color: #17a2b8;
+        border-color: #17a2b8;
+    }
+
+    .list-group-item.active a {
+        color: white;
+    }
+
+</style>

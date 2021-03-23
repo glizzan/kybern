@@ -60,6 +60,7 @@ export default {
             user_permissions: state => state.permissions.current_user_permissions,
         }),
         resources: function() {
+
             return [
                 { display: "Forums", model: "forum", items: this.forums },
                 { display: "Lists", model: "simplelist", items: this.lists }

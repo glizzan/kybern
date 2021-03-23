@@ -1,25 +1,29 @@
 <template>
 
-    <b-form inline :id=edit_leadership_id class="mx-auto">
+    <b-form :id=edit_leadership_id>
 
-        <div class="w-50 p-2">
-            <p class="text-center font-italic">Roles</p>
-            <vue-multiselect v-model="roles_selected" :options="rolesAsOptions" :multiple="true"
-            :close-on-select="true" :clear-on-select="false" placeholder="No roles selected"
-            :disabled="!has_permission" label="name" track-by="name">
-            </vue-multiselect>
-        </div>
-        <div class="w-50 p-2">
-            <p class="text-center font-italic">Individuals</p>
-            <vue-multiselect v-model="actors_selected" :options="groupMembersAsOptions" :multiple="true"
-            :close-on-select="true" :clear-on-select="true" placeholder="No individuals selected"
-            :disabled="!has_permission" label="name" track-by="pk" prepend="Individuals">
+        <div class="mb-3">
+            <b-input-group prepend="Roles" class="mb-2 mr-sm-2 mb-sm-0 flex-nowrap">
+                <vue-multiselect v-model="roles_selected" :options="rolesAsOptions" :multiple="true"
+                :close-on-select="true" :clear-on-select="false" placeholder="No roles selected"
+                :disabled="!has_permission" label="name" track-by="name">
                 </vue-multiselect>
-            </div>
+            </b-input-group>
         </div>
 
-        <b-button v-if="has_permission" variant="outline-secondary" class="mx-auto btn-sm mt-3" @click="update_leadership()">
-            Update {{this.leadership_type}}s</b-button>
+        <div class="mb-3">
+            <b-input-group prepend="Individuals" class="mb-2 mr-sm-2 mb-sm-0 flex-nowrap">
+                <vue-multiselect v-model="actors_selected" :options="groupMembersAsOptions" :multiple="true"
+                :close-on-select="true" :clear-on-select="true" placeholder="No individuals selected"
+                :disabled="!has_permission" label="name" track-by="pk" prepend="Individuals">
+                </vue-multiselect>
+            </b-input-group>
+        </div>
+
+        <div class="mb-3">
+            <b-button v-if="has_permission" variant="outline-secondary" @click="update_leadership()">
+                Update {{this.leadership_type}}s</b-button>
+         </div>
 
         <error-component :message=error_message></error-component>
 

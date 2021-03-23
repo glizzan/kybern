@@ -1,8 +1,6 @@
 <template>
 
-  <span>
-
-    <h5>{{ title_string }}</h5>
+  <div class="bg-white p-3">
 
     <b-container fluid id="action_history_table">
       <b-row>
@@ -67,7 +65,7 @@
 
     </b-container>
 
-  </span>
+  </div>
 
 </template>
 
@@ -116,9 +114,6 @@ export default {
       },
       modal_id: function() {
         return "action_history_modal_" + this.final_item_id + "_" + this.final_item_model
-      },
-      title_string: function() {
-        return "Action history for " + this.final_item_model + " " + this.final_item_name
       }
     },
     methods: {
