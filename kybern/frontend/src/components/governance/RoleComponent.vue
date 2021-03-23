@@ -1,78 +1,56 @@
 <template>
 
-    <span>
+    <div class="bg-white p-3">
 
-        <b-card no-body class="my-3">
+            <p>In addition to the required "members" role, groups can add custom roles which different people can
+            be assigned to. Each role has different rights and responsibilities within the community.</p>
 
-            <b-card-header>
+            <b-button v-if="user_permissions.add_role_to_community" class="btn-sm mr-3 mb-3" variant="info"
+                v-b-modal.add_role_modal id="add_role_button">add a role</b-button>
 
-                <span class="float-left">Roles</span>
+            <b-button v-if="user_permissions.apply_template" class="btn-sm mb-3" variant="info"
+                v-b-modal.apply_template_modal_role id="apply_role_templates">apply role templates</b-button>
 
-                <span class="float-right">
-                    <b-button v-if="user_permissions.add_role_to_community" class="btn-sm"
-                        v-b-modal.add_role_modal id="add_role_button">add a role</b-button>
+            <error-component :message=error_message></error-component>
 
-                    <router-link v-if="user_permissions.apply_template"
-                        :to="{ name: 'item-templates', params: {scope: 'role', target_id: group_pk, target_model: 'group'} }">
-                        <b-button class="btn-sm" id="apply_role_templates">role templates</b-button>
-                    </router-link>
-                </span>
+            <b-list-group>
 
-            </b-card-header>
+                <b-list-group-item v-for="role in combined_roles" v-bind:key="role.id"
+                    class="d-flex justify-content-between align-items-center" :id="role.name + '_role'">
 
-            <b-card-text class="p-3">
+                        <span class="role_info">
+                            <span class="role_name_display">{{ role.name }}</span>
+                            <small class="ml-2" :id="role.name + '_member_count'">
+                            {{role.current_members.length }} people </small>
+                        </span>
 
-                <p>Each group has a variety of roles which different people can be assigned to. Each
-                    role has different rights and responsibilities within the community.</p>
+                        <div class="role_interactions">
 
-                <error-component :message=error_message></error-component>
-
-                <b-list-group>
-
-                        <b-list-group-item class="d-flex justify-content-between align-items-center"
-                            :id="'members_role'">
-                            <span class="role_info">
-                                <span class="role_name_display">members</span>
-                                <small class="ml-2" :id="'members_member_count'"> {{ group_members.length }} people </small>
-                            </span>
-                            <div class="role_interactions">
-                                <router-link :to="{ name: 'role-permissions', params: { role_to_edit: 'members' }}">
-                                    <b-button variant="info" pill id="members_editrole">permissions</b-button>
-                                </router-link>
+                            <div v-if="role.name != 'members'" class="d-inline" v-b-modal.role_membership_modal
+                                 v-on:click="role_selected = role.name" :id="role.name + '_changemembers'">
+                                <b-icon-people class="mr-1"></b-icon-people><small>change members</small>
                             </div>
-                        </b-list-group-item>
 
-                        <b-list-group-item v-for="role in roles" v-bind:key="role.id"
-                            class="d-flex justify-content-between align-items-center" :id="role.name + '_role'">
-                                <span class="role_info">
-                                        <span class="role_name_display">{{ role.name }}</span>
-                                        <small class="ml-2" :id="role.name + '_member_count'">
-                                        {{role.current_members.length }} people </small>
-                                </span>
-                                <div class="role_interactions">
-                                    <b-button variant="secondary" pill v-b-modal.role_membership_modal
-                                        v-on:click="role_to_change_membership = role.name" :id="role.name + '_changemembers'">
-                                        change members</b-button>
-                                    <router-link :to="{ name: 'role-permissions', params: { role_to_edit: role.name }}">
-                                        <b-button variant="info" pill :id="role.name + '_editrole'">
-                                            permissions</b-button>
-                                    </router-link>
-                                    <b-button variant="danger" pill v-on:click="remove_role(role.name)">
-                                        remove</b-button>
-                                </div>
-                        </b-list-group-item>
+                            <div class="ml-3 d-inline" v-b-modal.role_permissions_modal :id="role.name + '_editrole'"
+                                v-on:click="role_selected = role.name">
+                                <b-icon-shield-lock class="mr-1"></b-icon-shield-lock><small>change permissions</small>
+                            </div>
 
-                </b-list-group>
+                            <div v-if="role.name != 'members'" class="ml-3 d-inline" v-on:click="remove_role(role.name)">
+                                <b-icon-trash class="mr-1"></b-icon-trash><small>remove</small>
+                            </div>
 
-            </b-card-text>
+                        </div>
+                </b-list-group-item>
 
-        </b-card>
+            </b-list-group>
 
-        <add-role-component></add-role-component>
-        <role-membership-component :role_selected=role_to_change_membership></role-membership-component>
+        <add-role-modal></add-role-modal>
+        <role-membership-component :role_selected=role_selected></role-membership-component>
+        <role-permissions-modal :role_to_edit=role_selected></role-permissions-modal>
+        <template-modal :scope="'role'"></template-modal>
 
-
-    </span>
+    </div>
 
 </template>
 
@@ -81,17 +59,19 @@
 import Vuex from 'vuex'
 import store from '../../store'
 import ErrorComponent from '../utils/ErrorComponent'
-import AddRoleComponent from '../governance/AddRoleComponent'
+import AddRoleModal from '../governance/AddRoleModal'
 import RoleMembershipComponent from '../governance/RoleMembershipComponent'
+import RolePermissionsModal from '../permissions/RolePermissionsModal'
+import TemplateModal from '../templates/TemplateModal'
 
 
 export default {
 
     store,
-    components: { ErrorComponent, AddRoleComponent, RoleMembershipComponent },
+    components: { ErrorComponent, AddRoleModal, RolePermissionsModal, RoleMembershipComponent, TemplateModal },
     data: function() {
         return {
-            role_to_change_membership: '',               // prop for add-people-to-role-modal
+            role_selected: '',
             error_message: null,
         }
     },
@@ -105,7 +85,11 @@ export default {
             group_members: state => state.governance.members,
             user_permissions: state => state.permissions.current_user_permissions,
             group_pk: state => state.group_pk
-        })
+        }),
+        combined_roles: function() {
+            var combined_roles = [{name: "members", current_members: this.group_members}]
+            return combined_roles.concat(this.roles)
+        }
     },
     methods: {
         ...Vuex.mapActions(['checkPermissions', 'removeRole']),

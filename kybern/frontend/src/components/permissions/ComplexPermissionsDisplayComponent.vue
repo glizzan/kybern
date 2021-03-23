@@ -38,11 +38,12 @@
 
                 </router-link>
 
-                <router-link :to="{ name: 'item-templates', params: {scope: item_model, target_id: item_id, target_model: item_model} }"
-                             v-if="user_permissions.apply_template" id="apply_templates" class="mr-2">
-                    <b-icon-grid3x3-gap-fill v-b-tooltip.hover title="Apply templates" variant=info font-scale=1.5>
-                    </b-icon-grid3x3-gap-fill>
-                </router-link>
+                <b-icon-grid3x3-gap-fill v-b-tooltip.hover title="Apply templates" variant=info font-scale=1.5
+                    v-if="user_permissions.apply_template" id="apply_templates" class="mr-2"
+                    v-b-modal="'apply_template_modal_' + item_model">
+                </b-icon-grid3x3-gap-fill>
+
+                <template-modal :scope=item_model :target_id=item_id :target_model=item_model></template-modal>
 
                 <b-iconstack font-scale="1.5" v-b-tooltip.hover title="Add permission" class="mr-2"
                     :id="'add_permission_button'" v-b-modal="'add_permission_modal_'  + modal">
@@ -87,12 +88,13 @@ import store from '../../store'
 import AddPermissionModalComponent from '../permissions/AddPermissionModalComponent'
 import EditPermissionsModalComponent from '../permissions/EditPermissionsModalComponent'
 import PermissionsTableComponent from '../permissions/PermissionsTableComponent'
+import TemplateModal from '../templates/TemplateModal'
 
 
 export default {
 
     props: ['permissions', 'item_id', 'item_model', 'item_name'],
-    components: { AddPermissionModalComponent, EditPermissionsModalComponent, PermissionsTableComponent },
+    components: { AddPermissionModalComponent, EditPermissionsModalComponent, PermissionsTableComponent, TemplateModal },
     store,
     data: function() {
         return {

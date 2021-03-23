@@ -1,95 +1,42 @@
 <template>
 
-    <span>
+    <div class="mt-3">
 
-        <b-card no-body class="my-3">
+        <b-button v-if="user_permissions.add_members_to_community || user_permissions.remove_members_from_community"
+            class="btn-sm btn-info mr-3 mb-3" v-b-modal.group_membership_display id="group_membership_display_button">
+            change members</b-button>
 
-            <b-card-header>
+        <edit-membership-modal></edit-membership-modal>
 
-                <span class="float-left">Members</span>
+        <b-button class="btn-sm btn-info mb-3" v-b-modal.group_membership_settings_display
+            id="group_membership_settings_button">
+            change membership settings</b-button>
 
-                <span class="float-right">
+        <membership-settings-modal></membership-settings-modal>
 
-                    <router-link :to="{ name: 'membership-settings' }">
-                        <b-button class="btn-sm btn-seconday" id="group_membership_settings_button">
-                            membership settings</b-button>
+        <div id="current_member_list" class="bg-white p-3">
+            <b-table small :items="members_and_roles" :fields="fields">
+
+                <template #cell(member)="data">
+                    <router-link :to="{ name: 'user-permissions', params: { 'user_pk': data.item.pk } }" class="text-info">
+                        {{ data.item.member }}
                     </router-link>
+                </template>
 
-                    <b-button class="btn-sm btn-secondary" v-b-modal.group_membership_display id="group_membership_display_button">
-                        change members</b-button>
-
-                </span>
-
-            </b-card-header>
-
-            <b-card-text class="p-3">
-
-                <b-container id="current_member_list">
-                    <b-row cols="4">
-                        <b-col v-for="member in groupMembersAsOptions" v-bind:key="member.pk">
-                            <router-link :to="{ name: 'user-permissions', params: { 'user_pk': member.pk } }" class="text-info">
-                                {{ member.name }}
-                            </router-link>
-                        </b-col>
-                    </b-row>
-                </b-container>
-
-
-            </b-card-text>
-
-        </b-card>
-
-        <b-modal id="group_membership_display" title="Group Membership" class="modal fade" size="lg" hide-footer>
-
-            <error-component :message=error_message></error-component>
-
-            <b>Current Members:</b>
-                <span id="current_member_list"> <b-badge v-for="member in groupMembersAsOptions" v-bind:key="member.pk"
-                pill variant="info" class="mx-1">{{ member.name }}</b-badge></span>
-
-            <hr >
-
-            <span v-if="user_permissions.add_members_to_community">
-
-                <span v-if="add_member_button_selected">
-                    <vue-multiselect v-model="members_to_add_selected" :options="nonmembersAsOptions" :multiple="true"
-                        :close-on-select="true" :clear-on-select="false" placeholder="No one selected"
-                        label="name" track-by="name">
-                    </vue-multiselect>
-                    <b-button class="btn-sm mb-3" id="save_add_member_button" @click="add_members()">Save</b-button>
-                    <b-button class="btn-sm mb-3" @click="add_member_button_selected = false">Discard</b-button>
-                </span>
-                <span v-else>
-                    <span v-if="!remove_member_button_selected">
-                        <b-button class="btn-sm mb-3" id="add_member_button"
-                            @click="add_member_button_selected = true">Add Members</b-button>
+                <template #cell()="data">
+                    <span v-if="data.value != undefined && data.value == true">
+                        <b-icon-check-circle-fill variant="success">
+                        </b-icon-check-circle-fill>
                     </span>
-                </span>
-
-            </span>
-
-            <span v-if="user_permissions.remove_members_from_community">
-
-                <span v-if="remove_member_button_selected">
-                    <vue-multiselect v-model="members_to_remove_selected" :options="groupMembersAsOptions" :multiple="true"
-                        :close-on-select="true" :clear-on-select="false" placeholder="No one selected"
-                        label="name" track-by="name">
-                    </vue-multiselect>
-                    <b-button class="btn-sm mb-3" id="save_remove_member_button" @click="remove_members()">Save</b-button>
-                    <b-button class="btn-sm mb-3" @click="remove_member_button_selected = false">Discard</b-button>
-                </span>
-                <span v-else>
-                    <span v-if="!add_member_button_selected">
-                        <b-button class="btn-sm mb-3" id="remove_member_button"
-                            @click="remove_member_button_selected = true">Remove Members</b-button>
+                    <span v-else>
+                        <b-icon-x variant="danger"></b-icon-x>
                     </span>
-                </span>
+                </template>
 
-            </span>
+            </b-table>
+        </div>
 
-        </b-modal>
-
-    </span>
+    </div>
 
 </template>
 
@@ -97,48 +44,44 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
-import Multiselect from 'vue-multiselect'
-import ErrorComponent from '../utils/ErrorComponent'
+import EditMembershipModal from '../governance/EditMembershipModal'
+import MembershipSettingsModal from '../governance/MembershipSettingsModal'
 
 
 export default {
 
+    components: { EditMembershipModal, MembershipSettingsModal },
     store,
-    components: { ErrorComponent, "vue-multiselect": Multiselect },
-    data: function() {
-        return {
-            item_model: 'group',  // group model
-            add_member_button_selected: false,
-            remove_member_button_selected: false,
-            members_to_add_selected: [],
-            members_to_remove_selected: [],
-            error_message: null
-        }
-    },
     created () {
         this.checkPermissions({permissions: {"add_members_to_community": null, "remove_members_from_community": null }})
             .catch(error => {  this.error_message = error; console.log(error) })
-        this.getPermissionsForItem({ item_id: this.item_id, item_model: this.item_model })
-            .catch(error => {  this.error_message = error; console.log(error) })
     },
     computed: {
-        ...Vuex.mapState({
-            permissions: state => state.permissions.permissions,
-            user_permissions: state => state.permissions.current_user_permissions,
-            item_id: state => state.group_pk
-        }),
-        ...Vuex.mapGetters(['groupMembersAsOptions', 'nonmembersAsOptions'])
+        ...Vuex.mapState({ user_permissions: state => state.permissions.current_user_permissions }),
+        ...Vuex.mapGetters(['groupMembersAsOptions', 'allRoleNames', 'rolesForMember']),
+        members_and_roles: function() {
+            var vue_data = this
+            var items = []
+            this.groupMembersAsOptions.forEach(member => {
+                var row = {member: member.name, pk: member.pk}
+                var roles_user_is_in = this.rolesForMember(member.pk)
+                vue_data.fields.forEach(field => {
+                    if (roles_user_is_in.includes(field)) { row[field] = true }
+                })
+                items.push(row)
+            })
+            return items
+        },
+        fields: function() {
+            var role_names = []
+            this.allRoleNames.forEach(name => {
+                if (name != "members") { role_names.push(name) }
+            })
+            return ["member"].concat(role_names)
+        }
     },
     methods: {
-        ...Vuex.mapActions(['getPermissionsForItem', 'checkPermissions', 'addMembers', 'removeMembers']),
-        add_members() {
-            var members_to_add = this.members_to_add_selected.map(actor => actor.pk)
-            this.addMembers({ user_pks: members_to_add }).catch(error => this.error_message = error)
-        },
-        remove_members() {
-            var members_to_remove = this.members_to_remove_selected.map(actor => actor.pk)
-            this.removeMembers({ user_pks: members_to_remove }).catch(error => this.error_message = error)
-        }
+        ...Vuex.mapActions(['checkPermissions'])
     }
 
 }

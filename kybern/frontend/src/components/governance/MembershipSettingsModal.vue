@@ -1,14 +1,13 @@
 <template>
 
-    <span>
+    <b-modal id="group_membership_settings_display" title="Membership Settings" class="modalfade" size="xl" hide-footer>
 
-        <h3>Group Membership Settings</h3>
+            <p class="mb-4">Not sure what to pick?
+                <span class="text-info" id="membership_templates_link" v-b-modal.apply_template_modal_membership>
+                    Browse pre-existing membership templates and apply them to your community.</span>
+            </p>
 
-            <router-link v-if="user_permissions.apply_template" :to="{ name: 'templates', params: {scope: 'membership'}}">
-                <b-card title="Membership Templates" class="bg-light text-info border-secondary my-4">
-                    <p id="membership_templates_link" class="mb-1 text-secondary">Browse pre-existing membership setups and
-                        apply them to your community.</p></b-card>
-            </router-link>
+            <template-modal :scope="'membership'"></template-modal>
 
             <error-component :message=error_message></error-component>
 
@@ -34,7 +33,7 @@
 
             </span>
 
-    </span>
+    </b-modal>
 
 </template>
 
@@ -44,12 +43,13 @@ import Vuex from 'vuex'
 import store from '../../store'
 import ErrorComponent from '../utils/ErrorComponent'
 import SimplePermissionsDisplayComponent from '../permissions/SimplePermissionsDisplayComponent'
+import TemplateModal from '../templates/TemplateModal'
 
 
 export default {
 
     store,
-    components: { ErrorComponent, SimplePermissionsDisplayComponent },
+    components: { ErrorComponent, SimplePermissionsDisplayComponent, TemplateModal },
     data: function() {
         return {
             item_model: 'group',  // group model

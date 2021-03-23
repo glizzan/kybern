@@ -2,7 +2,7 @@
 
     <span>
 
-        <b-button class="mr-1 mb-4 btn-sm" :id="'add_permission_button_' + modal"
+        <b-button class="mr-1 mb-4 btn-sm outline-secondary" :id="'add_permission_button_' + modal" variant="outline-secondary"
             v-b-modal="'add_permission_modal_'  + modal">Add Permission</b-button>
 
         <add-permission-modal-component :default_selection=default_selection :role_to_edit=role_to_edit
@@ -10,7 +10,7 @@
             :modal_id="'add_permission_modal_'  + modal">
         </add-permission-modal-component>
 
-        <b-button class="mb-4 btn-sm" :id="'edit_permissions_button_' + modal"
+        <b-button class="mb-4 btn-sm" :id="'edit_permissions_button_' + modal" variant="outline-secondary"
             v-b-modal="'edit_permissions_modal_'  + modal">Edit Permissions</b-button>
 
         <edit-permissions-modal-component :permissions=permissions :item_name=item_name

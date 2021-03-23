@@ -7,22 +7,33 @@
 
             <span class="font-weight-bold"><b-icon-people-fill class="mr-2"></b-icon-people-fill>{{group_name}}</span>
 
-            <router-link id="resources_button" :to="{ name: 'home'}" :exact-active-class="'selected-link'">
-                <b-icon-grid class="ml-3 mr-1"></b-icon-grid>Resources
+            <router-link id="resources_button" :to="{ name: 'home'}" :class="is_active('resources')">
+                <b-icon-grid-fill v-if="is_active('resources') == 'tab-active'" class="ml-3 mr-1"></b-icon-grid-fill>
+                <b-icon-grid v-else class="ml-3 mr-1"></b-icon-grid>
+                Resources
             </router-link>
 
             <router-link id="group_history_button" :to="{ name: 'action-history', params: { item_id: group_pk,
-            item_model: 'group', item_name: group_name }}" :exact-active-class="'selected-link'">
-                <b-icon-clock-history class="ml-3 mr-1"></b-icon-clock-history>History
+            item_model: 'group', item_name: group_name }}" :class="is_active('history')">
+                <b-icon-clock-fill v-if="is_active('history') == 'tab-active'" class="ml-3 mr-1">
+                </b-icon-clock-fill>
+                <b-icon-clock-history v-else class="ml-3 mr-1"></b-icon-clock-history>
+                History
             </router-link>
 
-            <router-link id="governance_button" :to="{ name: 'governance'}" :exact-active-class="'selected-link'">
-                <b-icon-person-lines-fill class="ml-3 mr-1"></b-icon-person-lines-fill>Group Roles
+            <router-link id="governance_button" :to="{ name: 'governance'}" :class="is_active('governance')">
+                <b-icon-person-check-fill v-if="is_active('governance') == 'tab-active'" class="ml-3 mr-1">
+                </b-icon-person-check-fill>
+                <b-icon-person-check v-else class="ml-3 mr-1"></b-icon-person-check>
+                Group Roles
             </router-link>
 
-            <router-link id="group_permissions_button" :exact-active-class="'selected-link'"
+            <router-link id="group_permissions_button" :class="is_active('permissions')"
                 :to="{ name: 'group-permissions', params: { group_pk: group_pk}}">
-                <b-icon-shield-lock-fill class="ml-3 mr-1"></b-icon-shield-lock-fill>Permissions
+                <b-icon-shield-lock-fill v-if="is_active('permissions') == 'tab-active'" class="ml-3 mr-1">
+                </b-icon-shield-lock-fill>
+                <b-icon-shield-lock v-else class="ml-3 mr-1"></b-icon-shield-lock>
+                Permissions
             </router-link>
 
         </span>
@@ -95,6 +106,9 @@ export default {
         leave_group() {
             this.removeMembers({ user_pks: [store.state.user_pk] }).then(response => window.location.reload())
             .catch(error => {  this.error_message = error; console.log(error) })
+        },
+        is_active(tab_name) {
+            if (this.$route.meta.tab == tab_name) { return "tab-active" } else { return "tab-inactive" }
         }
     }
 
@@ -108,7 +122,7 @@ a, a button {
 color: black
 }
 
-.selected-link {
+.tab-active {
     font-weight: bold;
     color: #17a2b8;   /* info */
 }

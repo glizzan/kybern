@@ -7,14 +7,13 @@
         </div>
 
         <div class="bg-white p-3 my-3">
-            <p>This group's basic structure is:</p>
+            <p>This group's leadership structure is:</p>
             <p class="mt-2 mx-5">{{ governance_info_display }}</p>
         </div>
 
         <change-leadership-component></change-leadership-component>
 
     </span>
-
 
 </template>
 

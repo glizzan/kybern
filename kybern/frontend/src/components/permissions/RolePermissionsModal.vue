@@ -1,8 +1,6 @@
 <template>
 
-    <span id="edit_role_section">
-
-        <h3>{{ title_string }}</h3>
+    <b-modal id="role_permissions_modal" :title="title_string" size="xl" hide-footer>
 
         <p class="my-1">People with this role can...</p>
 
@@ -10,7 +8,7 @@
             :item_id=group_id :item_model="'group'" :item_name="'Role ' + role_to_edit">
         </simple-permissions-display-component>
 
-    </span>
+    </b-modal>
 
 </template>
 

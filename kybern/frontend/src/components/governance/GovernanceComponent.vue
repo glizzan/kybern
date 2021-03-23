@@ -19,12 +19,13 @@
             </b-card>
 
             <b-card class="bg-white mb-3">
-                <router-link class="text-info" :to="{ name: 'templates', params: {scope: 'community'}}">
-                    Community Templates </router-link>
-                <p id="community_templates_link" class="my-2">
+                <span id="community_templates_link" class="text-info" v-b-modal.apply_template_modal_community>
+                    Community Templates</span>
+                <p class="my-2">
                     Browse pre-existing governance setups and apply them to your community.</p>
-
             </b-card>
+
+            <template-modal :scope="'community'"></template-modal>
 
         </b-col>
         <b-col cols=9>
@@ -46,11 +47,12 @@ import store from '../../store'
 import LeadershipComponent from '../governance/LeadershipComponent'
 import GroupMembershipComponent from '../governance/GroupMembershipComponent'
 import RoleComponent from '../governance/RoleComponent'
+import TemplateModal from '../templates/TemplateModal'
 
 
 export default {
 
-    components: { LeadershipComponent, GroupMembershipComponent, RoleComponent },
+    components: { LeadershipComponent, GroupMembershipComponent, RoleComponent, TemplateModal },
     store,
     data: function() {
         return {
