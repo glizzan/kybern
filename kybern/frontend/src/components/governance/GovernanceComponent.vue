@@ -4,11 +4,11 @@
         <b-col cols=3 class="p-3">
 
             <b-list-group class="mb-3">
-                <b-list-group-item :active="selected_component=='leadership'" @click="selected_component='leadership'">
+                <b-list-group-item id="leadership" :active="selected_component=='leadership'" @click="selected_component='leadership'">
                     Leadership</b-list-group-item>
-                <b-list-group-item :active="selected_component=='membership'" @click="selected_component='membership'">
+                <b-list-group-item id="membership" :active="selected_component=='membership'" @click="selected_component='membership'">
                     Members</b-list-group-item>
-                <b-list-group-item :active="selected_component=='customroles'" @click="selected_component='customroles'">
+                <b-list-group-item id="customroles" :active="selected_component=='customroles'" @click="selected_component='customroles'">
                     Custom Roles</b-list-group-item>
             </b-list-group>
 

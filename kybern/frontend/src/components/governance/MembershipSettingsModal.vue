@@ -2,7 +2,8 @@
 
     <b-modal id="group_membership_settings_display" title="Membership Settings" class="modalfade" size="xl" hide-footer>
 
-            <p class="mb-4">Not sure what to pick?
+            <p v-if="user_permissions.apply_template" class="mb-4" >
+                Not sure what to pick?
                 <span class="text-info" id="membership_templates_link" v-b-modal.apply_template_modal_membership>
                     Browse pre-existing membership templates and apply them to your community.</span>
             </p>

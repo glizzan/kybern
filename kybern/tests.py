@@ -166,9 +166,11 @@ class GroupBasicsTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5)[0].click()
+        self.browser.find_by_id("customroles", wait_time=5).first.click()
         time.sleep(2)
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "1 people")
+        self.browser.find_by_id("membership", wait_time=5).first.click()
         self.browser.find_by_id('group_membership_display_button', wait_time=5).first.click()
         time.sleep(2)
         names = [item.text for item in self.browser.find_by_css("span#current_member_list>span.badge", wait_time=5)]
@@ -183,12 +185,14 @@ class GroupBasicsTestCase(BaseTestCase):
         names = [item.text for item in self.browser.find_by_css("span#current_member_list>span.badge", wait_time=5)]
         self.assertEquals(names, ["meganrapinoe", "christenpress"])
         self.browser.find_by_css(".close", wait_time=5).first.click()  # close modal
+        self.browser.find_by_id("customroles", wait_time=5).first.click()
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5).text, "2 people")
 
     def test_create_role(self):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5)[0].click()
+        self.browser.find_by_id("customroles", wait_time=5).first.click()
         self.browser.find_by_id('add_role_button', wait_time=5)[0].scroll_to()
         self.browser.find_by_id('add_role_button', wait_time=5).first.click()
         self.browser.fill('role_name', 'forwards')
@@ -232,17 +236,19 @@ class PermissionsTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button')[0].click()
+        self.browser.find_by_id("customroles").first.click()
         self.browser.find_by_id('forwards_editrole')[0].scroll_to()
         self.browser.find_by_id('forwards_editrole').first.click()
         self.browser.find_by_id('edit_permissions_button_default').first.click()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(permissions, [])
-        self.browser.find_by_css(".close").first.click()  # close modal
+        self.browser.find_by_css(".close").last.click()  # close modal
+        time.sleep(3)
         self.browser.find_by_id('add_permission_button_default').first.click()
         self.select_from_multiselect("Remove members")
         self.browser.find_by_id('save_permission_button').first.click()
         time.sleep(.25)
-        self.browser.find_by_css(".close").first.click()  # close modal
+        self.browser.find_by_css(".close").last.click()  # close modal
         self.browser.find_by_id('edit_permissions_button_default').first.click()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(permissions, ["those with role forwards have permission to remove members from community"])
@@ -256,9 +262,11 @@ class PermissionsTestCase(BaseTestCase):
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button')[0].click()
+        self.browser.find_by_id("customroles", wait_time=5).first.click()
         self.browser.find_by_id('members_member_count').scroll_to()
         time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count').text, "9 people")
+        self.browser.find_by_id("membership", wait_time=5).first.click()
         self.browser.find_by_id('group_membership_display_button').first.click()
         time.sleep(1)
         self.browser.find_by_id('remove_member_button').first.click()
@@ -270,12 +278,14 @@ class PermissionsTestCase(BaseTestCase):
         time.sleep(1)
         self.browser.find_by_css(".close").first.click()  # close modal
         time.sleep(1)
+        self.browser.find_by_id("customroles", wait_time=5).first.click()
         self.assertEquals(self.browser.find_by_id('members_member_count').text, "8 people")
 
         # Emily Sonnett, not a forward, cannot remove members
         self.login_user("emilysonnett", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button')[0].click()
+        self.browser.find_by_id("membership", wait_time=5).first.click()
         self.browser.find_by_id('group_membership_display_button').first.click()
         time.sleep(1)
         self.assertEquals(len(self.browser.find_by_id('remove_member_button')), 0)
@@ -299,6 +309,7 @@ class ActionsTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button')[0].click()
+        self.browser.find_by_id("customroles", wait_time=5).first.click()
         self.browser.find_by_css("#add_role_button")[0].scroll_to()
         self.browser.find_by_id('add_role_button').first.click()
         self.browser.fill('role_name', 'forwards')
@@ -339,6 +350,7 @@ class ActionConditionsTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5)[0].click()
+        self.browser.find_by_id("customroles").first.click()
         self.browser.find_by_id('forwards_editrole', wait_time=5)[0].scroll_to()
         self.browser.find_by_id('forwards_editrole', wait_time=5).first.click()
         self.browser.find_by_id('edit_permissions_button_default').first.click()
@@ -360,6 +372,7 @@ class ActionConditionsTestCase(BaseTestCase):
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5)[0].click()
+        self.browser.find_by_id("customroles").first.click()
         self.browser.find_by_id('add_role_button', wait_time=5).first.click()
         self.browser.fill('role_name', 'midfielders')
         self.browser.find_by_id('save_role_button', wait_time=5).first.click()
@@ -593,6 +606,7 @@ class ConsensusConditionTestCase(BaseTestCase):
         self.login_user("emilysonnett", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button')[0].click()
+        self.browser.find_by_id("customroles").first.click()
         self.browser.find_by_id('add_role_button')[0].scroll_to()
         self.browser.find_by_id('add_role_button').first.click()
         self.browser.fill('role_name', 'midfielders')
@@ -627,6 +641,7 @@ class ConsensusConditionTestCase(BaseTestCase):
         self.login_user("crystaldunn", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button')[0].click()
+        self.browser.find_by_id("customroles").first.click()
         self.browser.find_by_id('add_role_button')[0].scroll_to()
         self.browser.find_by_id('add_role_button').first.click()
         self.browser.fill('role_name', 'midfielders')
@@ -683,6 +698,7 @@ class ConsensusConditionTestCase(BaseTestCase):
         # change is implemented
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button').first.click()
+        self.browser.find_by_id("customroles").first.click()
         time.sleep(2)
         roles = [item.text for item in self.browser.find_by_css(".role_name_display")]
         self.assertEquals(roles, ["members", "forwards", "defense", "captains", "midfielders"])
@@ -707,6 +723,7 @@ class ConsensusConditionTestCase(BaseTestCase):
         self.login_user("crystaldunn", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button')[0].click()
+        self.browser.find_by_id("customroles").first.click()
         self.browser.find_by_id('add_role_button')[0].scroll_to()
         self.browser.find_by_id('add_role_button').first.click()
         self.browser.fill('role_name', 'midfielders')
@@ -880,14 +897,14 @@ class ForumsTestCase(BaseTestCase):
         self.browser.find_by_css(".close").first.click()  # close modal
         self.browser.find_by_id('add_permission_button').first.click()
         self.select_from_multiselect("Edit forum")
-        time.sleep(2)
+        time.sleep(4)
         element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
         self.browser.find_by_id('save_permission_button').first.click()
-        time.sleep(3)
+        time.sleep(5)
         self.browser.find_by_css(".close").first.click()  # close modal
         self.browser.find_by_id("edit_permissions_button", wait_time=5).first.click()
-        time.sleep(3)
+        time.sleep(5)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertCountEqual(permissions, ['those with role forwards have permission to edit forum',
                                             "those with role members have permission to apply template, but only if the user is the creator of the template's target",
@@ -919,6 +936,7 @@ class TemplatesTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("membership", wait_time=5).first.click()
         self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
         self.browser.find_by_id('membership_templates_link', wait_time=5).first.click()
         self.browser.find_by_id('select_template_invite_only', wait_time=5).first.click()
@@ -931,6 +949,7 @@ class TemplatesTestCase(BaseTestCase):
         # check that the template has been applied
         self.browser.reload()
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("membership", wait_time=5).first.click()
         self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
         self.browser.find_by_id('edit_permissions_button_addmember').first.click()
         permissions_display = self.browser.find_by_css(".permission-display", wait_time=5)
@@ -943,6 +962,7 @@ class TemplatesTestCase(BaseTestCase):
         self.login_user("crystaldunn", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("membership", wait_time=5).first.click()
         self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
         button = self.browser.find_by_id('membership_templates_link', wait_time=5)
         self.assertEquals(len(button), 0)
@@ -954,18 +974,20 @@ class TemplatesTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("customroles").first.click()
         self.browser.find_by_id('forwards_editrole', wait_time=5)[0].scroll_to()
         self.browser.find_by_id('forwards_editrole', wait_time=5).first.click()
         self.browser.find_by_id('edit_permissions_button_default', wait_time=5).first.click()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display", wait_time=5)]
         self.assertEquals(permissions, [])
-        self.browser.find_by_css(".close", wait_time=5).first.click()
+        self.browser.find_by_css(".close", wait_time=5).last.click()
 
         self.browser.find_by_id('add_permission_button_default', wait_time=5).first.click()
+        time.sleep(2)
         self.select_from_multiselect("Apply template")
         self.browser.find_by_id('save_permission_button', wait_time=5).first.click()
         time.sleep(1)
-        self.browser.find_by_css(".close", wait_time=5).first.click()
+        self.browser.find_by_css(".close", wait_time=5).last.click()
 
         self.browser.find_by_id('edit_permissions_button_default', wait_time=5).first.click()
         perm_element = self.browser.find_by_text("those with role forwards have permission to apply template", wait_time=5)
@@ -984,6 +1006,7 @@ class TemplatesTestCase(BaseTestCase):
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("membership", wait_time=5).first.click()
         self.browser.find_by_id('group_membership_settings_button', wait_time=5)[0].scroll_to()
         self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
         self.browser.find_by_id('membership_templates_link', wait_time=5)[0].scroll_to()
@@ -998,6 +1021,9 @@ class TemplatesTestCase(BaseTestCase):
 
         # check that the template has not been applied
         self.browser.reload()
+        self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("membership", wait_time=5).first.click()
+        self.browser.find_by_id('group_membership_settings_button', wait_time=5)[0].click()
         self.browser.find_by_id('edit_permissions_button_addmember', wait_time=5)[0].scroll_to()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display", wait_time=5)]
         self.assertFalse("those with role forwards have permission to add members to community" in permissions)
@@ -1018,6 +1044,8 @@ class TemplatesTestCase(BaseTestCase):
         self.browser.back()
         self.browser.back()
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("membership", wait_time=5).first.click()
+        time.sleep(2)
         self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
         time.sleep(2)
         self.browser.find_by_id('edit_permissions_button_addmember', wait_time=5).first.click()
@@ -1055,17 +1083,22 @@ class MembershipTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("customroles", wait_time=5).first.click()
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
         time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "4 people")
 
         # apply anyone can join template
+        self.browser.find_by_id("membership", wait_time=5).first.click()
         self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
         self.browser.find_by_id('membership_templates_link', wait_time=5).first.click()
         self.browser.find_by_id('select_template_anyone_can_join', wait_time=5).first.click()
         self.browser.find_by_id('submit_apply_template', wait_time=5).first.click()
 
         # check template was applied
+        self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("membership", wait_time=5).first.click()
+        self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
         self.browser.find_by_id('edit_permissions_button_addmember', wait_time=5).first.click()
         permission_display = self.browser.find_by_css(".permission-display", wait_time=5)
         self.assertEquals(
@@ -1081,6 +1114,7 @@ class MembershipTestCase(BaseTestCase):
 
         # we should now have 5 members, not 4
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("customroles", wait_time=5).first.click()
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
         time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "5 people")
@@ -1091,11 +1125,13 @@ class MembershipTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button').first.click()
+        self.browser.find_by_id("customroles", wait_time=5).first.click()
         self.browser.find_by_id('members_member_count')[0].scroll_to()
         time.sleep(3)
         self.assertEquals(self.browser.find_by_id('members_member_count')[0].text, "4 people")
 
         # apply the template
+        self.browser.find_by_id("membership", wait_time=5).first.click()
         self.browser.find_by_id('group_membership_settings_button').first.click()
         time.sleep(2)
         self.browser.find_by_id('membership_templates_link').first.click()
@@ -1105,6 +1141,9 @@ class MembershipTestCase(BaseTestCase):
         self.browser.find_by_id('submit_apply_template', wait_time=5).first.click()
 
         # check that the template has been applied
+        self.browser.find_by_id('governance_button').first.click()
+        self.browser.find_by_id("membership", wait_time=5).first.click()
+        self.browser.find_by_id('group_membership_settings_button').first.click()
         self.browser.find_by_id('edit_permissions_button_addmember', wait_time=5).first.click()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display", wait_time=5)]
         self.assertEquals(permissions, ["those with role forwards have permission to add members to community"])
@@ -1119,6 +1158,7 @@ class MembershipTestCase(BaseTestCase):
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("membership", wait_time=5).first.click()
         self.browser.find_by_id('group_membership_display_button', wait_time=5).first.click()
         self.browser.find_by_id('add_member_button', wait_time=5).first.click()
         time.sleep(1)
@@ -1148,6 +1188,7 @@ class MembershipTestCase(BaseTestCase):
         time.sleep(1)
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("customroles", wait_time=5).first.click()
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
         time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5).text, "5 people")
@@ -1158,11 +1199,13 @@ class MembershipTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("customroles", wait_time=5).first.click()
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
         time.sleep(3)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "4 people")
 
         # apply anyone can join template
+        self.browser.find_by_id("membership", wait_time=5).first.click()
         self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
         self.browser.find_by_id('membership_templates_link', wait_time=5).first.click()
         self.browser.find_by_id('select_template_anyone_can_request_to_join', wait_time=5).first.click()
@@ -1171,6 +1214,9 @@ class MembershipTestCase(BaseTestCase):
         self.browser.find_by_id('submit_apply_template', wait_time=5).first.click()
 
         # check template was applied
+        self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("membership", wait_time=5).first.click()
+        self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
         self.browser.find_by_id('edit_permissions_button_addmember', wait_time=5).first.click()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display", wait_time=5)]
         self.assertEquals(permissions, ["anyone has permission to add members to community, but only if the user is adding themselves"])
@@ -1184,6 +1230,8 @@ class MembershipTestCase(BaseTestCase):
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
         self.browser.find_by_id("join_group_button", wait_time=5).first.click()
         time.sleep(1)  # may be necessary for scroll_tos?
+        self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("customroles", wait_time=5).first.click()
         self.browser.find_by_id('members_member_count')[0].scroll_to()
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "4 people")
 
@@ -1203,6 +1251,7 @@ class MembershipTestCase(BaseTestCase):
         self.browser.back()
         self.browser.back()
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("customroles", wait_time=5).first.click()
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
         time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5)[0].text, "5 people")
@@ -1258,6 +1307,7 @@ class ListTestCase(BaseTestCase):
         self.browser.fill('content', 'NJ Sky Blue')
         self.browser.find_by_id('index')[0].type(Keys.RIGHT)
         self.browser.find_by_id('add_row_save_button').first.click()
+        time.sleep(4)
         self.browser.find_by_id('add_row_button').first.click()
         self.browser.fill('content', 'Washington Spirit')
         self.browser.find_by_id('add_row_save_button').first.click()
@@ -1379,6 +1429,7 @@ class ListTestCase(BaseTestCase):
         self.browser.find_by_id('add_row_save_button').first.click()
 
         # rapinoe edits configuration but can't add a required field without default
+        time.sleep(4)
         self.browser.find_by_id('edit_list_button').first.click()
         time.sleep(3)
         self.browser.find_by_id('column_required').check()
@@ -1449,8 +1500,10 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.find_by_id("select_template_posters_control_posts", wait_time=5).first.click()
         self.browser.find_by_id("submit_apply_template", wait_time=5).first.click()
         time.sleep(4)
+        self.browser.find_by_id("forum_permissions_button", wait_time=5).first.click()
         self.browser.find_by_id("edit_permissions_button").first.click()
         self.browser.find_by_css(".permission-display", wait_time=5)
+        time.sleep(4)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(len(permissions), 10)
         time.sleep(3)
@@ -1518,13 +1571,14 @@ class DependentFieldTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("membership", wait_time=5).first.click()
         self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
         self.browser.find_by_id('add_permission_button_addmember', wait_time=5).first.click()
         time.sleep(4)
         self.select_from_multiselect("members")
         self.browser.find_by_id('save_permission_button', wait_time=5).first.click()
         time.sleep(1)
-        self.browser.find_by_css(".close", wait_time=5).first.click()  # close modal
+        self.browser.find_by_css(".close", wait_time=5).last.click()  # close modal
         self.browser.find_by_id('edit_permissions_button_addmember', wait_time=5).first.click()
 
         # adds an approval condition with permission_actors dependency field as member_pk_list
@@ -1543,6 +1597,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5)[0].click()
+        self.browser.find_by_id("membership", wait_time=5).first.click()
         time.sleep(2)
         self.browser.find_by_id('group_membership_display_button', wait_time=5).first.click()
         time.sleep(2)
@@ -1570,6 +1625,7 @@ class DependentFieldTestCase(BaseTestCase):
         time.sleep(3)
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
+        self.browser.find_by_id("customroles", wait_time=5).first.click()
         self.browser.find_by_id('members_member_count', wait_time=5)[0].scroll_to()
         time.sleep(2)
         self.assertEquals(self.browser.find_by_id('members_member_count', wait_time=5).text, "5 people")
@@ -1604,6 +1660,7 @@ class MultipleConditionsTestCase(BaseTestCase):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5)[0].click()
+        self.browser.find_by_id("customroles").first.click()
         self.browser.find_by_id('forwards_editrole', wait_time=5)[0].scroll_to()
         self.browser.find_by_id('forwards_editrole', wait_time=5).first.click()
         self.browser.find_by_id(('edit_permissions_button_default')).first.click()
@@ -1653,6 +1710,7 @@ class MultipleConditionsTestCase(BaseTestCase):
         self.login_user("christenpress", "badlands2020")
         self.go_to_group("USWNT")
         self.browser.find_by_id('governance_button', wait_time=5)[0].click()
+        self.browser.find_by_id("customroles", wait_time=5).first.click()
         self.browser.find_by_id('add_role_button', wait_time=5).first.click()
         self.browser.fill('role_name', 'midfielders')
         self.browser.find_by_id('save_role_button', wait_time=5).first.click()
@@ -1687,6 +1745,7 @@ class MultipleConditionsTestCase(BaseTestCase):
         self.browser.reload()
         time.sleep(2)
         self.browser.find_by_id('governance_button', wait_time=5)[0].click()
+        self.browser.find_by_id("customroles", wait_time=5).first.click()
         roles = [item.text for item in self.browser.find_by_css(".role_name_display", wait_time=5)]
         self.assertEquals(roles, ["members", "forwards", "midfielders"])
 

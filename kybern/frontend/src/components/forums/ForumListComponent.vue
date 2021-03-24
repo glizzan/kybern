@@ -14,8 +14,8 @@
 
             <b-card v-for="{ pk, name, description } in processed_forums" v-bind:key=pk class="bg-white">
                 <b-card-text>
-                    <div class="forum-link font-weight-bold text-info">
-                        <router-link :to="{ name: 'forum-detail', params: {forum_id: pk}}" class="text-info">
+                    <div class="font-weight-bold text-info">
+                        <router-link :to="{ name: 'forum-detail', params: {forum_id: pk}}" class="forum-link text-info">
                             {{ name }}</router-link>
                     </div>
                     <div class="forum-description mt-1">{{ description }}</div>
