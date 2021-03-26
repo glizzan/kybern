@@ -1412,13 +1412,13 @@ class ListTestCase(BaseTestCase):
         self.browser.find_by_id('link_to_list_0').first.click()
 
         # rapinoe adds two rows with original configuration
-        time.sleep(2)
+        time.sleep(4)
         self.browser.find_by_id('add_row_button', wait_time=5).first.click()
         time.sleep(1)
         self.browser.fill('Team Name', 'Sky Blue')
         self.browser.fill('State', 'NJ')
         self.browser.find_by_id('add_row_save_button').first.click()
-        time.sleep(4)
+        time.sleep(6)
         if self.browser.is_element_present_by_css(".close"):
             self.browser.find_by_css(".close", wait_time=5).first.click()
         self.browser.find_by_id('add_row_button', wait_time=5).first.click()
@@ -1442,7 +1442,7 @@ class ListTestCase(BaseTestCase):
         self.browser.find_by_id('edit_list_save_button').first.click()
 
         # upated list missing removed field, has new field
-        time.sleep(3)
+        time.sleep(4)
         teams = [team.text for team in self.browser.find_by_xpath("//td")]
         teams = list(filter(lambda x: x not in ["edit\ndelete\nmove", "0", "1", "2", "3"], teams))
         self.assertEquals(teams, ['Spirit', 'Washington', 'DC', 'No', 'Sky Blue', '', 'NJ', 'No'])
