@@ -171,14 +171,31 @@ def serialize_existing_permission_for_vue(permission, pk_as_key=True):
     permissions: {{permissions }},
         // {int(pk) : {name: x, display: x, change_type: x } } """
 
+    if hasattr(permission.permitted_object, "is_community"):
+        target = "community"
+    else:
+        target = f"{permission.permitted_object.__class__.__name__} '{permission.permitted_object.name}'"
+
+    owner_permission = False
+    if permission.permitted_object.foundational_permission_enabled or permission.get_state_change_object().is_foundational:
+        owner_permission = True
+
+    governor_permission = not owner_permission and permission.permitted_object.governing_permission_enabled
+
     permission_dict = {
         "name": permission.change_display_string(), "display": permission.display_string(),
         "change_name": permission.change_name(),
         "change_type": permission.change_type, "actors": permission.get_actors(),
+        "is_foundational": permission.is_foundational(),
+        "section": permission.get_section(),
         "roles": permission.get_roles(), "anyone": permission.anyone,
         "fields": permission.get_configuration(), "pk": permission.pk,
         "change_field_options": permission.get_change_fields(),
-        "dependent_field_options": permission.get_context_keys()
+        "dependent_field_options": permission.get_context_keys(),
+        "configuration": permission.get_configuration_text(),
+        "owner_permission": owner_permission,
+        "governor_permission": governor_permission,
+        "target": target
     }
 
     condition_data = permission.get_condition_data() if permission.has_condition() else None
@@ -1134,16 +1151,26 @@ def get_permissions(request):
     target = model_class.objects.get(pk=item_id)
 
     client = Client(actor=request.user, target=target)
-    existing_permissions = client.PermissionResource.get_all_permissions()
+
+    if hasattr(target, "is_community") and target.is_community:
+        existing_permissions = client.PermissionResource.get_all_permissions_in_community(community=target)
+    else:
+        existing_permissions = client.PermissionResource.get_all_permissions()
 
     permission_pks, permissions = [], {}
     for permission in existing_permissions:
         permission_pks.append(permission.pk)
         permissions.update(serialize_existing_permission_for_vue(permission))
 
+    nested_pks = []
+    for permission in client.PermissionResource.get_nested_permissions(target=target):
+        nested_pks.append(permission.pk)
+        permissions.update(serialize_existing_permission_for_vue(permission))
+
     return JsonResponse({
         "item_id": item_id, "item_model": request_data.get("item_model"), "permissions": permissions,
-        "permission_pks": permission_pks, "foundational": target.foundational_permission_enabled,
+        "permission_pks": permission_pks, "nested_pks": nested_pks,
+        "foundational": target.foundational_permission_enabled,
         "governing": target.governing_permission_enabled
     })
 

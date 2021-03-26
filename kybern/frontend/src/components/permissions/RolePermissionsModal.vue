@@ -1,21 +1,14 @@
 <template>
 
-    <span id="edit_role_section">
+    <b-modal id="role_permissions_modal" :title="title_string" size="xl" hide-footer>
 
-        <h3>{{ title_string }}</h3>
+        <p class="my-1">People with this role can...</p>
 
-        <b>People with this role can...</b>
+        <simple-permissions-display-component :permissions=role_permissions :role_to_edit=role_to_edit
+            :item_id=group_id :item_model="'group'" :item_name="'Role ' + role_to_edit">
+        </simple-permissions-display-component>
 
-        <p class="mx-2 my-2" v-if="!role_permissions.length">This role has no permissions yet.</p>
-
-        <edit-permission-component v-for="permission in role_permissions" v-bind:key="permission.pk"
-            :permission=permission :role_to_edit=role_to_edit> </edit-permission-component>
-        <add-permission-component :role_to_edit=role_to_edit :item_model="'group'" :item_id=group_id>
-        </add-permission-component>
-
-        <error-component :message=error_message></error-component>
-
-    </span>
+    </b-modal>
 
 </template>
 
@@ -23,15 +16,13 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
-import ErrorComponent from '../utils/ErrorComponent'
-import EditPermissionComponent from '../permissions/EditPermissionComponent'
-import AddPermissionComponent from '../permissions/AddPermissionComponent'
+import SimplePermissionsDisplayComponent from '../permissions/SimplePermissionsDisplayComponent'
 
 
 export default {
 
     props: ['role_to_edit'],
-    components: { ErrorComponent, EditPermissionComponent, AddPermissionComponent },
+    components: { SimplePermissionsDisplayComponent },
     store,
     data: function() {
         return {

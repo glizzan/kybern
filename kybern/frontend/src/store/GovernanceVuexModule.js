@@ -7,15 +7,15 @@ const GovernanceVuexModule = {
 
         // Roles & members
         members: [],    // [ pk, pk, pk, pk ]
-        roles: [],              // [ 'rolename', 'rolename', 'rolename' ]
+        roles: [],              // [ { name: role_name, current_members: [pk, pk, pk] } ]
         users: [],              // [ { name: 'username', pk: pk } ]
         current_membership_option: "",         // ie "invite only", "anyone can join"
         membership_config_data: { "permission": null, "condition": null },         // { permission: null, condition: null }
 
         // Leadership data
         governance_info: "",                    // Text string explaining governance structure
-        owners: {},              // { actors: [pk, pk], roles: ['rolename', 'rolename'] }
-        governors: {},        // { actors: [pk, pk], roles: ['rolename', 'rolename'] }
+        owners: {actors:[], roles:[]},              // { actors: [pk, pk], roles: ['rolename', 'rolename'] }
+        governors: {actors:[], roles:[]},        // { actors: [pk, pk], roles: ['rolename', 'rolename'] }
 
     },
     getters: {
@@ -25,6 +25,11 @@ const GovernanceVuexModule = {
         },
         roleNames: state => {
             var names = []
+            state.roles.forEach(function(item){ names.push(item.name)})
+            return names
+        },
+        allRoleNames: state => {
+            var names = ["owners", "governors", "members"]
             state.roles.forEach(function(item){ names.push(item.name)})
             return names
         },
@@ -41,10 +46,40 @@ const GovernanceVuexModule = {
             return getters.getUser(pk).name
         },
         userInGroup: (state, getters) => (pk) => {
-            return pk in state.members
+            return state.members.includes(pk)
         },
         membersInRole: (state, getters) => (role_name) => {
             return state.roles.find(role => role.name == role_name).current_members
+        },
+        rolesForMember: (state, getters) => (user_pk, custom_only) => {
+
+            var roles_user_is_in = []
+
+            if(!user_pk) { console.log("user_pk passed in is undefined"); return roles_user_is_in }
+
+            state.roles.forEach(function(role) {
+                if (role.current_members.includes(user_pk)) { roles_user_is_in.push(role.name) }
+            })
+
+            if (!custom_only) {
+
+                if (getters.userInGroup(user_pk)) { roles_user_is_in.push("members") }
+
+                if (state.owners.actors.includes(user_pk)) {
+                    roles_user_is_in.push("owners")
+                } else {
+                    var matched_roles = state.owners.roles.filter(role => roles_user_is_in.includes(role));
+                    if (matched_roles.length > 1) { roles_user_is_in.push("owners") }
+                }
+
+                if (state.owners.actors.includes(user_pk)) {
+                    roles_user_is_in.push("governors")
+                } else {
+                    matched_roles = state.governors.roles.filter(role => roles_user_is_in.includes(role));
+                    if (matched_roles.length > 1) { roles_user_is_in.push("governors") }
+                }
+            }
+            return roles_user_is_in
         },
         role_to_options: (state, getters) => (role_list) => {
             if (!role_list) { return [] }

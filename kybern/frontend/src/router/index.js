@@ -10,16 +10,16 @@ import ActionDetailComponent from '../components/actions/ActionDetailComponent'
 // governance
 import GovernanceComponent from '../components/governance/GovernanceComponent'
 import ChangeLeadershipComponent from '../components/governance/ChangeLeadershipComponent'
-import MembershipSettingsComponent from '../components/governance/MembershipSettingsComponent'
 // permissions
-import ItemPermissionsComponent from '../components/permissions/ItemPermissionsComponent'
-import RolePermissionsComponent from '../components/permissions/RolePermissionsComponent'
+import GroupPermissionsComponent from '../components/permissions/GroupPermissionsComponent'
+import NonGroupPermissionsComponent from '../components/permissions/NonGroupPermissionsComponent'
 import PersonPermissionsComponent from '../components/permissions/PersonPermissionsComponent'
 import AdvancedPermissionsComponent from '../components/permissions/AdvancedPermissionsComponent'
 import ConditionManagerComponent from '../components/conditions/ConditionManagerComponent'
 // forums
 import ForumFormComponent from '../components/forums/ForumFormComponent'
 import ForumListComponent from '../components/forums/ForumListComponent'
+import ForumDetailComponent from '../components/forums/ForumDetailComponent'
 import ForumComponent from '../components/forums/ForumComponent'
 import PostComponent from '../components/forums/PostComponent'
 import PostFormComponent from '../components/forums/PostFormComponent'
@@ -29,6 +29,7 @@ import TemplateComponent from '../components/templates/TemplateComponent'
 import ListFormComponent from '../components/simplelists/ListFormComponent'
 import RowFormComponent from '../components/simplelists/RowFormComponent'
 import SimpleListComponent from '../components/simplelists/SimpleListComponent'
+import SimpleListDetailComponent from '../components/simplelists/SimpleListDetailComponent'
 
 
 Vue.use(VueRouter)
@@ -38,6 +39,7 @@ const routes = [
     {
         name: 'home',
         path: '/',
+        meta: { tab: 'resources' },
         components: {
             sidebar: GroupConfigComponent,
             main: GroupResourcesComponent
@@ -48,7 +50,7 @@ const routes = [
     {
         name: 'edit-group',
         path: '/edit group',
-        meta: { highlight: 'edit-group'},
+        meta: { tab: 'none' },
         components: {
             sidebar: GroupConfigComponent,
             main: GroupResourcesComponent,
@@ -60,7 +62,7 @@ const routes = [
     {
         name: 'action-history',
         path: '/actions/history/:item_id/:item_model/:item_name',
-        meta: { highlight: 'history'},
+        meta: { tab: 'history' },
         props: { sidebar: false, main: true },
         components: {
             sidebar: GroupConfigComponent,
@@ -70,7 +72,7 @@ const routes = [
     {
         name: 'action-detail',
         path: '/actions/detail/:action_id',
-        meta: { highlight: 'history'},
+        meta: { tab: 'history' },
         props: { sidebar: false, main: true },
         components: {
             sidebar: GroupConfigComponent,
@@ -82,7 +84,7 @@ const routes = [
     {
         name: 'templates',
         path: '/templates/:scope/',
-        meta: { highlight: 'governance'},
+        meta: { tab: 'governance' },
         props: { sidebar: false, main: true },
         components: {
             sidebar: GroupConfigComponent,
@@ -92,7 +94,7 @@ const routes = [
     {
         name: 'item-templates',
         path: '/templates/:scope/:target_id/:target_model',
-        meta: { highlight: 'governance'},
+        meta: { tab: 'governance'},
         props: { sidebar: false, main: true },
         components: {
             sidebar: GroupConfigComponent,
@@ -104,7 +106,7 @@ const routes = [
     {
         name: 'governance',
         path: '/governance',
-        meta: { highlight: 'governance'},
+        meta: { tab: 'governance'},
         components: {
             sidebar: GroupConfigComponent,
             main: GovernanceComponent
@@ -113,48 +115,38 @@ const routes = [
     {
         name: 'change-leadership',
         path: '/governance/change-leadership',
-        meta: { highlight: 'governance'},
+        meta: { tab: 'governance'},
         components: {
             sidebar: GroupConfigComponent,
             main: ChangeLeadershipComponent
         }
     },
-    {
-        name: 'membership-settings',
-        path: '/membership-settings',
-        meta: { highlight: 'governance'},
-        components: {
-            sidebar: GroupConfigComponent,
-            main: MembershipSettingsComponent
-        }
-    },
-
 
     // Permissions
     {
-        name: 'item-permissions',
-        path: '/permissions/:item_id/:item_model/:item_name',
-        meta: { highlight: 'permissions'},
+        name: 'group-permissions',
+        path: '/permissions/:group_pk',
+        meta: { tab: 'permissions'},
         props: { sidebar: false, main: true },
         components: {
             sidebar: GroupConfigComponent,
-            main: ItemPermissionsComponent
+            main: GroupPermissionsComponent
         }
     },
     {
-        name: 'role-permissions',
-        path: '/permissions/:role_to_edit',
-        meta: { highlight: 'permissions'},
+        name: 'item-permissions',  // non-group permissions
+        path: '/permissions/:item_id/:item_model/:item_name',
+        meta: { tab: 'permissions'},
         props: { sidebar: false, main: true },
         components: {
             sidebar: GroupConfigComponent,
-            main: RolePermissionsComponent
+            main: NonGroupPermissionsComponent
         }
     },
     {
         name: 'user-permissions',
         path: '/permissions/user/:user_pk',
-        meta: { highlight: 'permissions'},
+        meta: { tab: 'permissions'},
         props: { sidebar: false, main: true },
         components: {
             sidebar: GroupConfigComponent,
@@ -164,7 +156,7 @@ const routes = [
     {
         name: 'advanced-permissions',
         path: '/advanced-permissions/:item_id/:item_model',
-        meta: { highlight: 'permissions'},
+        meta: { tab: 'permissions'},
         props: { sidebar: false, main: true },
         components: {
             sidebar: GroupConfigComponent,
@@ -174,7 +166,7 @@ const routes = [
     {
         name: 'conditions',
         path: '/conditions/:conditioned_on/:dependency_scope',
-        meta: { highlight: 'permissions'},
+        meta: { tab: 'permissions'},
         props: { sidebar: false, main: true },
         components: {
             sidebar: GroupConfigComponent,
@@ -186,6 +178,7 @@ const routes = [
     {
         name: 'add-new-forum',
         path: '/forums/new',
+        meta: { tab: 'resources'},
         components: {
             sidebar: GroupConfigComponent,
             main: ForumListComponent,
@@ -195,15 +188,17 @@ const routes = [
     {
         name: 'forum-detail',
         path: '/forums/:forum_id',
+        meta: { tab: 'resources'},
         props: { sidebar: false, main: true },
         components: {
             sidebar: GroupConfigComponent,
-            main: ForumComponent
+            main: ForumDetailComponent
         }
     },
     {
         name: 'edit-forum',
         path: '/forums/:forum_id/edit',
+        meta: { tab: 'resources'},
         props: { sidebar: false, main: true, modal: true },
         components: {
             sidebar: GroupConfigComponent,
@@ -214,6 +209,7 @@ const routes = [
     {
         name: 'add-new-post',
         path: '/forums/:forum_id/new_post',
+        meta: { tab: 'resources'},
         props: { sidebar: false, main: true, modal: true },
         components: {
             sidebar: GroupConfigComponent,
@@ -224,6 +220,7 @@ const routes = [
     {
         name: 'edit-post',
         path: '/forums/:forum_id/posts/:post_id/edit',
+        meta: { tab: 'resources'},
         props: { sidebar: false, main: true, modal: true },
         components: {
             sidebar: GroupConfigComponent,
@@ -234,6 +231,7 @@ const routes = [
     {
         name: 'post-detail',
         path: '/forums/:forum_id/posts/:post_id',
+        meta: { tab: 'resources'},
         props: { sidebar: false, main: true },
         components: {
             sidebar: GroupConfigComponent,
@@ -245,6 +243,7 @@ const routes = [
     {
         name: 'add-new-list',
         path: '/lists/new',
+        meta: { tab: 'resources'},
         components: {
             sidebar: GroupConfigComponent,
             main: GroupResourcesComponent,
@@ -254,6 +253,7 @@ const routes = [
     {
         name: 'edit-list-info',
         path: '/lists/edit/:list_id',
+        meta: { tab: 'resources'},
         props: { sidebar: false, main: false, modal: true },
         components: {
             sidebar: GroupConfigComponent,
@@ -264,15 +264,17 @@ const routes = [
     {
         name: 'list-detail',
         path: '/lists/detail/:list_id',
+        meta: { tab: 'resources'},
         props: { sidebar: false, main: true},
         components: {
             sidebar: GroupConfigComponent,
-            main: SimpleListComponent
+            main: SimpleListDetailComponent
         }
     },
     {
         name: 'edit-list-row',
         path: '/lists/detail/:list_id/rows/:mode/:row_index',
+        meta: { tab: 'resources'},
         props: { sidebar: false, main: true, modal: true},
         components: {
             sidebar: GroupConfigComponent,
@@ -283,6 +285,7 @@ const routes = [
     {
         name: 'add-list-row',
         path: '/lists/detail/:list_id/rows/:mode',
+        meta: { tab: 'resources'},
         props: { sidebar: false, main: true, modal: true},
         components: {
             sidebar: GroupConfigComponent,

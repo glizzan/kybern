@@ -2,30 +2,27 @@
 
     <span>
 
-        <h4 class="text-secondary pb-3">Forums
+        <h5 class="pb-3">
+            <span class="font-weight-bold">Forums</span>
             <router-link :to="{ name: 'add-new-forum'}">
-                <b-button v-if="user_permissions.add_forum" variant="outline-secondary"
+                <b-button v-if="user_permissions.add_forum" variant="light"
                     class="btn-sm ml-3" id="new_forum_button">+ add new</b-button>
             </router-link>
-        </h4>
+        </h5>
 
-        <b-card v-if=governance_forum class="bg-light text-info border-secondary mb-3">
-            <router-link :to="{ name: 'forum-detail', params: {forum_id: governance_forum.pk}}">
-                <b-card-title class="forum-link">{{ governance_forum.name }}<b-icon-star-fill class="ml-2">
-                </b-icon-star-fill></b-card-title>
-            </router-link>
-            <p class="mb-1 text-secondary forum-description">  {{ governance_forum.description }}</p>
-        </b-card>
+        <b-card-group columns>
 
-        <span v-for="{ pk, name, description } in regular_forums" v-bind:key=pk>
-            <b-card class="bg-light text-info border-secondary mb-3">
-                <router-link :to="{ name: 'forum-detail', params: { forum_id: pk } }">
-                    <b-card-title class="forum-link">{{ name }}</b-card-title></router-link>
-                <p class="mb-1 text-secondary forum-description">  {{ description }}  </p>
+            <b-card v-for="{ pk, name, description } in processed_forums" v-bind:key=pk class="bg-white">
+                <b-card-text>
+                    <div class="font-weight-bold text-info">
+                        <router-link :to="{ name: 'forum-detail', params: {forum_id: pk}}" class="forum-link text-info">
+                            {{ name }}</router-link>
+                    </div>
+                    <div class="forum-description mt-1">{{ description }}</div>
+                </b-card-text>
             </b-card>
-        </span>
 
-        <span v-if="Object.keys(forums).length === 0">You do not have any forums yet.</span>
+        </b-card-group>
 
     </span>
 
@@ -47,18 +44,15 @@ export default {
             user_permissions: state => state.permissions.current_user_permissions,
             group_name: state => state.group_name
         }),
-        regular_forums: function() {
-            var regular_forums = []
+        processed_forums: function() {
+            var processed_forums = []
             for (let index in this.forums) {
-                if (this.forums[index].special != "Gov") { regular_forums.push(this.forums[index]) }
+                if (this.forums[index].special == "Gov") {
+                    processed_forums.unshift(this.forums[index])
+                }
+                else { processed_forums.push(this.forums[index]) }
             }
-            return regular_forums
-        },
-        governance_forum: function() {
-            for (let index in this.forums) {
-                if (this.forums[index].special == "Gov") { return this.forums[index] }
-            }
-            return null
+            return processed_forums
         }
     },
     created () {
@@ -72,3 +66,13 @@ export default {
 }
 
 </script>
+
+<style scoped>
+
+    .card-deck .card {
+        max-width: 5px;
+    }
+
+</style>
+
+

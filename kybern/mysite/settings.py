@@ -219,7 +219,5 @@ WEBPACK_LOADER = {
     }
 }
 
-LOAD_JS_WITH_WEBPACK = False
-
 RUN_HEADLESS = False
 RUN_HEADLESS = True

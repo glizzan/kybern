@@ -7,6 +7,7 @@ from django.http import HttpResponseRedirect
 from concord.utils.helpers import Client
 
 from accounts.models import Profile
+from groups.models import Group
 from accounts.forms import RegistrationFormWithCode
 
 
@@ -17,6 +18,11 @@ class RegistrationViewWithCode(RegistrationView):
 
 class IndexView(generic.TemplateView):
     template_name = 'accounts/index.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["groups"] = Group.objects.all()
+        return context
 
 
 class ProfileView(LoginRequiredMixin, generic.DetailView):

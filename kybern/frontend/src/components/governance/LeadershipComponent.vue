@@ -1,34 +1,19 @@
 <template>
 
-    <b-card no-body class="my-3">
+    <span>
 
-        <b-card-header>
+        <div class="bg-white pt-3 my-3">
+            <leadership-guide-alert></leadership-guide-alert>
+        </div>
 
-            <span class="float-left">Leadership</span>
+        <div class="bg-white p-3 my-3">
+            <p>This group's leadership structure is:</p>
+            <p class="mt-2 mx-5">{{ governance_info_display }}</p>
+        </div>
 
-            <span class="float-right">
+        <change-leadership-component></change-leadership-component>
 
-                <router-link :to="{ name: 'change-leadership' }">
-                    <b-button class="btn-sm btn-seconday" id="change_leadership_button">change leadership</b-button>
-                </router-link>
-
-            </span>
-
-        </b-card-header>
-
-        <b-card-text class="p-3">
-
-            <p class="card-text">
-                Groups can have different leadership structures. This group's basic structure is:
-            </p>
-
-            <p class="card-text mt-2 mx-5">
-                {{ governance_info_display }}
-            </p>
-
-        </b-card-text>
-
-    </b-card>
+    </span>
 
 </template>
 
@@ -36,10 +21,13 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
+import LeadershipGuideAlert from '../governance/LeadershipGuideAlert'
+import ChangeLeadershipComponent from '../governance/ChangeLeadershipComponent'
 
 
 export default {
 
+    components: { LeadershipGuideAlert, ChangeLeadershipComponent },
     store,
     computed: {
         ...Vuex.mapState({ governance_info: state => state.governance.governance_info }),

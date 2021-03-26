@@ -4,15 +4,6 @@
 
         <error-component :message=error_message></error-component>
 
-        <span v-if="!add_permission_button_clicked">
-
-            <b-button v-if="user_permissions.add_permission" size="sm" v-on:click="add_permission_button_clicked=true"
-                variant="outline-dark" class="my-2" id="add_permission_button">Add Permission</b-button>
-
-        </span>
-
-        <div v-if="add_permission_button_clicked">
-
             <div v-if="!permission_selected" class="my-3">
 
                 <b>Select permission to add</b>
@@ -101,8 +92,6 @@
 
             </div>
 
-        </div>
-
     </span>
 
 </template>
@@ -126,7 +115,6 @@ export default {
     data: function() {
         return {
             permission_exists: false,
-            add_permission_button_clicked: false,
             permission_selected: '',
             configuration_fields: [],
             error_message: '',
@@ -193,7 +181,6 @@ export default {
         ...Vuex.mapActions(['checkPermissions', 'addPermission']),
         clearState() {
             if (!this.default_selection) { this.permission_selected = '' }
-            this.add_permission_button_clicked = false
             this.permission_actors_selected = []
             this.permission_roles_selected = []
             this.configuration_fields = []
