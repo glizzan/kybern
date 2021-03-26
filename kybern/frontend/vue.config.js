@@ -13,6 +13,9 @@ const pages = {
 
 module.exports = {
     pages: pages,
+    css: {
+        extract: true
+      },
     filenameHashing: false,
     productionSourceMap: false,
     publicPath: process.env.NODE_ENV === 'production'
