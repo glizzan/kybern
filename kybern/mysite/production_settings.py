@@ -45,3 +45,6 @@ STATICFILES_DIRS = [
 STATIC_ROOT = os.path.join(BASE_DIR, 'mysite', 'static')
 
 STATIC_URL = '/static/'  # where we serve static files from
+
+
+LOAD_JS_WITH_WEBPACK = False

@@ -37,3 +37,8 @@ DATABASES = {
 
 EMAIL_HOST = "localhost"
 EMAIL_PORT = 1025
+
+
+# Misc
+
+LOAD_JS_WITH_WEBPACK = False

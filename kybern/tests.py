@@ -887,7 +887,6 @@ class ForumsTestCase(BaseTestCase):
         time.sleep(3)
 
         # Add permissions - we start with only default permissions, but then have one more
-        forum = Forum.objects.last()
         self.browser.find_by_id("forum_permissions_button", wait_time=5).first.click()
         self.browser.find_by_id("edit_permissions_button", wait_time=5).first.click()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display", wait_time=5)]
