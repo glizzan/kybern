@@ -13,7 +13,6 @@ import ChangeLeadershipComponent from '../components/governance/ChangeLeadership
 // permissions
 import GroupPermissionsComponent from '../components/permissions/GroupPermissionsComponent'
 import PersonPermissionsComponent from '../components/permissions/PersonPermissionsComponent'
-import AdvancedPermissionsComponent from '../components/permissions/AdvancedPermissionsComponent'
 import ConditionManagerComponent from '../components/conditions/ConditionManagerComponent'
 // forums
 import ForumFormComponent from '../components/forums/ForumFormComponent'
@@ -140,16 +139,6 @@ const routes = [
         components: {
             sidebar: GroupConfigComponent,
             main: PersonPermissionsComponent
-        }
-    },
-    {
-        name: 'advanced-permissions',
-        path: '/advanced-permissions/:item_id/:item_model',
-        meta: { tab: 'permissions'},
-        props: { sidebar: false, main: true },
-        components: {
-            sidebar: GroupConfigComponent,
-            main: AdvancedPermissionsComponent
         }
     },
     {
