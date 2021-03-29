@@ -10,12 +10,16 @@
             :modal_id="'add_permission_modal_'  + modal">
         </add-permission-modal-component>
 
-        <b-button class="mb-4 btn-sm" :id="'edit_permissions_button_' + modal" variant="outline-secondary"
+        <b-button class="mr-1 mb-4 btn-sm" :id="'edit_permissions_button_' + modal" variant="outline-secondary"
             v-b-modal="'edit_permissions_modal_'  + modal">Edit Permissions</b-button>
 
         <edit-permissions-modal-component :permissions=permissions :item_name=item_name
             :item_id=item_id :item_model=item_model :modal_id="'edit_permissions_modal_'  + modal">
         </edit-permissions-modal-component>
+
+        <router-link id="group_permissions_button" :to="{ name: 'group-permissions', params: { group_pk: group_pk}}">
+            <b-button class="mb-4 btn-sm" variant="outline-secondary">See All Permissions In Group</b-button>
+        </router-link>
 
         <permissions-table-component :permissions=permissions class="my-2"></permissions-table-component>
 
@@ -37,7 +41,8 @@ export default {
     components: { AddPermissionModalComponent, EditPermissionsModalComponent, PermissionsTableComponent },
     props: ['permissions', 'item_id', 'item_model', 'item_name', 'modal_id', 'default_selection', 'role_to_edit'],
     computed: {
-        modal: function() { if (this.modal_id) { return this.modal_id } else {return "default" } }
+        ...Vuex.mapState({ group_pk: state => state.group_pk }),
+        modal: function() { if (this.modal_id) { return this.modal_id } else {return "default" } },
     }
 
 }

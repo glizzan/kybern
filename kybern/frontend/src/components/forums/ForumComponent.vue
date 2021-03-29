@@ -17,9 +17,10 @@
             <b-button variant="outline-secondary" class="btn-sm" id="forum_history_button">forum history</b-button>
         </router-link>
 
-        <router-link :to="{ name: 'item-permissions', params: { item_id: forum_id, item_model: 'forum', item_name: forum_name }}">
-            <b-button variant="outline-secondary" id="forum_permissions_button" class="btn-sm">forum permissions</b-button>
-        </router-link>
+        <b-button variant="outline-secondary" id="forum_permissions_button" v-b-modal.item_permissions_modal
+            class="btn-sm">list permissions</b-button>
+        <item-permissions-modal :item_id=forum_id :item_model="'forum'" :item_name=forum_name>
+        </item-permissions-modal>
 
         <error-component :message="delete_error_message"></error-component>
 
@@ -52,13 +53,14 @@ import Vuex from 'vuex'
 import store from '../../store'
 import { UtilityMixin } from '../utils/Mixins'
 import ErrorComponent from '../utils/ErrorComponent'
+import ItemPermissionsModal from '../permissions/ItemPermissionsModal'
 
 
 export default {
 
     props: ['forum_id'],
     store,
-    components: { ErrorComponent },
+    components: { ErrorComponent, ItemPermissionsModal },
     mixins: [UtilityMixin],
     data: function() {
             return {

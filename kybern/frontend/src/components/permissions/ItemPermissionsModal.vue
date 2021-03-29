@@ -1,8 +1,11 @@
 <template>
 
-    <complex-permissions-display-component :permissions=permissions :item_id=item_id :item_model=item_model
-        :item_name=item_name>
-    </complex-permissions-display-component>
+    <b-modal id="item_permissions_modal" :title="title_string" size="xl" hide-footer>
+
+        <simple-permissions-display-component :permissions=permissions :item_id=item_id
+            :item_model=item_model :item_name=item_name></simple-permissions-display-component>
+
+    </b-modal>
 
 </template>
 
@@ -10,13 +13,13 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
-import ComplexPermissionsDisplayComponent from '../permissions/ComplexPermissionsDisplayComponent'
+import SimplePermissionsDisplayComponent from '../permissions/SimplePermissionsDisplayComponent'
 
 
 export default {
 
-    components: { ComplexPermissionsDisplayComponent },
     props: ['item_id', 'item_model', 'item_name'],
+    components: { SimplePermissionsDisplayComponent },
     store,
     created: function () {
         this.getPermissionsForItem({ item_id: this.item_id, item_model: this.item_model })
@@ -24,6 +27,7 @@ export default {
     },
     computed: {
         ...Vuex.mapGetters(['permissionsForItem']),
+        title_string: function() { return "Permissions for " + this.item_model + " '" + this.item_name + "'" },
         permissions: function() {
             return this.permissionsForItem(this.item_id + "_" + this.item_model, true)
         },
@@ -32,6 +36,8 @@ export default {
         ...Vuex.mapActions(['getPermissionsForItem']),
     }
 
+
 }
 
 </script>
+

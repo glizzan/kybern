@@ -31,9 +31,10 @@
                         <b-button variant="outline-secondary" id="post_history_button" class="btn-sm">post history</b-button>
                     </router-link>
 
-                    <router-link :to="{ name: 'item-permissions', params: {item_id: post_id, item_model: 'post', item_name: post.title }}">
-                        <b-button variant="outline-secondary" class="btn-sm">post permissions</b-button>
-                    </router-link>
+                    <b-button variant="outline-secondary" id="post_permissions" v-b-modal.item_permissions_modal
+                        class="btn-sm">post permissions</b-button>
+                    <item-permissions-modal :item_id=post_id :item_model="'post'" :item_name=post.title>
+                    </item-permissions-modal>
 
                     <error-component :message="delete_error_message"></error-component>
 
@@ -59,13 +60,14 @@ import { UtilityMixin } from '../utils/Mixins'
 import ErrorComponent from '../utils/ErrorComponent'
 import CommentListComponent from '../comments/CommentListComponent'
 import ResourceSidebarComponent from '../groups/ResourceSidebarComponent'
+import ItemPermissionsModal from '../permissions/ItemPermissionsModal'
 
 
 export default {
 
     props: ['forum_id', 'post_id'],
     store,
-    components: { ErrorComponent, CommentListComponent, ResourceSidebarComponent },
+    components: { ErrorComponent, CommentListComponent, ResourceSidebarComponent, ItemPermissionsModal },
     mixins: [UtilityMixin],
     data: function() {
             return {

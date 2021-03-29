@@ -7,21 +7,28 @@
             <b-card-text>{{ comment.text }}</b-card-text>
 
             <template v-slot:footer>
+
                 <b-button v-if="user_permissions.edit_comment" variant="outline-secondary" class="btn-sm" v-b-modal="comment_modal_id">
                     edit</b-button>
+
                 <b-button v-if="user_permissions.delete_comment" variant="outline-secondary" class="btn-sm"
                     @click="delete_comment(comment.pk)">delete</b-button>
+
                 <router-link :to="{ name: 'action-history', params: {item_id: comment.pk, item_model: 'comment',
                         item_name: comment_name(comment.text) }}">
                     <b-button variant="outline-secondary" class="btn-sm">comment history</b-button>
                 </router-link>
-                <router-link :to="{ name: 'item-permissions', params: { item_id: comment.pk, item_model: 'comment',
-                        item_name: comment_name(comment.text)}}">
-                    <b-button variant="outline-secondary" class="btn-sm">comment permissions</b-button>
-                </router-link>
+
+                <b-button variant="outline-secondary" id="comment_permissions" v-b-modal.item_permissions_modal
+                    class="btn-sm">comment permissions</b-button>
+                <item-permissions-modal :item_id=comment.pk :item_model="'comment'"
+                    :item_name="comment_name(comment.text)"></item-permissions-modal>
+
                 <br />
+
                 <small class="text-muted">Posted {{ display_date(comment.created_at) }}
                     by {{ getUserName(comment.commentor_pk) }}</small>
+
             </template>
 
         </b-card>
@@ -50,11 +57,12 @@
 import Vuex from 'vuex'
 import store from '../../store'
 import ErrorComponent from '../utils/ErrorComponent'
+import ItemPermissionsModal from '../permissions/ItemPermissionsModal'
 
 
 export default {
 
-    components: { ErrorComponent },
+    components: { ErrorComponent, ItemPermissionsModal },
     props: ['item_id', 'item_model', 'comment'],
     store,
     data: function() {

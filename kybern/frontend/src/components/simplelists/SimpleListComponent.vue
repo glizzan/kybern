@@ -19,10 +19,10 @@
                     list history</b-button>
         </router-link>
 
-        <router-link :to="{ name: 'item-permissions', params: {item_id: list_id, item_model: 'simplelist', item_name: list_name }}">
-                <b-button variant="outline-secondary" id="list_permissions" class="btn-sm">
-                    list permissions</b-button>
-        </router-link>
+        <b-button variant="outline-secondary" id="list_permissions" v-b-modal.item_permissions_modal
+            class="btn-sm">list permissions</b-button>
+        <item-permissions-modal :item_id=list_id :item_model="'simplelist'" :item_name=list_name>
+        </item-permissions-modal>
 
         <router-link v-if="user_permissions.add_row_to_list"
                     :to="{ name: 'add-list-row', params: { list_id: list_id, mode: 'create' } }">
@@ -89,11 +89,12 @@ import Vuex from 'vuex'
 import store from '../../store'
 import { UtilityMixin } from '../utils/Mixins'
 import ErrorComponent from '../utils/ErrorComponent'
+import ItemPermissionsModal from '../permissions/ItemPermissionsModal'
 
 
 export default {
 
-    components: { ErrorComponent },
+    components: { ErrorComponent, ItemPermissionsModal },
     props: ['list_id'],
     store,
     mixins: [UtilityMixin],
