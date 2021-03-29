@@ -100,14 +100,16 @@
 <script type="application/javascript">
 
     var IndexVueApp = new Vue({
+
       delimiters: ['[[', ']]'],
       el: '#IndexVueApp',
       data: {
         signed_in: {{ user.is_authenticated|lower }},
         user_name: "{{ user.username }}",
-        info_visible: true
+        info_visible: {% if hide_info %} false {% else %} true {% endif %}
       }
     });
+
 </script>
 
 {% endblock %}
