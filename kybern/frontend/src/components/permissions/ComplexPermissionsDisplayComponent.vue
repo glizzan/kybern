@@ -25,7 +25,7 @@
 
             </b-col>
 
-            <b-col class="bg-white p-3">
+            <b-col class="bg-white p-3 table-width">
 
                 <span class="big-text mr-2">All Group Permissions</span>
 
@@ -110,7 +110,7 @@ export default {
         item_key: function() { return this.item_id + "_" + this.item_model },
         modal_id: function() { return this.item_key },
         modal: function() { if (this.modal_id) { return this.modal_id } else {return "default" } },
-        role_names: function() { return [""].concat(this.allRoleNames) },
+        role_names: function() { return ["", "you", "anyone"].concat(this.allRoleNames) },
         target_names: function() { return this.get_array("target") },
         section_names: function() { return this.get_array("section")},
         filter_data: function() {
@@ -152,6 +152,10 @@ export default {
     display: inline;
     width: 50%;
     float: right;
+}
+
+.table-width {
+    max-width: 83%
 }
 
 </style>
