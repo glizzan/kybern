@@ -7,29 +7,31 @@
 
         <router-link v-if="user_permissions.edit_list"
                 :to="{ name: 'edit-list-info', params: { list_id: list_id } }">
-            <b-button variant="outline-secondary" class="btn-sm" id="edit_list_button">
+            <b-button variant="outline-secondary" class="btn-sm mr-2" id="edit_list_button">
                 edit list info</b-button>
         </router-link>
 
-        <b-button v-if="user_permissions.delete_list" variant="outline-secondary" class="btn-sm"
+        <b-button v-if="user_permissions.delete_list" variant="outline-secondary" class="btn-sm mr-2"
             id="delete_list_button" @click="delete_list(list_id)">delete list</b-button>
 
         <router-link :to="{ name: 'action-history', params: {item_id: list_id, item_model: 'simplelist', item_name: list_name }}">
-                <b-button variant="outline-secondary" class="btn-sm" id="list_history_button">
+                <b-button variant="outline-secondary" class="btn-sm mr-2" id="list_history_button">
                     list history</b-button>
         </router-link>
 
         <b-button variant="outline-secondary" id="list_permissions" v-b-modal.item_permissions_modal
-            class="btn-sm">list permissions</b-button>
+            class="btn-sm mr-2">list permissions</b-button>
         <item-permissions-modal :item_id=list_id :item_model="'simplelist'" :item_name=list_name>
         </item-permissions-modal>
+
+        <b-button :href=csv_export_url variant="outline-secondary" class="btn-sm  mr-2" download>
+            export as csv</b-button>
 
         <router-link v-if="user_permissions.add_row_to_list"
                     :to="{ name: 'add-list-row', params: { list_id: list_id, mode: 'create' } }">
                 <b-button variant="outline-info" class="btn-sm" id="add_row_button">
                     add a row</b-button>
         </router-link>
-
 
         <error-component :message="error_message"></error-component>
 
@@ -103,7 +105,8 @@ export default {
                 error_message: "",
                 move_error_message: "",
                 old_index: null,
-                new_index: null
+                new_index: null,
+                base_export_url: ""
             }
         },
     created (){
@@ -122,13 +125,14 @@ export default {
         } else {
             console.log("Missing list_id in SimpleListComponent")
         }
+        this.url_lookup('export_as_csv').then(response => this.base_export_url = response)
     },
     computed: {
         ...Vuex.mapState({
             lists: state => state.simplelists.lists,
             user_permissions: state => state.permissions.current_user_permissions
         }),
-        ...Vuex.mapGetters(['getListData', 'getUserName']),
+        ...Vuex.mapGetters(['getListData', 'getUserName', 'url_lookup']),
         lists_loaded: function() { if (this.lists.length == 0) { return false } else { return true }},
         rows: function() {
             if (this.lists_loaded) { return this.getListData(this.list_id).rows } else { return [] }},
@@ -162,6 +166,9 @@ export default {
                 index++
             }
             return list_data
+        },
+        csv_export_url: function() {
+            return this.base_export_url + "?item_id=" + this.list_id + "&item_model=simplelist"
         }
     },
     methods: {
