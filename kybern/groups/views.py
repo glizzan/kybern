@@ -174,7 +174,7 @@ def serialize_existing_permission_for_vue(permission, pk_as_key=True):
     if hasattr(permission.permitted_object, "is_community"):
         target = "community"
     else:
-        target = f"{permission.permitted_object.__class__.__name__} '{permission.permitted_object.name}'"
+        target = f"{permission.permitted_object.__class__.__name__} '{permission.permitted_object.get_name()}'"
 
     owner_permission = False
     if permission.permitted_object.foundational_permission_enabled or permission.get_state_change_object().is_foundational:
