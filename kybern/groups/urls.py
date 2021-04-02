@@ -11,6 +11,10 @@ urlpatterns = [
     # catch all for single-page vue app
     path('<int:pk>/<path:resource>', views.GroupDetailView.as_view(), name='group_detail_catchall'),
 
+    # Export views
+    path('export/csv/<int:target>', views.export_as_csv, name="export_as_csv"),
+    path('export/json/<int:target>', views.export_as_json, name="export_as_json"),
+
     # API/AJAX views
 
     # create group ajax view

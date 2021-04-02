@@ -1,8 +1,6 @@
 <template>
 
-    <span>
-
-        <h4>Advanced Permissions for {{ item_model }} {{ item_id }}</h4>
+    <b-modal id="advanced_permissions_modal" :title="title_string" size="xl" hide-footer>
 
         <div class="my-3">
             <p>When the governing permission is turned on, any governor can take any action on this item, unless it is an
@@ -37,7 +35,7 @@
 
         <error-component :message=error_message></error-component>
 
-    </span>
+    </b-modal>
 
 </template>
 
@@ -75,6 +73,9 @@ export default {
         ...Vuex.mapState({ user_permissions: state => state.permissions.current_user_permissions }),
         ...Vuex.mapGetters(['permissionsForItem',  'getFoundationalForItem',
             'getGoverningForItem']),
+        title_string: function() {
+            return "Advanced permissions for " + this.item_model + " '" + this.item_name + "'"
+        },
         item_key: function() {
             return this.item_id + "_" + this.item_model
         },

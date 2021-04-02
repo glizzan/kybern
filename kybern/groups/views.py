@@ -1,4 +1,4 @@
-import json, logging
+import json, logging, csv
 from contextlib import suppress
 
 from django.urls import reverse, get_resolver, exceptions
@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.views import generic
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
 
 from concord.actions.models import TemplateModel
 from concord.resources.models import Comment, SimpleList, CommentCatcher
@@ -174,7 +174,7 @@ def serialize_existing_permission_for_vue(permission, pk_as_key=True):
     if hasattr(permission.permitted_object, "is_community"):
         target = "community"
     else:
-        target = f"{permission.permitted_object.__class__.__name__} '{permission.permitted_object.name}'"
+        target = f"{permission.permitted_object.__class__.__name__} '{permission.permitted_object.get_name()}'"
 
     owner_permission = False
     if permission.permitted_object.foundational_permission_enabled or permission.get_state_change_object().is_foundational:
@@ -1535,3 +1535,44 @@ def check_permissions(request, target, permissions):
     return JsonResponse({"user_permissions": permission_dict})
 
 
+####################
+### Export Views ###
+####################
+
+
+# NOTE: these export views need permission checks
+
+
+def export_as_csv(request, target):
+    """Returns an HTTP Response containing a CSV file. Default for exporting Lists."""
+
+    # get object to export as CSV
+    model_class = get_model(request.GET.get("item_model"))
+    item = model_class.objects.get(pk=int(request.GET.get("item_id")))
+
+    # export it
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="' + item.get_name() + '.csv"'
+
+    columns, dict_data = item.get_csv_data()
+
+    writer = csv.DictWriter(response, fieldnames=columns)
+    writer.writeheader()
+    for data in dict_data:
+        writer.writerow(data)
+
+    return response
+
+
+def export_as_json(request, target):
+    """Returns an HTTP Response containing a CSV file. Default for exporting Forums."""
+
+    # get object to export as CSV
+    model_class = get_model(request.GET.get("item_model"))
+    item = model_class.objects.get(pk=int(request.GET.get("item_id")))
+
+    # export it
+    response = HttpResponse(item.get_json_data(), content_type='application/json')
+    response['Content-Disposition'] = 'attachment; filename="' + item.get_name() + '.json"'
+
+    return response

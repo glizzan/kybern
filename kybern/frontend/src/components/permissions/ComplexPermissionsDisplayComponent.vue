@@ -19,51 +19,43 @@
                 </div>
 
                 <div class="my-3">
-                    <h6>Types</h6>
+                    <h6>Type of Change</h6>
                     <b-form-select v-model="sectionSelected" :options="section_names"></b-form-select>
                 </div>
 
             </b-col>
 
-            <b-col class="bg-white p-3">
+            <b-col class="bg-white p-3 table-width">
 
                 <span class="big-text mr-2">All Group Permissions</span>
 
-                <router-link :to="{ name: 'advanced-permissions', params: { item_id: item_id, item_model: item_model} }">
-
-                    <b-iconstack font-scale="1.5" v-b-tooltip.hover title="View advanced permissions" class="mx-2">
-                    <b-icon stacked icon="shield-lock-fill" variant="warning"></b-icon>
-                    <b-icon stacked icon="star-fill" scale=.5 shift-h="4" shift-v="5" variant="info"></b-icon>
-                    </b-iconstack>
-
-                </router-link>
-
-                <b-icon-grid3x3-gap-fill v-b-tooltip.hover title="Apply templates" variant=info font-scale=1.5
-                    v-if="user_permissions.apply_template" id="apply_templates" class="mr-2"
-                    v-b-modal="'apply_template_modal_' + item_model">
-                </b-icon-grid3x3-gap-fill>
-
-                <template-modal :scope=item_model :target_id=item_id :target_model=item_model></template-modal>
-
-                <b-iconstack font-scale="1.5" v-b-tooltip.hover title="Add permission" class="mr-2"
-                    :id="'add_permission_button'" v-b-modal="'add_permission_modal_'  + modal">
-                <b-icon stacked icon="shield-lock-fill" variant="warning"></b-icon>
-                <b-icon stacked icon="plus" variant="info" shift-h="-3" shift-v="-4"></b-icon>
-                </b-iconstack>
-
+                <b-icon-plus-circle v-b-tooltip.hover title="Add permission" class="mx-2" variant=warning
+                    font-scale=1.5 :id="'add_permission_button'" v-b-modal="'add_permission_modal_'  + modal">
+                </b-icon-plus-circle>
                 <add-permission-modal-component :item_name=item_name :item_id=item_id :item_model=item_model
                     :modal_id="'add_permission_modal_'  + modal">
                 </add-permission-modal-component>
 
-                <b-iconstack font-scale="1.5" v-b-tooltip.hover title="Edit permissions" class="mr-2"
-                    :id="'edit_permissions_button'" v-b-modal="'edit_permissions_modal_'  + modal">
-                    <b-icon stacked icon="shield-lock-fill" variant="warning"></b-icon>
-                    <b-icon stacked icon="pencil-fill" scale=.5 variant="info" shift-h="-3" shift-v="-4"></b-icon>
-                </b-iconstack>
-
+                <b-icon-pencil-fill v-b-tooltip.hover title="Edit permissions" class="mr-2" variant="warning"
+                    font-scale=1.5 :id="'edit_permissions_button'" v-b-modal="'edit_permissions_modal_'  + modal">
+                </b-icon-pencil-fill>
                 <edit-permissions-modal-component :permissions=permissions :item_name=item_name
                     :item_id=item_id :item_model=item_model :modal_id="'edit_permissions_modal_'  + modal">
                 </edit-permissions-modal-component>
+
+                <b-icon-grid3x3-gap-fill v-b-tooltip.hover title="Apply templates" variant=warning font-scale=1.5
+                    v-if="user_permissions.apply_template" id="apply_templates" class="mr-2"
+                    v-b-modal="'apply_template_modal_' + item_model">
+                </b-icon-grid3x3-gap-fill>
+                <template-modal :scope=item_model :target_id=item_id :target_model=item_model></template-modal>
+
+                <b-iconstack font-scale="1.5" v-b-tooltip.hover title="View advanced permissions" class="mr-2"
+                    :id="'advanced_permissions_button'" v-b-modal.advanced_permissions_modal>
+                    <b-icon stacked icon="shield-lock-fill" variant="warning"></b-icon>
+                    <b-icon stacked icon="star-fill" scale=.5 shift-h="4" shift-v="5" variant="info"></b-icon>
+                </b-iconstack>
+                <advanced-permissions-modal :item_name=item_name :item_id=item_id :item_model=item_model>
+                </advanced-permissions-modal>
 
                 <b-form-input id="search_permissions" v-model="permissionSearchString" type="search"
                     placeholder="Search permissions"></b-form-input>
@@ -89,12 +81,14 @@ import AddPermissionModalComponent from '../permissions/AddPermissionModalCompon
 import EditPermissionsModalComponent from '../permissions/EditPermissionsModalComponent'
 import PermissionsTableComponent from '../permissions/PermissionsTableComponent'
 import TemplateModal from '../templates/TemplateModal'
+import AdvancedPermissionsModal from '../permissions/AdvancedPermissionsModal'
 
 
 export default {
 
     props: ['permissions', 'item_id', 'item_model', 'item_name'],
-    components: { AddPermissionModalComponent, EditPermissionsModalComponent, PermissionsTableComponent, TemplateModal },
+    components: { AddPermissionModalComponent, EditPermissionsModalComponent, PermissionsTableComponent,
+                  TemplateModal, AdvancedPermissionsModal },
     store,
     data: function() {
         return {
@@ -116,7 +110,7 @@ export default {
         item_key: function() { return this.item_id + "_" + this.item_model },
         modal_id: function() { return this.item_key },
         modal: function() { if (this.modal_id) { return this.modal_id } else {return "default" } },
-        role_names: function() { return [""].concat(this.allRoleNames) },
+        role_names: function() { return ["", "you", "anyone"].concat(this.allRoleNames) },
         target_names: function() { return this.get_array("target") },
         section_names: function() { return this.get_array("section")},
         filter_data: function() {
@@ -158,6 +152,10 @@ export default {
     display: inline;
     width: 50%;
     float: right;
+}
+
+.table-width {
+    max-width: 83%
 }
 
 </style>

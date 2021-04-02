@@ -1,0 +1,15 @@
+Hi {{ notification.user.username }},
+
+{% if notification.notes == 'resolved' %}Your action has been resolved:
+
+<a href='https://www.kybern.org/groups/{{notification.action.target.get_owner.pk}}/#/actions/detail/{{notification.action.pk}}'>{notification.action}</a>
+{% else %}
+The following action was taken on Kybern:
+
+<a href='https://www.kybern.org/groups/{{notification.action.target.get_owner.pk}}/#/actions/detail/{{notification.action.pk}}'>{notification.action}</a>
+
+{% if notification.notes == 'approval' %}You're seeing this because the action may require your approval.{% endif %}
+{% if notification.notes == 'creator' %}You're seeing this because you created the target of the action.{% endif %}
+{% if notification.notes == 'everything' %}You're seeing this because you're getting notifications of all activity in all groups you're part of.{% endif %}
+
+{% endif %}You can change your notification settings on Kybern.org.

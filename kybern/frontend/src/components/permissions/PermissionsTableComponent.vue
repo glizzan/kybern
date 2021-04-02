@@ -1,25 +1,28 @@
 <template>
 
-    <b-table small :items="restructured_permissions" :fields="fields" :filter=filter_data
-        :filter-function=filter_function>
+    <b-table small sticky-header="390px" no-border-collapse responsive
+        :items="restructured_permissions" :fields="fields"
+        :filter=filter_data :filter-function=filter_function>
 
         <template #cell(condition)="data">
             <span v-if=data.item.condition>True</span>
         </template>
 
         <template #cell(change_name)="data">
-            <small>{{ data.item.change_name }}</small>
-            <b-icon-asterisk v-if=data.item.configuration scale=.5
-                v-b-tooltip.hover :title="data.item.configuration.substring(11)">
-            </b-icon-asterisk>
+            <div class="text-nowrap">
+                <b-icon-info-circle-fill v-b-tooltip.hover :title="data.item.display" class="mr-2" font-scale=".8">
+                </b-icon-info-circle-fill>
+                <small>{{ data.item.change_name }}</small>
+                <b-icon-asterisk v-if=data.item.configuration scale=.5
+                    v-b-tooltip.hover :title="data.item.configuration.substring(11)">
+                </b-icon-asterisk>
+            </div>
         </template>
 
         <template #cell(target)="data">
-            <small>{{ data.item.target }}</small>
-        </template>
-
-        <template #cell(display)="data">
-            <b-icon-info-circle-fill v-b-tooltip.hover :title="data.item.display"></b-icon-info-circle-fill>
+            <div class="text-nowrap">
+                <small>{{ data.item.target }}</small>
+            </div>
         </template>
 
         <!-- Default display for cell, displays true-false as checks/xs-->
@@ -56,13 +59,10 @@ export default {
         return {
             prepend_constant_fields: [
                 {
-                    key: 'display',
-                    label: 'Info'
-                },
-                {
                     key: 'change_name',
                     label: 'Change',
-                    sortable: true
+                    sortable: true,
+                    stickyColumn: true
                 },
                 {
                     key: 'target',

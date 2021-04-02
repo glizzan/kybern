@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'groups',
     # third party apps
     'django_registration',
+    'django_q',
     # django contrib stuff needs to be here so accounts can override default logout page
     'django.contrib.auth',
     'django.contrib.admin',
@@ -204,6 +205,19 @@ else:
     from .local_settings import *  # noqa: F403, F401
 
 
+# For asynchronous tasks
+
+Q_CLUSTER = {
+    'name': 'DjangORM',
+    'workers': 4,
+    'timeout': 90,
+    'retry': 120,
+    'queue_limit': 50,
+    'bulk': 10,
+    'orm': 'default'
+}
+
+
 # Webpack stuffs
 
 VUE_FRONTEND_DIR = os.path.join(BASE_DIR, 'frontend')
@@ -221,3 +235,4 @@ WEBPACK_LOADER = {
 
 RUN_HEADLESS = False
 RUN_HEADLESS = True
+

@@ -17,9 +17,13 @@
             <b-button variant="outline-secondary" class="btn-sm" id="forum_history_button">forum history</b-button>
         </router-link>
 
-        <router-link :to="{ name: 'item-permissions', params: { item_id: forum_id, item_model: 'forum', item_name: forum_name }}">
-            <b-button variant="outline-secondary" id="forum_permissions_button" class="btn-sm">forum permissions</b-button>
-        </router-link>
+        <b-button variant="outline-secondary" id="forum_permissions_button" v-b-modal.item_permissions_modal
+            class="btn-sm">forum permissions</b-button>
+        <item-permissions-modal :item_id=forum_id :item_model="'forum'" :item_name=forum_name>
+        </item-permissions-modal>
+
+        <b-button :href=json_export_url variant="outline-secondary" class="btn-sm" download>
+            export as json</b-button>
 
         <error-component :message="delete_error_message"></error-component>
 
@@ -52,19 +56,21 @@ import Vuex from 'vuex'
 import store from '../../store'
 import { UtilityMixin } from '../utils/Mixins'
 import ErrorComponent from '../utils/ErrorComponent'
+import ItemPermissionsModal from '../permissions/ItemPermissionsModal'
 
 
 export default {
 
     props: ['forum_id'],
     store,
-    components: { ErrorComponent },
+    components: { ErrorComponent, ItemPermissionsModal },
     mixins: [UtilityMixin],
     data: function() {
             return {
                 delete_error_message: null,
                 add_post_error_message: null,
-                list_post_error_message: null
+                list_post_error_message: null,
+                base_export_url: ""
             }
         },
     created (){
@@ -77,10 +83,11 @@ export default {
                 delete_forum: {alt_target : alt_target},
                 add_post: {alt_target : alt_target}}
         }).catch(error => {  this.error_message = error; console.log(error) })
+        this.url_lookup('export_as_json').then(response => this.base_export_url = response)
     },
     computed: {
         ...Vuex.mapState({user_permissions: state => state.permissions.current_user_permissions}),
-        ...Vuex.mapGetters(['getForumData', 'getPostsDataForForum', 'getUserName']),
+        ...Vuex.mapGetters(['getForumData', 'getPostsDataForForum', 'getUserName', 'url_lookup']),
         posts: function() {
             var forum = this.get_forum()
             if (forum) { return this.getPostsDataForForum(this.forum_id) } return undefined
@@ -96,6 +103,9 @@ export default {
         is_governance_forum: function() {
             var forum = this.get_forum()
             if (forum) { return forum.special == "Gov" } return undefined
+        },
+        json_export_url: function() {
+            return this.base_export_url + "?item_id=" + this.forum_id + "&item_model=forum"
         }
     },
     methods: {

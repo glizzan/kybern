@@ -98,6 +98,8 @@ class UrlTestCase(TestCase):
             'get_governance_data': 'groups/api/get_governance_data/1/',
             'get_permission_data': 'groups/api/get_permission_data/1/',
             'get_forum_data': 'groups/api/get_forum_data/1/',
+            'export_as_csv': 'groups/export/csv/1',
+            'export_as_json': 'groups/export/json/1',
         }
         response = self.client.get(reverse('generate_url_map_with_target', kwargs={"target": 1}))
         self.assertEquals(len(response.json()['urls']), len(expected_dict))

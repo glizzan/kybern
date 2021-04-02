@@ -1,48 +1,30 @@
-{% extends 'accounts/base.html' %}
+{% extends 'accounts/alt_base.html' %}
+
+{% block title %}{{ request.user.username }}'s profile {% endblock %}
 
 {% block content %}
 
-<div class="col-1"></div>
-<div class="col-10">
+    <div id="profileApp">
+    </div>
 
-        <h3>Your Profile</h3>
+    <script type="text/javascript">
+        window.__INITIAL_STATE__ = '{{ initial_state|escapejs|safe }}'
+    </script>
 
-        <h6><b>username:</b> {{ profile.user.username }}</h6>
+    {% if LOAD_JS_WITH_WEBPACK %}
 
-        <h5 class="mt-5">Groups you're a leader of</h5>
+        {% load render_bundle from webpack_loader %}
+        {% render_bundle 'chunk-vendors' %}
+        {% render_bundle 'profile_vue' %}
 
-        {% for group in leadership_groups %}
+    {% else %}
 
-                <a href="{% url 'group_detail' pk=group.pk %}" class="list-group-item list-group-item-action">
-                <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">{{ group.name }}</h5>
-                </div>
-                <p class="mb-1">{{ group.group_description }}</p>
-                </a>
+        {% load static %}
+        <link type="text/css" rel="stylesheet" href="{% static 'css/profile_vue.css' %}" />
+        <script type="text/javascript" src="{% static 'js/chunk-vendors.js' %}"></script>
+        <script type="text/javascript" src="{% static 'js/profile_vue.js' %}"></script>
 
-        {% empty %}
+    {% endif %}
 
-                <p>You're not a leader of any groups.</p>
+{% endblock content %}
 
-        {% endfor %}
-
-        <h5 class="mt-5">Groups you're a member of (but not a leader)</h5>
-        
-        {% for group in other_groups %}
-
-                <a href="{% url 'group_detail' pk=group.pk %}" class="list-group-item list-group-item-action">
-                <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">{{ group.name }}</h5>
-                </div>
-                <p class="mb-1">{{ group.group_description }}</p>
-                </a>
-
-        {% empty %}
-
-                <p>You're not a member of any groups where you're not also a leader.</p>
-
-        {% endfor %}
-
-</div>
-
-{% endblock %}

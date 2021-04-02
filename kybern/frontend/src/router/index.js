@@ -12,9 +12,7 @@ import GovernanceComponent from '../components/governance/GovernanceComponent'
 import ChangeLeadershipComponent from '../components/governance/ChangeLeadershipComponent'
 // permissions
 import GroupPermissionsComponent from '../components/permissions/GroupPermissionsComponent'
-import NonGroupPermissionsComponent from '../components/permissions/NonGroupPermissionsComponent'
 import PersonPermissionsComponent from '../components/permissions/PersonPermissionsComponent'
-import AdvancedPermissionsComponent from '../components/permissions/AdvancedPermissionsComponent'
 import ConditionManagerComponent from '../components/conditions/ConditionManagerComponent'
 // forums
 import ForumFormComponent from '../components/forums/ForumFormComponent'
@@ -134,16 +132,6 @@ const routes = [
         }
     },
     {
-        name: 'item-permissions',  // non-group permissions
-        path: '/permissions/:item_id/:item_model/:item_name',
-        meta: { tab: 'permissions'},
-        props: { sidebar: false, main: true },
-        components: {
-            sidebar: GroupConfigComponent,
-            main: NonGroupPermissionsComponent
-        }
-    },
-    {
         name: 'user-permissions',
         path: '/permissions/user/:user_pk',
         meta: { tab: 'permissions'},
@@ -151,16 +139,6 @@ const routes = [
         components: {
             sidebar: GroupConfigComponent,
             main: PersonPermissionsComponent
-        }
-    },
-    {
-        name: 'advanced-permissions',
-        path: '/advanced-permissions/:item_id/:item_model',
-        meta: { tab: 'permissions'},
-        props: { sidebar: false, main: true },
-        components: {
-            sidebar: GroupConfigComponent,
-            main: AdvancedPermissionsComponent
         }
     },
     {

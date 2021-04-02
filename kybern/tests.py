@@ -137,8 +137,7 @@ class AccountsTestCase(BaseTestCase):
         self.browser.fill('username', 'meganrapinoe')
         self.browser.fill('password', 'badlands2020')
         self.browser.find_by_id('submit_login').first.click()
-        self.assertTrue(self.browser.is_text_present('Your Profile'))
-        self.assertTrue(self.browser.is_text_present('username: meganrapinoe'))
+        self.assertTrue(self.browser.is_text_present('Profile: meganrapinoe'))
 
 
 @skipIf("GroupBasicsTestCase" in test_cases_to_skip, "")
@@ -888,21 +887,21 @@ class ForumsTestCase(BaseTestCase):
 
         # Add permissions - we start with only default permissions, but then have one more
         self.browser.find_by_id("forum_permissions_button", wait_time=5).first.click()
-        self.browser.find_by_id("edit_permissions_button", wait_time=5).first.click()
+        self.browser.find_by_id("edit_permissions_button_default", wait_time=5).first.click()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display", wait_time=5)]
         self.assertCountEqual(permissions, ["those with role members have permission to apply template, but only if the user is the creator of the template's target",
                                             'those with role members have permission to add comment',
                                             'those with role members have permission to add post'])
-        self.browser.find_by_css(".close").first.click()  # close modal
-        self.browser.find_by_id('add_permission_button').first.click()
+        self.browser.find_by_css(".close").last.click()  # close modal
+        self.browser.find_by_id('add_permission_button_default').first.click()
         self.select_from_multiselect("Edit forum")
         time.sleep(4)
         element_containing_role_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
         self.browser.find_by_id('save_permission_button').first.click()
         time.sleep(5)
-        self.browser.find_by_css(".close").first.click()  # close modal
-        self.browser.find_by_id("edit_permissions_button", wait_time=5).first.click()
+        self.browser.find_by_css(".close").last.click()  # close modal
+        self.browser.find_by_id("edit_permissions_button_default", wait_time=5).first.click()
         time.sleep(5)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertCountEqual(permissions, ['those with role forwards have permission to edit forum',
@@ -1499,8 +1498,9 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.find_by_id("select_template_posters_control_posts", wait_time=5).first.click()
         self.browser.find_by_id("submit_apply_template", wait_time=5).first.click()
         time.sleep(4)
+        self.browser.find_by_css(".forum-link", wait_time=5).first.click()
         self.browser.find_by_id("forum_permissions_button", wait_time=5).first.click()
-        self.browser.find_by_id("edit_permissions_button").first.click()
+        self.browser.find_by_id("edit_permissions_button_default").first.click()
         self.browser.find_by_css(".permission-display", wait_time=5)
         time.sleep(4)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
@@ -1523,8 +1523,8 @@ class DependentFieldTestCase(BaseTestCase):
         self.assertEquals(field_select.value, "author")
 
         # User makes a post
-        self.browser.back()
-        self.browser.back()
+        self.go_to_group("USWNT")
+        self.browser.find_by_css(".forum-link", wait_time=5).first.click()
         self.browser.find_by_id('add_post_button', wait_time=5).first.click()
         time.sleep(3)  # this seems to be the important sleep
         self.browser.fill('post_title', 'I have an idea')
