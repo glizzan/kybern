@@ -93,8 +93,8 @@ def create_or_update_notification(sender, instance, created, **kwargs):
 
 
 def send_notification_email(notification):
-    msg = render_to_string('emails/immediate_notification.txt', {"notification": notification})
-    send_mail("Notification from Kybern", msg, None, [notification.user.email], fail_silently=False)
+    msg = render_to_string('emails/immediate_notifications.html', {"notification": notification})
+    send_mail("Notification from Kybern", msg, None, [notification.user.email], fail_silently=False, html_message=msg)
     notification.sent = True
     notification.save()
 

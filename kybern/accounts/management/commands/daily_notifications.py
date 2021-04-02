@@ -31,8 +31,8 @@ class Command(BaseCommand):
                 ctx["other_notifications"] = [n for n in notifications if n.notes == "everything"]
                 ctx["resolved_notifications"] = [n for n in notifications if n.notes == "resolved"]
 
-                msg = render_to_string('emails/daily_notification_summary.txt', ctx)
-                send_mail("Notification from Kybern", msg, None, [user.email], fail_silently=False)
+                msg = render_to_string('emails/daily_notifications.html', ctx)
+                send_mail("Notification from Kybern", msg, None, [user.email], fail_silently=False, html_message=msg)
 
                 for notification in notifications:
                     notification.sent = True
