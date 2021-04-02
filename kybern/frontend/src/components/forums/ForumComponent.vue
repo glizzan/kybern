@@ -18,7 +18,7 @@
         </router-link>
 
         <b-button variant="outline-secondary" id="forum_permissions_button" v-b-modal.item_permissions_modal
-            class="btn-sm">list permissions</b-button>
+            class="btn-sm">forum permissions</b-button>
         <item-permissions-modal :item_id=forum_id :item_model="'forum'" :item_name=forum_name>
         </item-permissions-modal>
 

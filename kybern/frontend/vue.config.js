@@ -8,6 +8,10 @@ const pages = {
     'group_create_vue': {
         entry: './src/group_create_main.js',
         chunks: ['chunk-vendors']
+    },
+    'profile_vue': {
+        entry: './src/profile_main.js',
+        chunks: ['chunk-vendors']
     }
 }
 

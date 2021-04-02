@@ -1,15 +1,35 @@
+arrow==1.0.3
 asgiref==3.2.3
+backcall==0.2.0
+blessed==1.18.0
+concord==0.0.1
 confusable-homoglyphs==3.2.0
+decorator==4.4.2
+dj-database-url==0.5.0
 Django==3.0.7
+django-picklefield==3.0.1
+django-q==1.3.5
 django-registration==3.1
-pytz==2019.3
-sqlparse==0.3.1
--e git+https://github.com/cobrateam/splinter.git#egg=splinter
-PyYAML==5.3.1
-# Supports running site in production on Heroku
-psycopg2
-dj-database-url
-gunicorn
-whitenoise
--e git+https://f23bc53183ac718cff2174b3d43ec925dc0e26bd@github.com/glizzan/glizzan-concord#egg=concord
 django-webpack-loader==0.6.0
+gunicorn==20.0.4
+ipython==7.20.0
+ipython-genutils==0.2.0
+jedi==0.18.0
+parso==0.8.1
+pexpect==4.8.0
+pickleshare==0.7.5
+prompt-toolkit==3.0.14
+psycopg2==2.8.6
+ptyprocess==0.7.0
+Pygments==2.7.4
+python-dateutil==2.8.1
+pytz==2019.3
+PyYAML==5.3.1
+selenium==3.141.0
+six==1.15.0
+-e git+https://github.com/cobrateam/splinter.git@bf9a6bd689b868a810c69b407a2c89379438f71c#egg=splinter
+sqlparse==0.3.1
+traitlets==5.0.5
+urllib3==1.25.10
+wcwidth==0.2.5
+whitenoise==5.2.0

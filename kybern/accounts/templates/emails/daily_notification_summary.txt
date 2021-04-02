@@ -1,0 +1,34 @@
+Hi {{ user.username }},
+
+This is your daily notification summary of actions taken on Kybern.
+
+{% if resolved_notifications %}**Your actions that have been resolved**
+
+{% for notification in resolved_notifications %}
+    <a href='https://www.kybern.org/groups/{{notification.action.target.get_owner.pk}}/#/actions/detail/{{notification.action.pk}}'>
+    {{notification.action}}</a>
+{% endfor %}
+{% endif %}
+{% if approval_notifications %}**Actions taken that may require your approval**
+
+{% for notification in approval_notifications %}
+    <a href='https://www.kybern.org/groups/{{notification.action.target.get_owner.pk}}/#/actions/detail/{{notification.action.pk}}'>
+    {{notification.action}}</a>
+{% endfor %}
+{% endif %}
+{% if creator_notifications %}**Actions taken on targets you created**
+
+{% for notification in creator_notifications %}
+    <a href='https://www.kybern.org/groups/{{notification.action.target.get_owner.pk}}/#/actions/detail/{{notification.action.pk}}'>
+    {{notification.action}}</a>
+{% endfor %}
+{% endif %}
+{% if other_notifications %}{% if approval_notifications or creator_notifications %}**Other actions**{% else %}**Actions**{% endif %}
+
+{% for notification in other_notifications %}
+    <a href='https://www.kybern.org/groups/{{notification.action.target.get_owner.pk}}/#/actions/detail/{{notification.action.pk}}'>
+    {{notification.action}}</a>
+{% endfor %}
+{% endif %}
+
+You can change your notification settings on Kybern.org.
