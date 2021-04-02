@@ -24,7 +24,7 @@ def user_approval_match(user, action):
 
 def generate_notifications(action):
 
-    for member_pk in action.target.get_owner().roles.get_members(): # get members of community owner of target
+    for member_pk in action.target.get_owner().roles.get_members():  # get members of community owner of target
 
         user = User.objects.get(pk=member_pk)
 
@@ -41,8 +41,8 @@ def generate_notifications(action):
             note = None
 
         if note:
-            notification = Notification(user=user, action=action, sent=False, notes=note,
-                email_type=user.notify_settings.send_emails)
+            notification = Notification(
+                user=user, action=action, sent=False, notes=note, email_type=user.notify_settings.send_emails)
             notification.save()
         else:
             print("No matches, sorry")

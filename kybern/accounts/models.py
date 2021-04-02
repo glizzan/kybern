@@ -83,7 +83,8 @@ def create_or_update_notification(sender, instance, created, **kwargs):
     """For now, we only notify on action creation, but we probably want to notify on update eventually."""
 
     from mysite.settings import TESTING
-    if TESTING: return
+    if TESTING:
+        return
 
     if created:
         async_task('accounts.tasks.generate_notifications', instance)
@@ -100,5 +101,5 @@ def send_notification_email(notification):
 
 @receiver(post_save, sender=Notification)
 def trigger_immediate_email(sender, instance, created, **kwargs):
-    if instance.sent == False and instance.email_type == "now":
+    if not instance.sent and instance.email_type == "now":
         send_notification_email(instance)

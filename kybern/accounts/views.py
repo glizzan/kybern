@@ -67,16 +67,14 @@ class ProfileView(LoginRequiredMixin, generic.DetailView):
             "notifications": get_serialized_notifications(self.request.user),
             "base_url": base_url,
             "notifications_url": base_url + get_resolver(None).reverse("profile_update_notifications"),
-            "initial_notification_settings":
-                {
-                    "email_options": [{"value": choice[0], "text": choice[1]} for choice in NotificationsSettings.EMAIL_CHOICES],
-                    "email_selected": self.request.user.notify_settings.send_emails,
-                    "everything": self.request.user.notify_settings.always_notify_everything,
-                    "creator": self.request.user.notify_settings.always_notify_creator,
-                    "approval": self.request.user.notify_settings.always_notify_approval,
-                    "resolved": self.request.user.notify_settings.always_notify_action_resolved
-                }
-
+            "initial_notification_settings": {
+                "email_options": [{"value": choice[0], "text": choice[1]} for choice in NotificationsSettings.EMAIL_CHOICES],
+                "email_selected": self.request.user.notify_settings.send_emails,
+                "everything": self.request.user.notify_settings.always_notify_everything,
+                "creator": self.request.user.notify_settings.always_notify_creator,
+                "approval": self.request.user.notify_settings.always_notify_approval,
+                "resolved": self.request.user.notify_settings.always_notify_action_resolved
+            }
         }
         context["initial_state"] = json.dumps(initial_state)
         return context

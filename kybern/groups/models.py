@@ -43,7 +43,6 @@ class Forum(PermissionedModel):
         return json.dumps({"name": self.name, "description": self.description, "posts": post_data})
 
 
-
 class Post(PermissionedModel):
     title = models.CharField(max_length=120)
     content = models.CharField(max_length=500)

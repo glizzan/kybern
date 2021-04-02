@@ -1,4 +1,4 @@
-import json, logging
+import json, logging, csv
 from contextlib import suppress
 
 from django.urls import reverse, get_resolver, exceptions
@@ -1539,8 +1539,9 @@ def check_permissions(request, target, permissions):
 ### Export Views ###
 ####################
 
-# NOTE: need to do a permissions check here
-import csv
+
+# NOTE: these export views need permission checks
+
 
 def export_as_csv(request, target):
     """Returns an HTTP Response containing a CSV file. Default for exporting Lists."""

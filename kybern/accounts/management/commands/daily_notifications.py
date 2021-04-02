@@ -5,7 +5,6 @@ from django.template.loader import render_to_string
 from django.core.mail import send_mail
 
 
-
 class Command(BaseCommand):
     help = 'Sends notifications as daily email.'
 
