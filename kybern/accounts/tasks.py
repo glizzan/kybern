@@ -52,6 +52,10 @@ def create_resolved_notification(action):
 
     if action.is_resolved:
 
-        notification = Notification(user=action.actor, action=action, sent=False, notes="resolved",
-                                    email_type=action.actor.notify_settings.send_emails)
-        notification.save()
+        if Client().Conditional.get_condition_items_for_action(action_pk=action.pk):
+
+            if not Notification.objects.filter(action=action, user=action.actor, notes="resolved"):
+
+                notification = Notification(user=action.actor, action=action, sent=False, notes="resolved",
+                                            email_type=action.actor.notify_settings.send_emails)
+                notification.save()
