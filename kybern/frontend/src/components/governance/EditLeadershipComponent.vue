@@ -70,6 +70,7 @@ export default {
             return false
         }
     },
+    watch: {  leadershipAsOptions: function (val) { this.get_existing_roles_and_actors() } },
     methods: {
         ...Vuex.mapActions(['checkPermissions', 'updateOwners', 'updateGovernors']),
         permission_to_update_owners: function() {
@@ -90,8 +91,8 @@ export default {
             }
         },
         update_leadership(leadership_type) {
-            roles = this.roles_selected.map(role => role.name)
-            actors = this.actors_selected.map(actor => actor.pk)
+            var roles = this.roles_selected.map(role => role.name)
+            var actors = this.actors_selected.map(actor => actor.pk)
             if (this.leadership_type == "owner") {
                 this.updateOwners({roles: roles, actors:actors}).catch(error => { this.error_message = error.message })
             } else if (this.leadership_type == "governor") {

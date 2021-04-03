@@ -68,14 +68,14 @@ const GovernanceVuexModule = {
                 if (state.owners.actors.includes(user_pk)) {
                     roles_user_is_in.push("owners")
                 } else {
-                    var matched_roles = state.owners.roles.filter(role => roles_user_is_in.includes(role));
+                    let matched_roles = state.owners.roles.filter(role => roles_user_is_in.includes(role));
                     if (matched_roles.length > 1) { roles_user_is_in.push("owners") }
                 }
 
                 if (state.owners.actors.includes(user_pk)) {
                     roles_user_is_in.push("governors")
                 } else {
-                    matched_roles = state.governors.roles.filter(role => roles_user_is_in.includes(role));
+                    let matched_roles = state.governors.roles.filter(role => roles_user_is_in.includes(role));
                     if (matched_roles.length > 1) { roles_user_is_in.push("governors") }
                 }
             }
@@ -212,11 +212,11 @@ const GovernanceVuexModule = {
         },
         REMOVE_GOVERNORS (state, data) {
             data.roles_to_remove.forEach(function(role){
-                index = state.governors.roles.indexOf(role)
+                var index = state.governors.roles.indexOf(role)
                 if (index > -1) { state.governors.roles.splice(index, 1)}
             })
             data.actors_to_remove.forEach(function(actor){
-                index = state.governors.actors.indexOf(actor)
+                var index = state.governors.actors.indexOf(actor)
                 if (index > -1) { state.governors.actors.splice(index, 1)}
             })
         },
@@ -291,10 +291,10 @@ const GovernanceVuexModule = {
             var url = await getters.url_lookup('update_owners')
             var params = { owner_roles: payload.roles, owner_actors: payload.actors }
             var implementationCallback = () => {
-                roles_to_add = payload.roles.filter(x => !state.owners.roles.includes(x))
-                actors_to_add = payload.actors.filter(x => !state.owners.actors.includes(x))
-                roles_to_remove = state.owners.roles.filter(x => !payload.roles.includes(x))
-                actors_to_remove = state.owners.actors.filter(x => !payload.actors.includes(x))
+                var roles_to_add = payload.roles.filter(x => !state.owners.roles.includes(x))
+                var actors_to_add = payload.actors.filter(x => !state.owners.actors.includes(x))
+                var roles_to_remove = state.owners.roles.filter(x => !payload.roles.includes(x))
+                var actors_to_remove = state.owners.actors.filter(x => !payload.actors.includes(x))
                 commit('ADD_OWNERS', { roles_to_add: roles_to_add, actors_to_add: actors_to_add })
                 commit('REMOVE_OWNERS', { roles_to_remove: roles_to_remove, actors_to_remove: actors_to_remove })
             }
@@ -304,10 +304,10 @@ const GovernanceVuexModule = {
             var url = await getters.url_lookup('update_governors')
             var params = { governor_roles: payload.roles, governor_actors: payload.actors }
             var implementationCallback = () => {
-                roles_to_add = payload.roles.filter(x => !state.governors.roles.includes(x))
-                actors_to_add = payload.actors.filter(x => !state.governors.actors.includes(x))
-                roles_to_remove = state.governors.roles.filter(x => !payload.roles.includes(x))
-                actors_to_remove = state.governors.actors.filter(x => !payload.actors.includes(x))
+                var roles_to_add = payload.roles.filter(x => !state.governors.roles.includes(x))
+                var actors_to_add = payload.actors.filter(x => !state.governors.actors.includes(x))
+                var roles_to_remove = state.governors.roles.filter(x => !payload.roles.includes(x))
+                var actors_to_remove = state.governors.actors.filter(x => !payload.actors.includes(x))
                 commit('ADD_GOVERNORS', { roles_to_add: roles_to_add, actors_to_add: actors_to_add })
                 commit('REMOVE_GOVERNORS', { roles_to_remove: roles_to_remove, actors_to_remove: actors_to_remove })
             }
