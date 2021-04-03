@@ -1,4 +1,4 @@
-# Kybern
+## Kybern
 
 Kybern is a prototype website built using [Concord](https://github.com/glizzan/glizzan-concord), a framework for implementing user-controlled permissions and governance structures. It showcases the functionality of Concord (and also allows developers to test that they've successfully built mechanisms for extensbility into Concord). The alpha prototype is live at [Kybern.org](https://www.kybern.org/). The site is currently neither secure or reliable, so please do not store important or private information on it.
 
