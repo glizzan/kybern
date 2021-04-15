@@ -13,9 +13,6 @@
                 <b-icon-info-circle-fill v-b-tooltip.hover :title="data.item.display" class="mr-2" font-scale=".8">
                 </b-icon-info-circle-fill>
                 <small>{{ data.item.change_name }}</small>
-                <b-icon-asterisk v-if=data.item.configuration scale=.5
-                    v-b-tooltip.hover :title="data.item.configuration.substring(11)">
-                </b-icon-asterisk>
             </div>
         </template>
 
@@ -33,7 +30,7 @@
                 <b-icon-x v-if="data.value.has_perm == false" variant="danger">
                 </b-icon-x>
                 <b-icon-question-diamond v-if="data.value.has_perm && data.value.more_info"
-                    v-b-tooltip.hover :title="data.value.more_info">
+                    v-b-tooltip="{ title: data.value.more_info, delay: 0 }">
                 </b-icon-question-diamond>
             </span>
             <span v-else>
@@ -113,7 +110,7 @@ export default {
             for (let perm_index in permissions) {
 
                 let permission = permissions[perm_index]
-                let key = permission.change_name + permission.configuration + permission.target
+                let key = permission.change_name + permission.target
                 let more_info = permission.condition ? permission.condition.how_to_pass_overall : null
 
                 // if permission already in map, add info to "more info" string and skip to next
@@ -137,7 +134,6 @@ export default {
                     change_name: permission.change_name,
                     foundational: permission.is_foundational,
                     section: permission.section,
-                    configuration: permission.configuration,
                     display: permission.display,
                     target: permission.target,
                     anyone: {has_perm: permission.anyone, more_info: more_info}

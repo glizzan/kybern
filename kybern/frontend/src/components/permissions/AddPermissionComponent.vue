@@ -77,13 +77,6 @@
 
                 </span>
 
-                <!-- If there are fields to configure -->
-                <span v-if="configuration_fields.length > 0" class="mb-3">
-                    <p class="mt-3 font-weight-bold">Configure your permission</p>
-                    <field-component v-for="field in configuration_fields" v-on:field-changed="change_field"
-                        :initial_field=field v-bind:key=field.field_name></field-component>
-                </span>
-
                 <b-button size="sm" class="mt-3" @click="add_permission()" id="save_permission_button">
                     Save permission</b-button>
 
@@ -102,21 +95,19 @@ import Vuex from 'vuex'
 import store from '../../store'
 import Multiselect from 'vue-multiselect'
 import ErrorComponent from '../utils/ErrorComponent'
-import FieldComponent from '../fields/FieldComponent'
 import { ConfiguredFieldsMixin } from '../utils/Mixins'
 
 
 export default {
 
     props: ['default_selection', 'role_to_edit', 'item_id', 'item_model'],  // item_model is required
-    components: { "vue-multiselect": Multiselect, ErrorComponent, FieldComponent },
+    components: { "vue-multiselect": Multiselect, ErrorComponent },
     mixins: [ConfiguredFieldsMixin],
     store,
     data: function() {
         return {
             permission_exists: false,
             permission_selected: '',
-            configuration_fields: [],
             error_message: '',
             permission_roles_selected: [],
             permission_actors_selected: [],
@@ -134,11 +125,6 @@ export default {
     watch: {
         default_selection: function (val) {
             return this.get_full_selection(val)
-        },
-        permission_selected: function (val) {
-            if (this.permission_selected) {
-                this.configuration_fields = Object.values(this.getPermissionConfigurationFields(this.permission_selected.value))
-            }
         },
         permission_options: function (val) {
             if (this.default_selection) {
@@ -219,7 +205,7 @@ export default {
         },
         add_permission() {
             this.addPermission({ item_or_role : this.item_or_role, item_id : this.item_id, item_model: this.item_model,
-                permission_selected : this.permission_selected.value, configuration : this.configuration_fields,
+                permission_selected : this.permission_selected.value,
                 roles: this.get_roles(), actors: this.permission_actors_selected, anyone: this.anyone
             }).then(response => { this.clearState()
             }).catch(error => {  this.error_message = error })

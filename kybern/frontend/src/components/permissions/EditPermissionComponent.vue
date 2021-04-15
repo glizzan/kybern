@@ -94,14 +94,6 @@
 
                 </span>
 
-                <!-- If there are fields to configure -->
-                <span v-if="configuration_fields.length > 0">
-                    <p class="mt-3 font-weight-bold">Configure your permission</p>
-                    <field-component v-for="field in configuration_fields"
-                        v-on:field-changed="change_field" :initial_field=field v-bind:key=field.field_name>
-                    </field-component>
-                </span>
-
                 <div class="block">
                     <b-button size="sm" class="mt-3" @click="update_permission()" id="update_permission_button">
                         Update permission</b-button>
@@ -124,7 +116,6 @@ import Vuex from 'vuex'
 import store from '../../store'
 import Multiselect from 'vue-multiselect'
 import ErrorComponent from '../utils/ErrorComponent'
-import FieldComponent from '../fields/FieldComponent'
 import { ConfiguredFieldsMixin } from '../utils/Mixins'
 
 
@@ -132,14 +123,13 @@ export default {
 
     props: ['permission', 'role_to_edit', 'item_id', 'item_model'],
     store,
-    components: { "vue-multiselect": Multiselect, ErrorComponent, FieldComponent },
+    components: { "vue-multiselect": Multiselect, ErrorComponent },
     mixins: [ConfiguredFieldsMixin],
     data: function() {
         return {
             permission_exists: true,
             edit_permission: false,
             edit_condition: false,
-            configuration_fields: [],
             permission_roles_selected: [],
             permission_actors_selected: [],
             error_message: ''
@@ -157,8 +147,7 @@ export default {
                 add_role_to_permission: {alt_target:alt_target},
                 remove_role_from_permission: {alt_target:alt_target},
                 give_anyone_permission: {alt_target:alt_target},
-                remove_anyone_from_permission: {alt_target:alt_target},
-                change_configuration_of_permission: {alt_target:alt_target}}
+                remove_anyone_from_permission: {alt_target:alt_target}}
         }).catch(error => {  this.error_message = error; console.log(error) })
     },
     watch: {
@@ -174,9 +163,7 @@ export default {
             permissions: state => state.permissions.permissions,
             user_permissions: state => state.permissions.current_user_permissions
         }),
-        ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'getPermissionConfigurationFields',
-            'getPermissionConfigurationFieldsWithData', 'role_to_options',
-            'user_pk_to_options']),
+        ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'role_to_options', 'user_pk_to_options']),
         anyone_can_take_permission() { return this.permission.anyone },
         item_or_role() {
             if (this.role_to_edit) { return "role"}
@@ -189,8 +176,7 @@ export default {
         can_edit_permission() {
             if (this.user_permissions.add_actor_to_permission || this.user_permissions.remove_actor_from_permission ||
             this.user_permissions.add_role_to_permission || this.user_permissions.remove_role_from_permission ||
-            this.user_permissions.give_anyone_permission || this.user_permissions.remove_anyone_from_permission ||
-            this.user_permissions.change_configuration_of_permission) {
+            this.user_permissions.give_anyone_permission || this.user_permissions.remove_anyone_from_permission) {
                 return true
             } else {
                 return false
@@ -205,8 +191,6 @@ export default {
         },
         refresh_permission_data(permission) {
             if (permission) {
-                this.configuration_fields = Object.values(
-                    this.getPermissionConfigurationFieldsWithData(permission.pk))
                 if (this.item_id && this.item_model) { // only do this for permission on item
                     this.permission_roles_selected = this.role_to_options(permission.roles)
                     this.permission_actors_selected = this.user_pk_to_options(permission.actors)
@@ -216,7 +200,6 @@ export default {
         clearState() {
             this.edit_permission = false,
             this.edit_condition = false,
-            this.configuration_fields = []
             this.permission_roles_selected = []
             this.permission_actors_selected = []
         },
@@ -229,10 +212,9 @@ export default {
             .catch(error => {  this.error_message = error.message  })
         },
         update_permission() {
-            this.updatePermission({ permission_id: this.permission.pk,
-                configuration : this.configuration_fields, roles: this.get_roles(),
-                actors: this.permission_actors_selected
-            }).then(response => { this.clearState() })
+            this.updatePermission({ permission_id: this.permission.pk, roles: this.get_roles(),
+                actors: this.permission_actors_selected })
+            .then(response => { this.clearState() })
             .catch(error => {  this.error_message = error })
         },
         toggle_anyone(enable_or_disable) {

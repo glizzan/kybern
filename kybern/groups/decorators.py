@@ -113,7 +113,7 @@ def reformat_combined_permission_and_condition_data(combined_data):
     condition_fields = []
     permission_fields = []
     for field in combined_data:
-        if field["type"] in ["RoleField", "RoleListField", "ActorField", "ActorListField"]:
+        if "for_permission" in field and field["for_permission"]:
             permission_fields.append(field)
         else:
             condition_fields.append(field)
@@ -159,10 +159,6 @@ def reformat_input_data(function=None, expect_target=True):
                              "reformat_input_data decorator")
 
         request_data = json.loads(request.body.decode('utf-8'))  # loaded, we can now use this as our kwargs
-
-        if "permission_configuration" in request_data:
-            reformatted_configuration = reformat_form_field_data(request_data["permission_configuration"])
-            request_data["permission_configuration"] = reformatted_configuration
 
         if "permission_roles" in request_data:
             request_data["permission_roles"] = reformat_role_select(request_data["permission_roles"])

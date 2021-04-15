@@ -73,6 +73,8 @@ def make_action_errors_readable(action):
     if action.status == "waiting":
         return "This action cannot be completed until a condition is passed.", action.get_logs()
     if action.status == "rejected":
+        if action.rejection_reason():
+            return "This action cannot be taken because: " + action.rejection_reason(), action.get_logs()
         return "You do not have permission to take this action", action.get_logs()
     return "We're sorry, there was an error", action.get_logs()
 
@@ -177,25 +179,30 @@ def serialize_existing_permission_for_vue(permission, pk_as_key=True):
         target = f"{permission.permitted_object.__class__.__name__} '{permission.permitted_object.get_name()}'"
 
     owner_permission = False
+    # if permission.get_state_change_object():
+    #     print("No state change obj: ", permission.change_type)
     if permission.permitted_object.foundational_permission_enabled or permission.get_state_change_object().is_foundational:
         owner_permission = True
 
     governor_permission = not owner_permission and permission.permitted_object.governing_permission_enabled
 
     permission_dict = {
-        "name": permission.change_display_string(), "display": permission.display_string(),
+        "name": permission.change_display_string(),
+        "display": permission.display_string(),
         "change_name": permission.change_name(),
-        "change_type": permission.change_type, "actors": permission.get_actors(),
+        "change_type": permission.change_type,
+        "actors": permission.get_actors(),
         "is_foundational": permission.is_foundational(),
         "section": permission.get_section(),
-        "roles": permission.get_roles(), "anyone": permission.anyone,
-        "fields": permission.get_configuration(), "pk": permission.pk,
+        "roles": permission.get_roles(),
+        "anyone": permission.anyone,
+        "pk": permission.pk,
         "change_field_options": permission.get_change_fields(),
         "dependent_field_options": permission.get_context_keys(),
-        "configuration": permission.get_configuration_text(),
         "owner_permission": owner_permission,
         "governor_permission": governor_permission,
-        "target": target
+        "target": target,
+        "linked": permission.get_state_change_object().linked_filters
     }
 
     condition_data = permission.get_condition_data() if permission.has_condition() else None
@@ -326,17 +333,15 @@ def get_governance_data(request, target):
 
 
 def get_permission_options(client):
-    """  This method gets permission *options* and permission configuration *options*, not the permission
-    data itself, which is fetched as needed based on user action.
+    """  This method gets permission *options*, not the permission data itself, which is fetched
+    as needed based on user action.
 
     (note: this matches format specified in vuex store)
     permission_options: {{ permission_options}},
         // {model_name: [ { value: x , text: x} ], model_name: [ { value: x , text: x}  ]}
-    permission_configuration_options: {{ permission_configuration_options}},
-        // { fieldname: { display: x, type: x, required: x, value: x, field_name: x}}
     """
 
-    permission_options, permission_configuration_options = {}, {}
+    permission_options = {}
 
     for model_class in [Group, Forum, Post, Comment, PermissionsItem, SimpleList]:
 
@@ -353,13 +358,7 @@ def get_permission_options(client):
                 "group": permission.section
             })
 
-        # get permission configuration options & save, it's ok if things overwrite because they're the same
-        for permission in settable_permissions:
-            permission_configuration_options.update({
-                permission.get_change_type(): permission.get_configurable_form_fields()
-            })
-
-    return permission_options, permission_configuration_options
+    return permission_options
 
 
 def get_condition_options(client):
@@ -374,7 +373,13 @@ def get_condition_options(client):
 
     # Get condition options
     settable_conditions = client.Conditional.get_possible_conditions()
-    condition_options = [{'value': cond.__name__, 'text': cond.descriptive_name} for cond in settable_conditions]
+    condition_options = []
+    for cond in settable_conditions:
+        condition_options.append({
+            "value": cond.__name__,
+            "text": cond.descriptive_name,
+            "linked": False if not hasattr(cond, "linked") else cond.linked
+        })
 
     # Create condition configuration
     condition_configuration = {}
@@ -391,7 +396,7 @@ def get_permission_data(request, target):
     default_target = client.Community.get_community(community_pk=target)
     client.update_target_on_all(target=default_target)
 
-    permission_options, permission_configuration_options = get_permission_options(client)
+    permission_options = get_permission_options(client)
     condition_options, condition_configuration_options = get_condition_options(client)
     dependent_field_options = get_all_dependent_fields()
     owner_condition = client.Community.get_condition_data(leadership_type="owner")
@@ -399,7 +404,6 @@ def get_permission_data(request, target):
 
     return JsonResponse({
         "permission_options": permission_options,
-        "permission_configuration_options": permission_configuration_options,
         "condition_options": condition_options,
         "condition_configuration_options": condition_configuration_options,
         "dependent_field_options": dependent_field_options,
@@ -787,8 +791,7 @@ def get_permission_info(permission):
 @login_required
 @reformat_input_data
 def add_permission(request, target, permission_type, item_or_role, permission_actors=None,
-                   permission_roles=None, permission_configuration=None, item_id=None,
-                   item_model=None):
+                   permission_roles=None, item_id=None, item_model=None):
 
     if item_or_role == "item":    # If an item has been passed in, make it the target
         model_class = get_model(item_model)
@@ -799,9 +802,7 @@ def add_permission(request, target, permission_type, item_or_role, permission_ac
     client = Client(actor=request.user, target=target)
 
     action, result = client.PermissionResource.add_permission(
-        change_type=permission_type, actors=permission_actors,
-        roles=permission_roles, configuration=permission_configuration
-    )
+        change_type=permission_type, actors=permission_actors, roles=permission_roles)
 
     action_dict = get_action_dict(action)
     permission_info = get_permission_info(result) if action.status == "implemented" else None
@@ -811,15 +812,12 @@ def add_permission(request, target, permission_type, item_or_role, permission_ac
 
 @login_required
 @reformat_input_data
-def update_permission(request, target, permission_id, permission_actors=None, permission_roles=None,
-                      permission_configuration=None):
+def update_permission(request, target, permission_id, permission_actors=None, permission_roles=None):
 
     client = Client(actor=request.user)
     target_permission = client.PermissionResource.get_permission(pk=permission_id)
 
-    actions = client.PermissionResource.update_configuration(
-        configuration_dict=permission_configuration, permission=target_permission
-    )
+    actions = []
 
     if permission_actors:
         actor_actions = client.PermissionResource.update_actors_on_permission(
@@ -954,6 +952,7 @@ def remove_condition(request, target, permission_or_leadership, target_permissio
         client.update_target_on_all(target)
         action, result = client.Conditional.remove_condition(leadership_type=leadership_type, element_id=element_id)
 
+    # TODO: pass in permission to get form data, if it's set on a permission
     result = result.get_condition_form_data() if result else result
 
     action_dict = get_action_dict(action)

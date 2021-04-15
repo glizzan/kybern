@@ -9,8 +9,6 @@ const PermissionsVuexModule = {
         // Permission & condition options
         permission_options: {},
             // [ { value: x , text: x } ]
-        permission_configuration_options: {},
-            // { permission_type: { fieldname: { display: x, type: x, required: x, value: x, field_name: x } }
         condition_options: [],
             // [ { value: x , text: x } ]
         condition_configuration_options: {},
@@ -78,10 +76,6 @@ const PermissionsVuexModule = {
             }
             return getters.get_list_of_permissions_given_pks(permission_pks).filter(e => e != undefined);
         },
-        getPermissionConfigurationFields: (state, getters) => (permission_type) => {
-            // JSON stringify + parse create a new copy of the fields so we don't accidentally mutate state by reference
-            return JSON.parse( JSON.stringify( state.permission_configuration_options[permission_type] ))
-        },
         getConditionConfigurationFields: (state, getters) => (condition_type) => {
             for (let key in state.condition_configuration_options) {
                 if (key.toLowerCase() == condition_type.toLowerCase()) {
@@ -101,20 +95,6 @@ const PermissionsVuexModule = {
             }
             return field
         },
-        mapPermissionDataToFields: (state, getters) => (fields, existing_data) => {
-            // Loops through data-less configuration fields looking for existing data to override
-            // default values.
-            var new_fields = Object.keys(fields).map(function(field_name) {
-                if (existing_data[field_name]) {
-                    fields[field_name].value = existing_data[field_name]
-                    fields[field_name] = getters.fix_permission_field_values(fields[field_name])
-                    return fields[field_name]
-                } else {
-                    return fields[field_name]
-                }
-            });
-            return new_fields
-        },
         getPermissionConditionConfigurationFieldsWithData: (state, getters) => (permission_id, element_id) => {
             var fields = state.permissions[permission_id]["condition"][element_id]["fields"]
             for (let field_index in fields) {
@@ -131,11 +111,6 @@ const PermissionsVuexModule = {
                 fields[field_index] = getters.fix_permission_field_values(fields[field_index])
             }
             return fields
-        },
-        getPermissionConfigurationFieldsWithData: (state, getters) => (permission_id) => {
-            var permission = state.permissions[permission_id]
-            var field_options = getters.getPermissionConfigurationFields(permission.change_type)
-            return getters.mapPermissionDataToFields(field_options, permission["fields"])
         },
         getFoundationalForItem: (state, getters) => (item_key) => {
             if (state.permission_overrides[item_key]) {
@@ -155,9 +130,6 @@ const PermissionsVuexModule = {
 
         SET_PERMISSION_OPTIONS (state, data) {
             Vue.set(state, "permission_options", data.options)
-        },
-        SET_PERMISSION_CONFIGURATION_OPTIONS (state, data) {
-            Vue.set(state, "permission_configuration_options", data.options)
         },
         SET_CONDITION_OPTIONS (state, data) {
             Vue.set(state, "condition_options", data.options)
@@ -256,7 +228,6 @@ const PermissionsVuexModule = {
             var url = await getters.url_lookup('get_permission_data')
             var implementationCallback = (response) => {
                 commit('SET_PERMISSION_OPTIONS', { options: response.data.permission_options })
-                commit('SET_PERMISSION_CONFIGURATION_OPTIONS', { options: response.data.permission_configuration_options })
                 commit('SET_CONDITION_OPTIONS', { options: response.data.condition_options })
                 commit('SET_CONDITION_CONFIGURATION_OPTIONS', { options: response.data.condition_configuration_options })
                 commit('SET_DEPENDENT_FIELD_OPTIONS', { options: response.data.dependent_field_options })
@@ -292,8 +263,7 @@ const PermissionsVuexModule = {
             var url = await getters.url_lookup('add_permission')
             var params = { item_or_role: payload.item_or_role, item_id: payload.item_id,
                 item_model: payload.item_model, permission_type : payload.permission_selected,
-                permission_roles : payload.roles, permission_actors : payload.actors,
-                permission_configuration : payload.configuration }
+                permission_roles : payload.roles, permission_actors : payload.actors }
 
             var implementationCallback = (response) => {
                 var pk = response.data.permission.pk
@@ -313,7 +283,7 @@ const PermissionsVuexModule = {
         async updatePermission ({ commit, state, dispatch, getters }, payload) {
             var url = await getters.url_lookup('update_permission')
             var params = { permission_id : payload.permission_id, permission_roles : payload.roles,
-                permission_actors : payload.actors, permission_configuration : payload.configuration }
+                permission_actors : payload.actors }
             var implementationCallback = (response) => {
                 pk = response.data.permission.pk
                 permission_data = response.data.permission.permission_data[0]
