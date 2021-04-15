@@ -889,7 +889,7 @@ class ForumsTestCase(BaseTestCase):
         self.browser.find_by_id("forum_permissions_button", wait_time=5).first.click()
         self.browser.find_by_id("edit_permissions_button_default", wait_time=5).first.click()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display", wait_time=5)]
-        self.assertCountEqual(permissions, ["those with role members have permission to apply template, but only if the user is the creator of the template's target",
+        self.assertCountEqual(permissions, ["those with role members have permission to apply template",
                                             'those with role members have permission to add comment',
                                             'those with role members have permission to add post'])
         self.browser.find_by_css(".close").last.click()  # close modal
@@ -905,7 +905,7 @@ class ForumsTestCase(BaseTestCase):
         time.sleep(5)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertCountEqual(permissions, ['those with role forwards have permission to edit forum',
-                                            "those with role members have permission to apply template, but only if the user is the creator of the template's target",
+                                            "those with role members have permission to apply template",
                                             'those with role members have permission to add comment',
                                             'those with role members have permission to add post'])
 
@@ -953,17 +953,6 @@ class TemplatesTestCase(BaseTestCase):
         permissions_display = self.browser.find_by_css(".permission-display", wait_time=5)
         permissions = [item.text for item in permissions_display]
         self.assertTrue("those with role forwards have permission to add members to community" in permissions)
-
-    def test_rejected_template(self):
-
-        # Crystal tries to apply the template, but she doesn't get the interface because she doesn't have permission
-        self.login_user("crystaldunn", "badlands2020")
-        self.go_to_group("USWNT")
-        self.browser.find_by_id('governance_button', wait_time=5).first.click()
-        self.browser.find_by_id("membership", wait_time=5).first.click()
-        self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
-        button = self.browser.find_by_id('membership_templates_link', wait_time=5)
-        self.assertEquals(len(button), 0)
 
     def test_apply_template_with_condition(self):
 
@@ -1101,7 +1090,7 @@ class MembershipTestCase(BaseTestCase):
         permission_display = self.browser.find_by_css(".permission-display", wait_time=5)
         self.assertEquals(
             [item.text for item in permission_display],
-            ["anyone has permission to add members to community, but only if the user is adding themselves"])
+            ["anyone has permission to add members to community"])
 
         # random person can join
         self.login_user("midgepurce", "badlands2020")
@@ -1217,8 +1206,10 @@ class MembershipTestCase(BaseTestCase):
         self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
         self.browser.find_by_id('edit_permissions_button_addmember', wait_time=5).first.click()
         permissions = [item.text for item in self.browser.find_by_css(".permission-display", wait_time=5)]
-        self.assertEquals(permissions, ["anyone has permission to add members to community, but only if the user is adding themselves"])
-        condition = self.browser.find_by_text("on the condition that those with role forwards needs to approve this action")
+        self.assertEquals(permissions, ["anyone has permission to add members to community"])
+        # time.sleep(30)
+        condition = self.browser.find_by_text(
+            "on the condition that the actor is the member, and those with role forwards needs to approve this action")
         self.assertEquals(len(condition), 1)
 
         # random person can request but they are not added yet
@@ -1505,13 +1496,15 @@ class DependentFieldTestCase(BaseTestCase):
         time.sleep(4)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
         self.assertEquals(len(permissions), 10)
-        time.sleep(3)
-        self.assertTrue(self.browser.is_text_present(
-            "anyone has permission to edit comment, but only if the user is the commenter"))
+        time.sleep(4)
+        self.assertTrue(self.browser.is_text_present("anyone has permission to edit comment"))
+        self.assertTrue(self.browser.is_text_present("on the condition that the actor wrote the comment"))
 
         # Inspecting what was created, everything looks fine
         self.browser.find_by_css(".edit-condition.edit_comment", wait_time=5).first.click()
-        self.browser.find_by_css(".edit-condition-button", wait_time=5).first.click()
+        time.sleep(3)
+        self.browser.find_by_css(".edit-condition-button", wait_time=5).last.click()
+        time.sleep(3)
         self.assertTrue(self.browser.is_text_present("set as: post's author"))
         self.browser.find_by_css(".edit-dependent-field", wait_time=5).first.click()
         self.assertTrue(self.browser.is_text_present("Choose object to depend on:"))
@@ -1663,6 +1656,7 @@ class MultipleConditionsTestCase(BaseTestCase):
         self.browser.find_by_id('forwards_editrole', wait_time=5)[0].scroll_to()
         self.browser.find_by_id('forwards_editrole', wait_time=5).first.click()
         self.browser.find_by_id(('edit_permissions_button_default')).first.click()
+        time.sleep(3)
         perm_element = self.browser.find_by_text(
             "those with role forwards have permission to add role to community", wait_time=5)
         cond_id = "_".join(["condition"] + perm_element[1]["id"].split("_")[1:])

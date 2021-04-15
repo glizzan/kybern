@@ -29,7 +29,7 @@
             <span v-if="show_select && !condition_selected">
                 <b>Select condition to add</b>
                 <template><div>
-                    <b-form-select v-model="condition_selected" :options="condition_options" :select-size="4"
+                    <b-form-select v-model="condition_selected" :options="processed_condition_options" :select-size="4"
                         name="condition_select">
                     </b-form-select>
                 </div></template>
@@ -85,6 +85,28 @@ export default {
             permissions: state => state.permissions.permissions,
             group_name: state => state.group_name
         }),
+        processed_condition_options: function() {
+            var options = []
+            options.push({
+                label: "Decision Conditions",
+                options: this.condition_options.filter(option => !option.value.includes("Filter"))
+            })
+            if (!this.leadership_type) {
+                options.push({
+                    label: "Filter Conditions",
+                    options: this.condition_options.filter(option => {
+                        if (option.value.includes("Filter")) {
+                            if (!option.linked) { return true }
+                            if (this.permission.linked && this.permission.linked.includes(option.value)) {
+                                return true
+                            }
+                        }
+                        return false
+                    })
+                })
+            }
+            return options
+        },
         permission: function() {
             if (!this.leadership_type) {
                 return this.permissions[this.conditioned_on]

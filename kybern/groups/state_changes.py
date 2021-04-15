@@ -151,7 +151,6 @@ class EditPostStateChange(BaseStateChange):
     descriptive_text = {
         "verb": "edit",
         "default_string": "post",
-        "configurations": [("author_only", "if the user is the post's author")],
         "preposition": "in"
     }
 
@@ -159,30 +158,10 @@ class EditPostStateChange(BaseStateChange):
     context_keys = ["forum", "post"]
     allowable_targets = [Post]
     settable_classes = ["all_community_models", Forum, Post]
+    linked_filters = ["CreatorOnly"]
 
     title = field_utils.CharField(label="Title")
     content = field_utils.CharField(label="Content")
-    author_only = field_utils.BooleanField(label="Only allow author to do this", null_value=False)
-
-    @classmethod
-    def get_configurable_fields(cls):
-        return {"author_only": {"display": "Only allow author to edit post", "type": "BooleanField"}}
-
-    @classmethod
-    def check_configuration_is_valid(cls, configuration):
-        """Used primarily when setting permissions, this method checks that the supplied configuration is a valid one.
-        By contrast, check_configuration checks a specific action against an already-validated configuration."""
-        if "author_only" in configuration and configuration["author_only"] is not None:
-            if configuration["author_only"] not in [True, False, "True", "False", "true", "false"]:
-                return False, f"author_only must be set to True or False, not {configuration['author_only']}"
-        return True, ""
-
-    def check_configuration(self, action, permission):
-        configuration = permission.get_configuration()
-        if "author_only" in configuration and configuration['author_only']:
-            if action.actor.pk != action.target.author.pk:
-                return False, "author_only is set to true, so the actor must be the same as the author of the target post"
-        return True, None
 
     def get_context_instances(self, action):
         """Returns the forum and the post object."""
@@ -208,7 +187,6 @@ class DeletePostStateChange(BaseStateChange):
     descriptive_text = {
         "verb": "delete",
         "default_string": "post",
-        "configurations": [("author_only", "if the user is the post's author")],
         "preposition": "from"
     }
 
@@ -216,28 +194,7 @@ class DeletePostStateChange(BaseStateChange):
     context_keys = ["forum", "post"]
     allowable_targets = [Post]
     settable_classes = ["all_community_models", Forum, Post]
-
-    author_only = field_utils.BooleanField(label="Only allow author to do this", null_value=False)
-
-    @classmethod
-    def get_configurable_fields(cls):
-        return {"author_only": {"display": "Only allow author to edit post", "type": "BooleanField"}}
-
-    @classmethod
-    def check_configuration_is_valid(cls, configuration):
-        """Used primarily when setting permissions, this method checks that the supplied configuration is a valid one.
-        By contrast, check_configuration checks a specific action against an already-validated configuration."""
-        if "author_only" in configuration and configuration["author_only"] is not None:
-            if configuration["author_only"] not in [True, False, "True", "False", "true", "false"]:
-                return False, f"author_only must be set to True or False, not {configuration['author_only']}"
-        return True, ""
-
-    def check_configuration(self, action, permission):
-        configuration = permission.get_configuration()
-        if "author_only" in configuration and configuration['author_only']:
-            if action.actor.pk != action.target.author.pk:
-                return False, "author_only is true, so the actor must be the same as the author of the target post"
-        return True, None
+    linked_filters = ["CreatorOnly"]
 
     def get_context_instances(self, action):
         """Returns the forum and the post object."""

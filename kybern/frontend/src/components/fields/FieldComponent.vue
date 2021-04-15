@@ -10,6 +10,15 @@
                 v-model=field.value :required=field.required>
         </div>
 
+        <!-- NOTE: should display differently  -->
+        <div v-if="field.type=='PermissionedModelField'" class="d-inline-block">
+            <div class="input-group-prepend">
+                <span class="input-group-text" id=field.name>{{ label(field) }}</span>
+            </div>
+            <input type="text" class="form-control" aria-label=field.name aria-describedby="field.name label"
+                v-model=field.value :required=field.required>
+        </div>
+
         <span v-if="field.type=='BooleanField'">
             <b-form-checkbox v-model=field.value name="checkbox-1" value="true" unchecked-value="false">
                 {{ label(field) }}
