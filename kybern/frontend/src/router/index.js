@@ -28,6 +28,10 @@ import ListFormComponent from '../components/simplelists/ListFormComponent'
 import RowFormComponent from '../components/simplelists/RowFormComponent'
 import SimpleListComponent from '../components/simplelists/SimpleListComponent'
 import SimpleListDetailComponent from '../components/simplelists/SimpleListDetailComponent'
+// documents
+import DocumentDetailComponent from '../components/documents/DocumentDetailComponent'
+import DocumentFormComponent from '../components/documents/DocumentFormComponent'
+import DocumentFullPageComponent from '../components/documents/DocumentFullPageComponent'
 
 
 Vue.use(VueRouter)
@@ -269,6 +273,49 @@ const routes = [
             sidebar: GroupConfigComponent,
             main: SimpleListComponent,
             modal: RowFormComponent
+        }
+    },
+
+    // Documents
+    {
+        name: 'add-new-document',
+        path: '/documents/new',
+        meta: { tab: 'resources'},
+        components: {
+            sidebar: GroupConfigComponent,
+            main: GroupResourcesComponent,
+            modal: DocumentFormComponent
+        }
+    },
+    {
+        name: 'document-detail',
+        path: '/documents/detail/:document_id',
+        meta: { tab: 'resources'},
+        props: { sidebar: false, main: true},
+        components: {
+            sidebar: GroupConfigComponent,
+            main: DocumentDetailComponent
+        }
+    },
+    {
+        name: 'edit-document',
+        path: '/documents/edit/:document_id',
+        meta: { tab: 'resources'},
+        props: { sidebar: false, main: false, modal: true },
+        components: {
+            sidebar: GroupConfigComponent,
+            main: GroupResourcesComponent,
+            modal: DocumentFormComponent
+        }
+    },
+    {
+        name: 'document-full-page',
+        path: '/documents/detail/full/:document_id/',
+        meta: { tab: 'resources'},
+        props: { sidebar: false, main: true},
+        components: {
+            sidebar: GroupConfigComponent,
+            main: DocumentFullPageComponent
         }
     }
 

@@ -30,6 +30,7 @@ test_cases_to_skip = [
     # "ApprovalConditionsTestCase",
     # "ConsensusConditionTestCase",
     # "DependentFieldTestCase",
+    # "DocumentTestCase",
     # "ForumsTestCase",
     # "GroupBasicsTestCase",
     # "ListTestCase",
@@ -1743,4 +1744,68 @@ class MultipleConditionsTestCase(BaseTestCase):
         self.assertEquals(roles, ["members", "forwards", "midfielders"])
 
 
+@skipIf("DocumentTestCase" in test_cases_to_skip, "")
+class DocumentTestCase(BaseTestCase):
 
+    def setUp(self):
+
+        # Basic setup
+        self.create_users()
+        self.create_templates()
+        self.actor = User.objects.first()
+        self.client = Client(actor=self.actor)
+        self.community = self.client.Community.create_community(name="USWNT")
+        self.client.update_target_on_all(target=self.community)
+        self.client.Community.add_members_to_community(member_pk_list=[user.pk for user in User.objects.all()[:4]])
+        self.client.Community.add_role_to_community(role_name="forwards")
+        pinoe = User.objects.get(username="meganrapinoe")
+        press = User.objects.get(username="christenpress")
+        self.client.Community.add_people_to_role(role_name="forwards", people_to_add=[pinoe.pk, press.pk])
+
+    def test_basic_document_functionality(self):
+
+        # create a document
+        self.login_user("meganrapinoe", "badlands2020")
+        self.go_to_group("USWNT")
+        self.browser.find_by_id('new_document_button').first.click()
+        self.browser.fill('document_name', "Why we deserve equal pay")
+        self.browser.fill('document_description', "Obviously")
+        self.browser.find_by_id('submit_document_button').first.click()
+        self.assertTrue(self.browser.is_text_present('Why we deserve equal pay'))
+        self.assertTrue(self.browser.is_text_present('Obviously'))
+
+        # go to list & edit it
+        self.browser.find_by_id('edit_document_button', wait_time=5).first.click()
+        self.browser.fill('document_name', "We deserve equal pay")
+        self.browser.fill('document_description', "Obviously!")
+        self.browser.find_by_id('submit_document_button').first.click()
+        self.assertTrue(self.browser.is_text_present('We deserve equal pay'))
+        self.assertTrue(self.browser.is_text_present('Obviously!'))
+
+        # edit content and discard
+        self.browser.find_by_id('edit_content_start_button', wait_time=5).first.click()
+        self.assertTrue(self.browser.is_text_present('hello'))  # default content in markdown editor
+        self.browser.fill('document_content_textarea', "## A Header \n\n ## __Another__ Header")
+        self.assertTrue(self.browser.is_text_present('Another Header'))
+        self.browser.find_by_id('discard_content_edits', wait_time=5).first.click()
+        self.assertFalse(self.browser.is_text_present('Another Header'))
+
+        # edit content and save
+        self.browser.find_by_id('edit_content_start_button', wait_time=5).first.click()
+        self.assertTrue(self.browser.is_text_present('hello'))  # default content in markdown editor
+        self.browser.fill('document_content_textarea', "## A Header \n\n ## __Another__ Header")
+        self.assertTrue(self.browser.is_text_present('Another Header'))
+        self.browser.find_by_id('edit_document_content_button', wait_time=5).first.click()
+        time.sleep(2)
+        self.assertTrue(self.browser.is_text_present('Another Header'))
+        found_textarea = self.browser.find_by_id('document_content_textarea')
+        self.assertFalse(found_textarea)
+
+        # full page view
+        self.assertTrue(self.browser.is_text_present('Governance Forum'))  # in view with sidebar
+        self.browser.find_by_id('document_fullpage', wait_time=5).first.click()
+        self.assertFalse(self.browser.is_text_present('Governance Forum'))   # in view without sidebar
+        self.assertTrue(self.browser.is_text_present('We deserve equal pay'))
+        self.assertTrue(self.browser.is_text_present('Obviously!'))
+        self.assertTrue(self.browser.is_text_present('A Header'))
+        self.assertTrue(self.browser.is_text_present('Another Header'))

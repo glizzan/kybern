@@ -101,4 +101,10 @@ urlpatterns = [
     path('api/<int:target>/edit_row/', views.edit_row, name='edit_row'),
     path('api/<int:target>/move_row/', views.move_row, name='move_row'),
     path('api/<int:target>/delete_row/', views.delete_row, name='delete_row'),
+
+    # document views
+    path('api/<int:target>/get_documents/', views.get_documents, name='get_documents'),
+    path('api/<int:target>/add_document/', views.add_document, name='add_document'),
+    path('api/<int:target>/edit_document/', views.edit_document, name='edit_document'),
+    path('api/<int:target>/delete_document/', views.delete_document, name='delete_document'),
 ]
