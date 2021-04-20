@@ -49,8 +49,10 @@ class UrlTestCase(TestCase):
             'apply_template': 'groups/api/apply_template/',
             'get_templates_for_scope': 'groups/api/get_templates_for_scope/',
             'delete_comment': 'groups/api/delete_comment/',
+            'delete_document': 'groups/api/1/delete_document/',
             'edit_comment': 'groups/api/edit_comment/',
             'add_comment': 'groups/api/add_comment/',
+            'add_document': 'groups/api/1/add_document/',
             'get_comment_data': 'groups/api/get_comment_data/',
             'delete_post': 'groups/api/1/delete_post/',
             'edit_post': 'groups/api/1/edit_post/',
@@ -72,6 +74,7 @@ class UrlTestCase(TestCase):
             'update_owners': 'groups/api/update_owners/1/',
             'remove_condition': 'groups/api/remove_condition/1/',
             'edit_condition': 'groups/api/edit_condition/1/',
+            'edit_document': 'groups/api/1/edit_document/',
             'add_condition': 'groups/api/add_condition/1/',
             'check_permissions': 'groups/api/check_permissions/1/',
             'toggle_anyone': 'groups/api/toggle_anyone/1/',
@@ -82,6 +85,7 @@ class UrlTestCase(TestCase):
             'update_permission': 'groups/api/update_permission/1/',
             'add_permission': 'groups/api/add_permission/1/',
             'get_data_for_role': 'groups/api/get_data_for_role/1/',
+            'get_documents': 'groups/api/1/get_documents/',
             'remove_members': 'groups/api/remove_members/1/',
             'add_members': 'groups/api/add_members/1/',
             'remove_people_from_role': 'groups/api/remove_people_from_role/1/',
@@ -102,5 +106,5 @@ class UrlTestCase(TestCase):
             'export_as_json': 'groups/export/json/1',
         }
         response = self.client.get(reverse('generate_url_map_with_target', kwargs={"target": 1}))
-        self.assertEquals(len(response.json()['urls']), len(expected_dict))
         self.assertEquals(response.json()['urls'], expected_dict)
+        self.assertEquals(len(response.json()['urls']), len(expected_dict))

@@ -257,6 +257,17 @@ def serialize_lists_for_vue(simple_lists):
     return serialized_lists
 
 
+def serialize_document_for_vue(document):
+    return {'pk': document.pk, 'name': document.name, 'description': document.description, 'content': document.content}
+
+
+def serialize_documents_for_vue(documents):
+    serialized_docs = []
+    for document in documents:
+        serialized_docs.append(serialize_document_for_vue(document))
+    return serialized_docs
+
+
 ############################
 ### Standard Django CBVs ###
 ############################
@@ -1476,6 +1487,73 @@ def delete_row(request, target, list_pk, index):
     action, result = client.List.delete_row_in_list(index=index)
 
     return JsonResponse(get_action_dict(action))
+
+
+######################
+### Document Views ###
+######################
+
+
+@login_required
+def get_documents(request, target):
+
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=target)
+
+    docs = client.Document.get_all_documents_given_owner(owner=target)
+    serialized_docs = serialize_documents_for_vue(docs)
+
+    return JsonResponse({"documents": serialized_docs})
+
+
+@login_required
+@reformat_input_data
+def add_document(request, target, name, description=None, content=None):
+
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.Document.set_target(target=target)
+
+    action, result = client.Document.add_document(name=name, description=description, content=content)
+
+    action_dict = get_action_dict(action)
+    if action.status == "implemented":
+        action_dict["document_data"] = serialize_document_for_vue(result)
+    return JsonResponse(action_dict)
+
+
+@login_required
+@reformat_input_data
+def edit_document(request, target, document_pk, name=None, description=None, content=None):
+
+    client = Client(actor=request.user)
+    target = client.Document.get_document(pk=document_pk)
+    client.Document.set_target(target=target)
+
+    action, result = client.Document.edit_document(name=name, description=description, content=content)
+
+    action_dict = get_action_dict(action)
+    if action.status == "implemented":
+        action_dict["document_data"] = serialize_document_for_vue(result)
+    return JsonResponse(action_dict)
+
+
+@login_required
+@reformat_input_data
+def delete_document(request, target, document_pk):
+
+    client = Client(actor=request.user)
+    target = client.Document.get_document(pk=document_pk)
+    client.Document.set_target(target=target)
+
+    action, result = client.Document.delete_document()
+
+    action_dict = get_action_dict(action)
+
+    if action.status == "implemented":
+        action_dict["deleted_document_pk"] = document_pk
+    return JsonResponse(action_dict)
 
 
 ######################################################################

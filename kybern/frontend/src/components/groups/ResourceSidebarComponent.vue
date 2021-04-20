@@ -18,6 +18,11 @@
                         class="btn-sm ml-3" id="new_forum_button">+ add new</b-button>
                 </router-link>
 
+                <router-link v-if="model == 'document'" :to="{ name: 'add-new-document'}">
+                    <b-button v-if="user_permissions.add_document" variant="light"
+                        class="btn-sm ml-3" id="new_document_button">+ add new</b-button>
+                </router-link>
+
             </h5>
 
             <b-list-group>
@@ -31,6 +36,8 @@
 
                 </b-list-group-item>
             </b-list-group>
+
+            <span v-if="Object.keys(items).length === 0">There are no {{display.toLowerCase()}} yet.</span>
 
         </div>
     </span>
@@ -50,31 +57,37 @@ export default {
     created (){
         if (this.lists.length == 0) { this.getLists() }
         if (this.forums.length == 0) { this.getForumData() }
-        this.checkPermissions({permissions: {"add_forum": null, "add_list": null}})
+        if (this.documents.length == 0) { this.getDocuments() }
+        this.checkPermissions({permissions: {"add_forum": null, "add_list": null, "add_document": null}})
             .catch(error => {  this.error_message = error; console.log(error) })
     },
     computed: {
         ...Vuex.mapState({
             lists: state => state.simplelists.lists,
             forums: state => state.forums.forums,
+            documents: state => state.documents.documents,
             user_permissions: state => state.permissions.current_user_permissions,
         }),
         resources: function() {
 
             return [
                 { display: "Forums", model: "forum", items: this.forums },
-                { display: "Lists", model: "simplelist", items: this.lists }
+                { display: "Lists", model: "simplelist", items: this.lists },
+                { display: "Documents", model: "document", items: this.documents }
             ]
         }
     },
     methods: {
-        ...Vuex.mapActions(['checkPermissions', 'getLists', 'getForumData']),
+        ...Vuex.mapActions(['checkPermissions', 'getLists', 'getForumData', 'getDocuments']),
         get_router_ref(model, item) {
             if (model == "simplelist") {
                 return { name: "list-detail", params: {list_id: item.pk}}
             }
             if (model == "forum") {
                 return { name: "forum-detail", params: {forum_id: item.pk}}
+            }
+            if (model == "document") {
+                return { name: "document-detail", params: {document_id: item.pk}}
             }
         }
     }

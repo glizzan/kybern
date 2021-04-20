@@ -8,6 +8,10 @@
 
         <SimpleListListComponent></SimpleListListComponent>
 
+        <hr />
+
+        <DocumentListComponent></DocumentListComponent>
+
     </span>
 
 </template>
@@ -19,13 +23,14 @@ import store from '../../store'
 import { UtilityMixin } from '../utils/Mixins'
 import ForumListComponent from '../forums/ForumListComponent'
 import SimpleListListComponent from '../simplelists/SimpleListListComponent'
+import DocumentListComponent from '../documents/DocumentListComponent'
 
 
 export default {
 
     store,
     mixins: [UtilityMixin],
-    components: { ForumListComponent, SimpleListListComponent },
+    components: { ForumListComponent, SimpleListListComponent, DocumentListComponent },
     data: function() {
         return {}
     }

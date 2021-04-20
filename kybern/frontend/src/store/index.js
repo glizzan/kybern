@@ -5,6 +5,7 @@ import axios from '../store/axios_instance'
 
 import ActionsVuexModule from './ActionsVuexModule'
 import CommentsVuexModule from './CommentsVuexModule'
+import DocumentVuexModule from './DocumentVuexModule'
 import ForumsVuexModule from './ForumsVuexModule'
 import GovernanceVuexModule from './GovernanceVuexModule'
 import PermissionsVuexModule from './PermissionsVuexModule'
@@ -17,6 +18,7 @@ Vue.use(Vuex)
 export default new Vuex.Store({
     modules: {
         concord_actions: ActionsVuexModule,  // use 'concord_actions' so as not to conflict with vuex actions
+        documents: DocumentVuexModule,
         forums: ForumsVuexModule,
         permissions: PermissionsVuexModule,
         governance: GovernanceVuexModule,
