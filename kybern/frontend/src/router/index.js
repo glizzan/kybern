@@ -15,12 +15,8 @@ import GroupPermissionsComponent from '../components/permissions/GroupPermission
 import PersonPermissionsComponent from '../components/permissions/PersonPermissionsComponent'
 import ConditionManagerComponent from '../components/conditions/ConditionManagerComponent'
 // forums
-import ForumFormComponent from '../components/forums/ForumFormComponent'
-import ForumListComponent from '../components/forums/ForumListComponent'
 import ForumDetailComponent from '../components/forums/ForumDetailComponent'
-import ForumComponent from '../components/forums/ForumComponent'
 import PostComponent from '../components/forums/PostComponent'
-import PostFormComponent from '../components/forums/PostFormComponent'
 // templates
 import TemplateComponent from '../components/templates/TemplateComponent'
 // lists
@@ -30,7 +26,6 @@ import SimpleListComponent from '../components/simplelists/SimpleListComponent'
 import SimpleListDetailComponent from '../components/simplelists/SimpleListDetailComponent'
 // documents
 import DocumentDetailComponent from '../components/documents/DocumentDetailComponent'
-import DocumentFormComponent from '../components/documents/DocumentFormComponent'
 import DocumentFullPageComponent from '../components/documents/DocumentFullPageComponent'
 
 
@@ -158,18 +153,8 @@ const routes = [
 
     //Forums
     {
-        name: 'add-new-forum',
-        path: '/forums/new',
-        meta: { tab: 'resources'},
-        components: {
-            sidebar: GroupConfigComponent,
-            main: ForumListComponent,
-            modal: ForumFormComponent
-        }
-    },
-    {
         name: 'forum-detail',
-        path: '/forums/:forum_id',
+        path: '/forums/:item_id',
         meta: { tab: 'resources'},
         props: { sidebar: false, main: true },
         components: {
@@ -178,41 +163,8 @@ const routes = [
         }
     },
     {
-        name: 'edit-forum',
-        path: '/forums/:forum_id/edit',
-        meta: { tab: 'resources'},
-        props: { sidebar: false, main: true, modal: true },
-        components: {
-            sidebar: GroupConfigComponent,
-            main: ForumComponent,
-            modal: ForumFormComponent
-        }
-    },
-    {
-        name: 'add-new-post',
-        path: '/forums/:forum_id/new_post',
-        meta: { tab: 'resources'},
-        props: { sidebar: false, main: true, modal: true },
-        components: {
-            sidebar: GroupConfigComponent,
-            main: ForumComponent,
-            modal: PostFormComponent
-        }
-    },
-    {
-        name: 'edit-post',
-        path: '/forums/:forum_id/posts/:post_id/edit',
-        meta: { tab: 'resources'},
-        props: { sidebar: false, main: true, modal: true },
-        components: {
-            sidebar: GroupConfigComponent,
-            main: ForumComponent,  // switch to postComponent once made
-            modal: PostFormComponent
-        }
-    },
-    {
         name: 'post-detail',
-        path: '/forums/:forum_id/posts/:post_id',
+        path: '/forums/:forum_id/posts/:item_id',
         meta: { tab: 'resources'},
         props: { sidebar: false, main: true },
         components: {
@@ -278,18 +230,8 @@ const routes = [
 
     // Documents
     {
-        name: 'add-new-document',
-        path: '/documents/new',
-        meta: { tab: 'resources'},
-        components: {
-            sidebar: GroupConfigComponent,
-            main: GroupResourcesComponent,
-            modal: DocumentFormComponent
-        }
-    },
-    {
         name: 'document-detail',
-        path: '/documents/detail/:document_id',
+        path: '/documents/detail/:item_id',
         meta: { tab: 'resources'},
         props: { sidebar: false, main: true},
         components: {
@@ -298,19 +240,8 @@ const routes = [
         }
     },
     {
-        name: 'edit-document',
-        path: '/documents/edit/:document_id',
-        meta: { tab: 'resources'},
-        props: { sidebar: false, main: false, modal: true },
-        components: {
-            sidebar: GroupConfigComponent,
-            main: GroupResourcesComponent,
-            modal: DocumentFormComponent
-        }
-    },
-    {
         name: 'document-full-page',
-        path: '/documents/detail/full/:document_id/',
+        path: '/documents/detail/full/:item_id/',
         meta: { tab: 'resources'},
         props: { sidebar: false, main: true},
         components: {

@@ -1,6 +1,6 @@
 <template>
 
-    <span>
+    <span v-if="user">
 
         <div>
             <b-card :title=title body-class="text-center" header-tag="nav">
@@ -8,10 +8,6 @@
                 <b-nav card-header tabs>
                     <b-nav-item link-classes="text-info" @click="tab='roles'; " v-bind:active="tab=='roles'">
                         Roles</b-nav-item>
-                    <b-nav-item link-classes="text-info" @click="tab='user_permissions'" v-bind:active="tab=='user_permissions'">
-                        {{user.name}}'s Permissions</b-nav-item>
-                    <b-nav-item link-classes="text-info" @click="tab='quick_add'" v-bind:active="tab=='quick_add'">
-                        Quick Add to Permissions</b-nav-item>
                 </b-nav>
                 </template>
 
@@ -55,19 +51,6 @@
 
                     </div>
 
-                    <div v-if="tab=='user_permissions'" class="my-3">
-
-                        <h4 class="font-weight-bold">User Permissions</h4>
-                        Coming soon!
-                            <!-- Permissions user has -->
-                            <!-- Thingy to add a new permission -->
-                    </div>
-
-                    <div v-if="tab=='quick_add'" class="my-3">
-                        <h4 class="font-weight-bold">Quick Add User to Existing Permissions</h4>
-                        Coming soon!
-                    </div>
-
                 </b-card-text>
 
             </b-card>
@@ -95,6 +78,7 @@ export default {
         }
     },
     created: function () {
+        this.getGovernanceData()
         this.getPermissionsForItem({ item_id: this.group_pk, item_model: 'group' })
             .catch(error => {  this.error_message = error; console.log(error) })
     },
@@ -134,7 +118,7 @@ export default {
         }
     },
     methods: {
-        ...Vuex.mapActions(['checkPermissions', 'getPermissionsForItem', 'addUsersToRole', 'removeUsersFromRole']),
+        ...Vuex.mapActions(['checkPermissions', 'getPermissionsForItem', 'addUsersToRole', 'removeUsersFromRole', 'getGovernanceData']),
         to_list(list) {
             var names = Array.from(list, item => item.name)
             return names.join(", ")

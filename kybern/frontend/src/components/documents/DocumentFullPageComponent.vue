@@ -22,7 +22,7 @@ import marked from 'marked'
 
 export default {
 
-    props: ['document_id'],
+    props: ['item_id'],
     store,
     created (){
         if (!this.document) { this.getDocuments() }
@@ -30,7 +30,7 @@ export default {
     computed: {
         ...Vuex.mapGetters(['getDocumentData']),
         document: function() {
-            return this.getDocumentData(this.document_id)
+            return this.getDocumentData(this.item_id)
         },
         rendered_content: function() {
             if (this.document) {

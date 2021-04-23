@@ -38,7 +38,7 @@ test_cases_to_skip = [
     # "MultipleConditionsTestCase",
     # "PermissionsTestCase",
     # "TemplatesTestCase",
-    # "VotingConditionTestCase",
+    # # "VotingConditionTestCase",
 ]
 
 
@@ -109,6 +109,9 @@ class BaseTestCase(StaticLiveServerTestCase):
         self.browser.visit(self.live_server_url + "/groups/list/")
         self.browser.find_by_text(group_name).first.click()
 
+    def close_modal(self, order=0):
+        self.browser.find_by_css(".close", wait_time=5)[order].click()
+
 
 @skipIf("AccountsTestCase" in test_cases_to_skip, "")
 class AccountsTestCase(BaseTestCase):
@@ -159,6 +162,7 @@ class GroupBasicsTestCase(BaseTestCase):
         self.browser.fill('group_description', 'For NWSL players')
         self.browser.find_by_id('start_from_scratch', wait_time=5).first.click()
         self.browser.find_by_id('create_group_button', wait_time=5).first.click()
+        time.sleep(2)
         self.assertTrue(self.browser.is_text_present('edit', wait_time=5))  # shows we're on group detail page now
         self.assertTrue(self.browser.is_text_present("NWSL", wait_time=5))  # shows we're on newly created detail page now
 
@@ -785,12 +789,11 @@ class ForumsTestCase(BaseTestCase):
     def test_create_forum(self):
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_id('new_forum_button').first.click()
-        self.browser.fill('forum_name', 'Strategy Sessions')
-        self.browser.fill('forum_description', 'A place to discuss strategy')
-        self.browser.find_by_id('add_forum_button').first.click()
+        self.browser.find_by_id('add_forum_default_button').first.click()
+        self.browser.fill('name', 'Strategy Sessions')
+        self.browser.fill('description', 'A place to discuss strategy')
+        self.browser.find_by_id('add_forum_default_submit_button').first.click()
         time.sleep(1)
-        self.browser.find_by_css(".close").first.click()  # close modal
         self.assertTrue(self.browser.is_text_present('Strategy Sessions'))
         self.assertTrue(self.browser.is_text_present('A place to discuss strategy'))
 
@@ -799,18 +802,16 @@ class ForumsTestCase(BaseTestCase):
         # Create forum
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_id('new_forum_button').first.click()
-        self.browser.fill('forum_name', 'Strategy Sessions')
-        self.browser.fill('forum_description', 'A place to discuss strategy')
-        self.browser.find_by_id('add_forum_button').first.click()
-        self.browser.find_by_css(".close").first.click()  # close modal
+        self.browser.find_by_id('add_forum_default_button').first.click()
+        self.browser.fill('name', 'Strategy Sessions')
+        self.browser.fill('description', 'A place to discuss strategy')
+        self.browser.find_by_id('add_forum_default_submit_button').first.click()
 
         # Edit forum
-        self.browser.reload()
-        self.browser.find_by_css(".forum-link", wait_time=5).last.click()
-        self.browser.find_by_id("edit_forum_button", wait_time=5).last.click()
-        self.browser.fill('forum_description', 'A place to make strategy')
-        self.browser.find_by_id('edit_forum_save_button').first.click()
+        self.browser.find_by_id("edit_forum_main_button", wait_time=5).last.click()
+        self.browser.fill('description', 'A place to make strategy')
+        self.browser.find_by_id('edit_forum_main_submit_button').first.click()
+        time.sleep(2)
         self.browser.find_by_css(".close").first.click()  # close modal
         time.sleep(.25)
         self.assertFalse(self.browser.is_text_present('A place to discuss strategy'))
@@ -821,54 +822,50 @@ class ForumsTestCase(BaseTestCase):
         # Create forum
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_id('new_forum_button').first.click()
-        self.browser.fill('forum_name', 'Strategy Sessions')
-        self.browser.fill('forum_description', 'A place to discuss strategy')
-        self.browser.find_by_id('add_forum_button').first.click()
+        self.browser.find_by_id('add_forum_default_button').first.click()
+        self.browser.fill('name', 'Strategy Sessions')
+        self.browser.fill('description', 'A place to discuss strategy')
+        self.browser.find_by_id('add_forum_default_submit_button').first.click()
         time.sleep(2)
-        self.browser.find_by_css(".close").first.click()  # close modal
-
-        # can't delete first (governance) forum
-        self.browser.find_by_css(".forum-link").first.click()
-        self.assertFalse(self.browser.is_text_present('delete forum'))
-        self.browser.back()
 
         # delete forum
-        self.browser.find_by_css(".forum-link").last.click()
-        time.sleep(2)
         self.browser.find_by_id('delete_forum_button').first.click()
         time.sleep(2)
         self.assertFalse(self.browser.is_text_present('A place to discuss strategy'))
+
+        # can't delete first (governance) forum
+        self.browser.find_by_css(".forum-link").last.click()
+        time.sleep(2)
+        self.assertFalse(self.browser.is_text_present('delete forum'))
 
     def test_add_edit_and_delete_post(self):
 
         # Create forum for post
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_id('new_forum_button').first.click()
-        self.browser.fill('forum_name', 'Strategy Sessions')
-        self.browser.fill('forum_description', 'A place to discuss strategy')
-        self.browser.find_by_id('add_forum_button').first.click()
-        self.browser.find_by_css(".close").first.click()  # close modal
-        self.browser.find_by_css(".forum-link").first.click()
+        self.browser.find_by_id('add_forum_default_button').first.click()
+        self.browser.fill('name', 'Strategy Sessions')
+        self.browser.fill('description', 'A place to discuss strategy')
+        self.browser.find_by_id('add_forum_default_submit_button').first.click()
 
         # Add post
-        self.browser.find_by_id('add_post_button').first.click()
-        self.browser.fill('post_title', 'I have an idea')
-        self.browser.fill('post_content', "It's a good one")
-        self.browser.find_by_id('add_post_save_button').first.click()
+        self.browser.find_by_id('add_post_default_button').first.click()
+        self.browser.fill('title', 'I have an idea')
+        self.browser.fill('content', "It's a good one")
+        self.browser.find_by_id('add_post_default_submit_button').first.click()
         self.assertTrue(self.browser.is_text_present('I have an idea'))
 
         # Edit post
-        self.browser.find_by_css(".post-link").first.click()
-        self.browser.find_by_id('edit_post_button').first.click()
+        self.browser.find_by_id('edit_post_main_button').first.click()
         time.sleep(2)
-        self.browser.fill('post_title', 'I have a great idea')
-        self.browser.find_by_id('edit_post_save_button').first.click()
+        self.browser.fill('title', 'I have a great idea')
+        self.browser.find_by_id('edit_post_main_submit_button').first.click()
         time.sleep(2)
+        self.browser.back()
         self.assertTrue(self.browser.is_text_present('I have a great idea'))
 
         # Delete post
+        self.browser.find_by_css(".post-link").first.click()
         self.browser.find_by_id('delete_post_button').first.click()
         time.sleep(2)
         self.assertFalse(self.browser.is_text_present('I have a great idea'))
@@ -878,17 +875,16 @@ class ForumsTestCase(BaseTestCase):
         # Create forum
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_id('new_forum_button').first.click()
-        self.browser.fill('forum_name', 'Strategy Sessions')
-        self.browser.fill('forum_description', 'A place to discuss strategy')
-        self.browser.find_by_id('add_forum_button').first.click()
-        self.browser.find_by_css(".close").first.click()  # close modal
-        self.browser.find_by_css(".forum-link").last.click()
+        self.browser.find_by_id('add_forum_default_button').first.click()
+        self.browser.fill('name', 'Strategy Sessions')
+        self.browser.fill('description', 'A place to discuss strategy')
+        self.browser.find_by_id('add_forum_default_submit_button').first.click()
         time.sleep(3)
 
         # Add permissions - we start with only default permissions, but then have one more
         self.browser.find_by_id("forum_permissions_button", wait_time=5).first.click()
         self.browser.find_by_id("edit_permissions_button_default", wait_time=5).first.click()
+        time.sleep(3)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display", wait_time=5)]
         self.assertCountEqual(permissions, ["those with role members have permission to apply template",
                                             'those with role members have permission to add comment',
@@ -901,7 +897,7 @@ class ForumsTestCase(BaseTestCase):
         self.select_from_multiselect("forwards", search_within=element_containing_role_dropdown)
         self.browser.find_by_id('save_permission_button').first.click()
         time.sleep(5)
-        self.browser.find_by_css(".close").last.click()  # close modal
+        self.browser.find_by_css(".close")[1].click()  # close modal
         self.browser.find_by_id("edit_permissions_button_default", wait_time=5).first.click()
         time.sleep(5)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display")]
@@ -1080,8 +1076,11 @@ class MembershipTestCase(BaseTestCase):
         self.browser.find_by_id("membership", wait_time=5).first.click()
         self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
         self.browser.find_by_id('membership_templates_link', wait_time=5).first.click()
+        time.sleep(3)
         self.browser.find_by_id('select_template_anyone_can_join', wait_time=5).first.click()
         self.browser.find_by_id('submit_apply_template', wait_time=5).first.click()
+        time.sleep(3)
+        self.browser.reload()
 
         # check template was applied
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
@@ -1089,6 +1088,7 @@ class MembershipTestCase(BaseTestCase):
         self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
         self.browser.find_by_id('edit_permissions_button_addmember', wait_time=5).first.click()
         permission_display = self.browser.find_by_css(".permission-display", wait_time=5)
+        time.sleep(20)
         self.assertEquals(
             [item.text for item in permission_display],
             ["anyone has permission to add members to community"])
@@ -1127,6 +1127,8 @@ class MembershipTestCase(BaseTestCase):
         roles_that_can_invite_dropdown = self.browser.find_by_css(".permissionrolefield")[0]
         self.select_from_multiselect("forwards", search_within=roles_that_can_invite_dropdown)
         self.browser.find_by_id('submit_apply_template', wait_time=5).first.click()
+        time.sleep(2)
+        self.browser.reload()
 
         # check that the template has been applied
         self.browser.find_by_id('governance_button').first.click()
@@ -1200,15 +1202,17 @@ class MembershipTestCase(BaseTestCase):
         roles_that_can_approve_dropdown = self.browser.find_by_css(".permissionrolefield", wait_time=5)[0]
         self.select_from_multiselect("forwards", search_within=roles_that_can_approve_dropdown)
         self.browser.find_by_id('submit_apply_template', wait_time=5).first.click()
+        time.sleep(2)
+        self.browser.reload()
 
         # check template was applied
         self.browser.find_by_id('governance_button', wait_time=5).first.click()
         self.browser.find_by_id("membership", wait_time=5).first.click()
         self.browser.find_by_id('group_membership_settings_button', wait_time=5).first.click()
         self.browser.find_by_id('edit_permissions_button_addmember', wait_time=5).first.click()
+        time.sleep(3)
         permissions = [item.text for item in self.browser.find_by_css(".permission-display", wait_time=5)]
         self.assertEquals(permissions, ["anyone has permission to add members to community"])
-        # time.sleep(30)
         condition = self.browser.find_by_text(
             "on the condition that the actor is the member, and those with role forwards needs to approve this action")
         self.assertEquals(len(condition), 1)
@@ -1272,20 +1276,19 @@ class ListTestCase(BaseTestCase):
         # create a list
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_id('new_list_button').first.click()
+        self.browser.find_by_id('add_list_default_button').first.click()
         self.browser.fill('list_name', "Best NWSL Teams")
         self.browser.fill('list_description', "The best NWSL teams, in order of awesomeness")
-        self.browser.find_by_id('add_list_button').first.click()
-        self.browser.back()
-        self.assertTrue(self.browser.is_text_present('The best NWSL teams, in order of awesomeness'))
+        self.browser.find_by_id('add_list_default_submit_button').first.click()
+        self.browser.find_by_css(".close", wait_time=5)[0].click()
 
         # go to list & edit it
         self.browser.find_by_id('link_to_list_0').first.click()
-        self.browser.find_by_id('edit_list_button').first.click()
+        self.browser.find_by_id('edit_list_main_button').first.click()
         self.browser.fill('list_name', "Best NWSL Teams!")
         self.browser.fill('list_description', "The best NWSL teams, in order of awesomeness!")
-        self.browser.find_by_id('edit_list_save_button').first.click()
-        self.browser.back()
+        self.browser.find_by_id('edit_list_main_submit_button').first.click()
+        self.browser.find_by_css(".close", wait_time=5)[0].click()
         self.assertTrue(self.browser.is_text_present('The best NWSL teams, in order of awesomeness!'))
 
         # add some items
@@ -1293,14 +1296,17 @@ class ListTestCase(BaseTestCase):
         self.browser.fill('content', 'Chicago Red Stars')
         self.browser.find_by_id('add_row_save_button').first.click()
         self.assertTrue(self.browser.is_text_present('Chicago Red Stars'))
+        self.browser.find_by_css(".close", wait_time=5)[0].click()
         self.browser.find_by_id('add_row_button').first.click()
         self.browser.fill('content', 'NJ Sky Blue')
         self.browser.find_by_id('index')[0].type(Keys.RIGHT)
         self.browser.find_by_id('add_row_save_button').first.click()
+        self.browser.find_by_css(".close", wait_time=5)[0].click()
         time.sleep(4)
         self.browser.find_by_id('add_row_button').first.click()
         self.browser.fill('content', 'Washington Spirit')
         self.browser.find_by_id('add_row_save_button').first.click()
+        self.browser.find_by_css(".close", wait_time=5)[0].click()
         time.sleep(2)
         teams = [team.text for team in self.browser.find_by_xpath("//td")]
         teams = list(filter(lambda x: x not in ["edit\ndelete\nmove", "0", "1", "2", "3"], teams))
@@ -1311,6 +1317,7 @@ class ListTestCase(BaseTestCase):
         self.browser.fill('content', 'Sky Blue FC')
         self.browser.find_by_id('edit_row_save_button', wait_time=5).first.click()
         time.sleep(2)
+        self.browser.find_by_css(".close", wait_time=5)[0].click()
         teams = [team.text for team in self.browser.find_by_xpath("//td", wait_time=5)]
         teams = list(filter(lambda x: x not in ["edit\ndelete\nmove", "0", "1", "2", "3"], teams))
         self.assertEquals(teams, ["Washington Spirit", "Chicago Red Stars", "Sky Blue FC"])
@@ -1318,6 +1325,7 @@ class ListTestCase(BaseTestCase):
         # delete a row
         self.browser.find_by_id('delete_row_2').first.click()
         time.sleep(2)
+        self.browser.find_by_css(".close", wait_time=5)[0].click()
         teams = [team.text for team in self.browser.find_by_xpath("//td")]
         teams = list(filter(lambda x: x not in ["edit\ndelete\nmove", "0", "1", "2", "3"], teams))
         self.assertEquals(teams, ["Washington Spirit", "Chicago Red Stars"])
@@ -1331,17 +1339,17 @@ class ListTestCase(BaseTestCase):
         # setup
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_id('new_list_button').first.click()
+        self.browser.find_by_id('add_list_default_button').first.click()
         self.browser.fill('list_name', "Best NWSL Teams")
         self.browser.fill('list_description', "The best NWSL teams, in order of awesomeness")
-        self.browser.find_by_id('add_list_button').first.click()
-        self.browser.back()
+        self.browser.find_by_id('add_list_default_submit_button').first.click()
+        self.browser.find_by_css(".close", wait_time=5)[0].click()
         self.browser.find_by_id('link_to_list_0').first.click()
         self.browser.find_by_id('add_row_button').first.click()
         self.browser.fill('content', 'Washington Spirit')
         self.browser.find_by_id('add_row_save_button').first.click()
 
-        self.assertEquals(len(self.browser.find_by_id('edit_list_button')), 1)
+        self.assertEquals(len(self.browser.find_by_id('edit_list_main_button')), 1)
         self.assertEquals(len(self.browser.find_by_id('delete_list_button')), 1)
         self.assertEquals(len(self.browser.find_by_id('add_row_button')), 1)
         self.assertEquals(len(self.browser.find_by_id('edit_row_0')), 1)
@@ -1352,7 +1360,7 @@ class ListTestCase(BaseTestCase):
         self.go_to_group("USWNT")
         self.browser.find_by_id('link_to_list_0').first.click()
 
-        self.assertEquals(len(self.browser.find_by_id('edit_list_button')), 0)
+        self.assertEquals(len(self.browser.find_by_id('edit_list_main_button')), 0)
         self.assertEquals(len(self.browser.find_by_id('delete_list_button')), 0)
         self.assertEquals(len(self.browser.find_by_id('add_row_button')), 0)
         self.assertEquals(len(self.browser.find_by_id('edit_row_0')), 0)
@@ -1363,7 +1371,7 @@ class ListTestCase(BaseTestCase):
         # rapinoe begins creating a list
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_id('new_list_button').first.click()
+        self.browser.find_by_id('add_list_default_button').first.click()
         self.browser.fill('list_name', "Best NWSL Teams")
         self.browser.fill('list_description', "The best NWSL teams, in our honest opinion")
 
@@ -1398,8 +1406,8 @@ class ListTestCase(BaseTestCase):
         self.browser.find_by_id('add_new_col_button').first.click()
 
         # save successfully
-        self.browser.find_by_id('add_list_button').first.click()
-        self.browser.back()
+        self.browser.find_by_id('add_list_default_submit_button').first.click()
+        self.browser.find_by_css(".close", wait_time=5)[0].click()
         self.browser.find_by_id('link_to_list_0').first.click()
 
         # rapinoe adds two rows with original configuration
@@ -1417,10 +1425,11 @@ class ListTestCase(BaseTestCase):
         self.browser.fill('City', 'Washington')
         self.browser.fill('State', 'DC')
         self.browser.find_by_id('add_row_save_button').first.click()
+        self.browser.find_by_css(".close", wait_time=5).first.click()
 
         # rapinoe edits configuration but can't add a required field without default
         time.sleep(4)
-        self.browser.find_by_id('edit_list_button').first.click()
+        self.browser.find_by_id('edit_list_main_button').first.click()
         time.sleep(3)
         self.browser.find_by_id('column_required').check()
         self.browser.fill('column_name', "Is Reigning Champion")
@@ -1430,7 +1439,8 @@ class ListTestCase(BaseTestCase):
         # with default supplied, she adds a new field
         self.browser.fill('column_default', "No")
         self.browser.find_by_id('add_new_col_button').first.click()
-        self.browser.find_by_id('edit_list_save_button').first.click()
+        self.browser.find_by_id('edit_list_main_submit_button').first.click()
+        self.browser.find_by_css(".close", wait_time=5).first.click()
 
         # upated list missing removed field, has new field
         time.sleep(4)
@@ -1490,6 +1500,7 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.find_by_id("select_template_posters_control_posts", wait_time=5).first.click()
         self.browser.find_by_id("submit_apply_template", wait_time=5).first.click()
         time.sleep(4)
+        self.browser.back()
         self.browser.find_by_css(".forum-link", wait_time=5).first.click()
         self.browser.find_by_id("forum_permissions_button", wait_time=5).first.click()
         self.browser.find_by_id("edit_permissions_button_default").first.click()
@@ -1519,13 +1530,13 @@ class DependentFieldTestCase(BaseTestCase):
         # User makes a post
         self.go_to_group("USWNT")
         self.browser.find_by_css(".forum-link", wait_time=5).first.click()
-        self.browser.find_by_id('add_post_button', wait_time=5).first.click()
+        self.browser.find_by_id('add_post_default_button', wait_time=5).first.click()
         time.sleep(3)  # this seems to be the important sleep
-        self.browser.fill('post_title', 'I have an idea')
+        self.browser.fill('title', 'I have an idea')
         time.sleep(3)
-        self.browser.fill('post_content', "It's a good one")
+        self.browser.fill('content', "It's a good one")
         time.sleep(3)
-        self.browser.find_by_id('add_post_save_button', wait_time=5).first.click()
+        self.browser.find_by_id('add_post_default_submit_button', wait_time=5).first.click()
         time.sleep(3)
         self.assertTrue(self.browser.is_text_present('I have an idea', wait_time=5))
         # FIXME: This only breaks on headless, not sure what's going on but added lots of sleeps
@@ -1536,8 +1547,8 @@ class DependentFieldTestCase(BaseTestCase):
         self.browser.find_by_css(".forum-link").first.click()
         self.browser.find_by_css(".post-link").first.click()
         self.browser.find_by_css(".add-comment").first.click()
-        self.browser.fill('comment_text', "it's ok I guess")
-        self.browser.find_by_id('submit_comment_button', wait_time=5).first.click()
+        self.browser.fill('text', "it's ok I guess")
+        self.browser.find_by_id('add_comment_default_button', wait_time=5).first.click()
         self.assertFalse(self.browser.is_text_present("it's ok I guess", wait_time=5))
 
         # User approves it
@@ -1767,18 +1778,19 @@ class DocumentTestCase(BaseTestCase):
         # create a document
         self.login_user("meganrapinoe", "badlands2020")
         self.go_to_group("USWNT")
-        self.browser.find_by_id('new_document_button').first.click()
-        self.browser.fill('document_name', "Why we deserve equal pay")
-        self.browser.fill('document_description', "Obviously")
-        self.browser.find_by_id('submit_document_button').first.click()
+        self.browser.find_by_id('add_document_default_button').first.click()
+        self.browser.fill('name', "Why we deserve equal pay")
+        self.browser.fill('description', "Obviously")
+        self.browser.find_by_id('add_document_default_submit_button').first.click()
         self.assertTrue(self.browser.is_text_present('Why we deserve equal pay'))
         self.assertTrue(self.browser.is_text_present('Obviously'))
 
         # go to list & edit it
-        self.browser.find_by_id('edit_document_button', wait_time=5).first.click()
-        self.browser.fill('document_name', "We deserve equal pay")
-        self.browser.fill('document_description', "Obviously!")
-        self.browser.find_by_id('submit_document_button').first.click()
+        self.browser.find_by_id('edit_document_main_button', wait_time=5).first.click()
+        self.browser.fill('name', "We deserve equal pay")
+        self.browser.fill('description', "Obviously!")
+        self.browser.find_by_id('edit_document_main_submit_button').first.click()
+        self.browser.find_by_css(".close", wait_time=5).first.click()  # close modal
         self.assertTrue(self.browser.is_text_present('We deserve equal pay'))
         self.assertTrue(self.browser.is_text_present('Obviously!'))
 

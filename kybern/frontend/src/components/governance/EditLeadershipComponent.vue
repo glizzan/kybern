@@ -21,11 +21,10 @@
         </div>
 
         <div class="mb-3">
+            <action-response-component :response=update_leadership_response></action-response-component>
             <b-button v-if="has_permission" variant="outline-secondary" @click="update_leadership()">
                 Update {{this.leadership_type}}s</b-button>
          </div>
-
-        <error-component :message=error_message></error-component>
 
     </b-form>
 
@@ -36,17 +35,17 @@
 import Vuex from 'vuex'
 import store from '../../store'
 import Multiselect from 'vue-multiselect'
-import ErrorComponent from '../utils/ErrorComponent'
+import ActionResponseComponent from '../actions/ActionResponseComponent'
 
 
 export default {
 
     props: ['leadership_type'],
-    components: { "vue-multiselect": Multiselect, ErrorComponent },
+    components: { "vue-multiselect": Multiselect, ActionResponseComponent },
     store,
     data: function() {
         return {
-            error_message: null,
+            update_leadership_response: null,
             actors_selected: [],
             roles_selected: []
         }
@@ -94,9 +93,11 @@ export default {
             var roles = this.roles_selected.map(role => role.name)
             var actors = this.actors_selected.map(actor => actor.pk)
             if (this.leadership_type == "owner") {
-                this.updateOwners({roles: roles, actors:actors}).catch(error => { this.error_message = error.message })
+                this.updateOwners({roles: roles, actors:actors})
+                    .then(response => { this.update_leadership_response = response })
             } else if (this.leadership_type == "governor") {
-                this.updateGovernors({ roles: roles, actors: actors}).catch(error => { this.error_message = error.message })
+                this.updateGovernors({ roles: roles, actors: actors})
+                    .then(response => { this.update_leadership_response = response })
             }
         }
     }

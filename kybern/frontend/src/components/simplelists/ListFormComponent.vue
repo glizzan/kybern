@@ -37,9 +37,10 @@
 
         </span>
 
-        <b-button v-if=!list_id variant="outline-secondary" class="btn-sm mt-4" id="add_list_button"
+        <action-response-component :response=list_response></action-response-component>
+        <b-button v-if=!list_id variant="outline-secondary" class="btn-sm mt-4" id="add_list_default_submit_button"
             @click="add_list">submit</b-button>
-        <b-button v-if=list_id variant="outline-secondary" class="btn-sm mt-4" id="edit_list_save_button"
+        <b-button v-if=list_id variant="outline-secondary" class="btn-sm mt-4" id="edit_list_main_submit_button"
             @click="edit_list">submit</b-button>
 
         <error-component :message=error_message></error-component>
@@ -53,12 +54,13 @@
 import Vuex from 'vuex'
 import store from '../../store'
 import ErrorComponent from '../utils/ErrorComponent'
+import ActionResponseComponent from '../actions/ActionResponseComponent'
 
 
 export default {
 
     props: ['list_id'],
-    components: { ErrorComponent },
+    components: { ErrorComponent, ActionResponseComponent },
     store,
     data: function() {
         return {
@@ -70,7 +72,8 @@ export default {
             column_name: "",
             column_required: false,
             column_default: "",
-            column_error_message: null
+            column_error_message: null,
+            list_response: null
         }
     },
     created () {
@@ -94,16 +97,12 @@ export default {
         add_list() {
             this.addList({ name: this.name, description: this.description,
                 configuration: this.reformat_columns_for_backend(this.columns)})
-            .then(response => {
-                this.$router.push({name: 'home'}) })
-            .catch(error => {  console.log(error), this.error_message = error })
+            .then(response => { this.list_response = response })
         },
         edit_list() {
             this.editList({ list_pk: parseInt(this.list_id), name: this.name, description: this.description,
                 configuration: this.reformat_columns_for_backend(this.columns) })
-            .then(response => {
-                this.$router.push({name: 'list-detail', params: {list_id: this.list_id}}) })
-            .catch(error => {  this.error_message = error })
+            .then(response => { this.list_response = response })
         },
         populate_columns() {
             if (this.list_id) {

@@ -33,7 +33,7 @@
                 @click="change_permission_override('foundational', 'enable')">Turn it on.</b-button>
         </div>
 
-        <error-component :message=error_message></error-component>
+        <action-response-component :response=override_response></action-response-component>
 
     </b-modal>
 
@@ -43,17 +43,17 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
-import ErrorComponent from '../utils/ErrorComponent'
+import ActionResponseComponent from '../actions/ActionResponseComponent'
 
 
 export default {
 
     props: ['item_id', 'item_model', 'item_name'],
-    components: { ErrorComponent },
+    components: { ActionResponseComponent },
     store,
     data: function() {
         return {
-            error_message: ''
+            override_response: null
         }
     },
     created: function () {
@@ -67,7 +67,6 @@ export default {
             "disable_governing_permission": {alt_target:alt_target},
                 "enable_foundational_permission": {alt_target:alt_target},
                 "disable_foundational_permission": {alt_target:alt_target}}})
-            .catch(error => {  this.error_message = error; console.log(error) })
     },
     computed: {
         ...Vuex.mapState({ user_permissions: state => state.permissions.current_user_permissions }),
@@ -91,9 +90,7 @@ export default {
                 item_id : this.item_id, item_model: this.item_model,
                 enable_or_disable: enable_or_disable,
                 governing_or_foundational: governing_or_foundational })
-            .catch(error => {
-                this.error_message = error.message
-            })
+                .then(response => { this.override_response = response })
         }
     }
 

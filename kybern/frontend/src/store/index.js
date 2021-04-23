@@ -102,8 +102,6 @@ export default new Vuex.Store({
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
 
-        // Should possibly be some kind of plugin, since any site requests should go through this
-
         actionAPIcall({ commit, state, dispatch }, payload) {
 
             var url = payload.url
@@ -112,27 +110,16 @@ export default new Vuex.Store({
 
             return axios.post(url, params).then(response => {
 
-                var error_to_throw = ""
-
                 if (response.data.action_status != "invalid") {
                     dispatch('updateActions', { response: response })
                 }
                 if (response.data.action_status == "implemented") {
                     implementationCallback(response)
-                } else {
-                    if (response.data.action_status == "waiting") {
-                        var link = "/groups/" + state.group_pk + "/#/actions/detail/" + response.data.action_pk
-                        error_to_throw = "<span>There is a <a id='condition_link' href='" + link + "'>condition</a> " +
-                            "on your action which must be  resolved before your action can be implemented.</span>"
-                    } else {
-                        console.log("Not implemented due to: ", response.data.action_developer_log)
-                        error_to_throw = response.data.action_log
-                    }
-                    throw error_to_throw
                 }
+                return response
 
-            }).catch(error => {
-                console.log("Error: ", error); throw error })
+            }).catch(error => {console.log("Error: ", error); throw error })
+
         },
 
         getAPIcall({ commit, state, dispatch }, payload) {

@@ -2,13 +2,13 @@
 
     <b-modal id="group_membership_display" title="Group Membership" class="modal fade" size="lg" hide-footer>
 
-        <error-component :message=error_message></error-component>
-
         <b>Current Members:</b>
             <span id="current_member_list"> <b-badge v-for="member in groupMembersAsOptions" v-bind:key="member.pk"
             pill variant="info" class="mx-1">{{ member.name }}</b-badge></span>
 
         <hr >
+
+        <action-response-component :response=change_member_response></action-response-component>
 
         <span v-if="user_permissions.add_members_to_community">
 
@@ -58,13 +58,13 @@
 import Vuex from 'vuex'
 import store from '../../store'
 import Multiselect from 'vue-multiselect'
-import ErrorComponent from '../utils/ErrorComponent'
+import ActionResponseComponent from '../actions/ActionResponseComponent'
 
 
 export default {
 
     store,
-    components: { ErrorComponent, "vue-multiselect": Multiselect },
+    components: { ActionResponseComponent, "vue-multiselect": Multiselect },
     data: function() {
         return {
             item_model: 'group',  // group model
@@ -72,7 +72,7 @@ export default {
             remove_member_button_selected: false,
             members_to_add_selected: [],
             members_to_remove_selected: [],
-            error_message: null
+            change_member_response: null
         }
     },
     created () {
@@ -93,11 +93,13 @@ export default {
         ...Vuex.mapActions(['getPermissionsForItem', 'checkPermissions', 'addMembers', 'removeMembers']),
         add_members() {
             var members_to_add = this.members_to_add_selected.map(actor => actor.pk)
-            this.addMembers({ user_pks: members_to_add }).catch(error => this.error_message = error)
+            this.addMembers({ user_pks: members_to_add })
+                .then(response => { this.change_member_response = response })
         },
         remove_members() {
             var members_to_remove = this.members_to_remove_selected.map(actor => actor.pk)
-            this.removeMembers({ user_pks: members_to_remove }).catch(error => this.error_message = error)
+            this.removeMembers({ user_pks: members_to_remove })
+                .then(response => { this.change_member_response = response })
         }
     }
 

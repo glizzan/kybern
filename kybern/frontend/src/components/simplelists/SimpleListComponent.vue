@@ -7,10 +7,11 @@
 
         <router-link v-if="user_permissions.edit_list"
                 :to="{ name: 'edit-list-info', params: { list_id: list_id } }">
-            <b-button variant="outline-secondary" class="btn-sm mr-2" id="edit_list_button">
+            <b-button variant="outline-secondary" class="btn-sm mr-2" id="edit_list_main_button">
                 edit list info</b-button>
         </router-link>
 
+        <action-response-component :response=delete_list_response></action-response-component>
         <b-button v-if="user_permissions.delete_list" variant="outline-secondary" class="btn-sm mr-2"
             id="delete_list_button" @click="delete_list(list_id)">delete list</b-button>
 
@@ -36,6 +37,8 @@
         <error-component :message="error_message"></error-component>
 
         <hr >
+
+        <action-response-component :response=delete_row_response></action-response-component>
 
         <b-table striped hover :items="list_data" :fields="list_fields">
 
@@ -74,10 +77,9 @@
                 <b-form-input v-model="new_index" type="number" min="0" :max="list_data.length - 1"></b-form-input>
             </b-input-group>
 
+            <action-response-component :response=move_row_response></action-response-component>
             <b-button variant="outline-secondary" class="btn-sm my-2" id="move_row_save_button"
                 @click="move_row()">save</b-button>
-
-            <error-component :message=move_error_message></error-component>
 
         </b-modal>
 
@@ -92,18 +94,21 @@ import store from '../../store'
 import { UtilityMixin } from '../utils/Mixins'
 import ErrorComponent from '../utils/ErrorComponent'
 import ItemPermissionsModal from '../permissions/ItemPermissionsModal'
+import ActionResponseComponent from '../actions/ActionResponseComponent'
 
 
 export default {
 
-    components: { ErrorComponent, ItemPermissionsModal },
+    components: { ErrorComponent, ItemPermissionsModal, ActionResponseComponent },
     props: ['list_id'],
     store,
     mixins: [UtilityMixin],
     data: function() {
             return {
                 error_message: "",
-                move_error_message: "",
+                delete_list_response: null,
+                delete_row_response: null,
+                move_row_response: null,
                 old_index: null,
                 new_index: null,
                 base_export_url: ""
@@ -176,12 +181,14 @@ export default {
         display_date(date) { return Date(date) },
         delete_list(list_id) {
             this.deleteList({list_pk: list_id})
-            .then(response => { this.$router.push({name: 'home'}) })
-            .catch(error => {  this.error_message = error })
+            .then(response => {
+                if (response.data.action_status == "implemented") { this.$router.push({name: 'home'}) }
+                else { this.delete_list_response = response }
+            })
         },
         delete_row(item) {
             this.deleteRow({list_pk: this.list_id, index:item.index})
-            .catch(error => {  this.error_message = error })
+            .then(response => { this.delete_row_response = response })
         },
         move_row() {
             this.new_index = parseInt(this.new_index)
@@ -194,8 +201,11 @@ export default {
                 return
             }
             this.moveRow({list_pk: this.list_id, old_index: this.old_index, new_index: this.new_index})
-            .then(response => { this.old_index = null; this.new_index = null; this.$bvModal.hide("move_row_modal") })
-            .catch(error => {  this.move_error_message = error })
+            .then(response => {
+                if (response.data.action_status == "implemented") {
+                    this.old_index = null; this.new_index = null;
+                }
+                this.move_row_response = response })
         }
     }
 

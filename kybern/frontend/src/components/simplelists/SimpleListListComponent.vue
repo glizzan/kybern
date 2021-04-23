@@ -6,7 +6,7 @@
             <span class="font-weight-bold">Lists</span>
             <router-link :to="{ name: 'add-new-list'}">
                 <b-button v-if="user_permissions.add_list" variant="light"
-                    class="btn-sm ml-3" id="new_list_button">+ add new</b-button>
+                    class="btn-sm ml-3" id="add_list_default_button">+ add new</b-button>
             </router-link>
         </h5>
 

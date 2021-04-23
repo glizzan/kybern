@@ -2,12 +2,12 @@
 
     <span>
 
-        <b-button v-if="user_permissions.add_comment" class="btn-sm add-comment" v-b-modal.edit_comment_modal>
+        <b-button v-if="user_permissions.add_comment" class="btn-sm add-comment mr-2" v-b-modal.edit_comment_modal>
             Add a comment</b-button>
-        <b-button v-if="item_comments.length > 0 && show_comments == false" class="btn-sm show-comments"
+        <b-button v-if="item_comments.length > 0 && show_comments == false" class="btn-sm show-comments mr-2"
             v-on:click="show_comments = true">
             Show comments</b-button>
-        <b-button v-if="item_comments.length > 0 && show_comments == true" class="btn-sm hide-comments"
+        <b-button v-if="item_comments.length > 0 && show_comments == true" class="btn-sm hide-comments mr-2"
             v-on:click="show_comments = false">
             Hide comments</b-button>
 
@@ -19,13 +19,13 @@
         <b-modal id="edit_comment_modal" title="Edit comment" hide-footer>
 
             <b-form-group id="comment_text_group">
-                <b-form-textarea id="comment_text" name="comment_text" v-model="comment_text" placeholder="Write your comment here">
+                <b-form-textarea id="text" name="text" v-model="comment_text" placeholder="Write your comment here">
                 </b-form-textarea>
             </b-form-group>
 
-            <b-button variant="outline-secondary" class="btn-sm" id="submit_comment_button"  @click="add_comment">submit</b-button>
+            <action-response-component :response=edit_comment_response></action-response-component>
 
-            <error-component :message=error_message></error-component>
+            <b-button variant="outline-secondary" class="btn-sm" id="add_comment_default_button"  @click="add_comment">submit</b-button>
 
         </b-modal>
 
@@ -38,24 +38,24 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
-import ErrorComponent from '../utils/ErrorComponent'
 import CommentComponent from '../comments/CommentComponent'
+import ActionResponseComponent from '../actions/ActionResponseComponent'
 
 
 export default {
 
-    components: { ErrorComponent, CommentComponent },
+    components: { ActionResponseComponent, CommentComponent },
     props: ['item_id', 'item_model'],
     store,
     data: function() {
         return {
             show_comments: true,
             comment_text: '',
-            error_message: ''
+            edit_comment_response: null
         }
     },
     created () {
-        this.getCommentData({ item_id: this.item_id, item_model: this.item_model })
+        this.getComments({ item_id: this.item_id, item_model: this.item_model })
         .catch(error => { console.log("Error getting comment data")  })
         var alt_target = this.item_model + "_" + this.item_id
         this.checkPermissions({permissions: {"add_comment": {alt_target : alt_target}}})
@@ -73,7 +73,7 @@ export default {
         }
     },
     methods: {
-        ...Vuex.mapActions(['checkPermissions', 'getCommentData', 'addComment']),
+        ...Vuex.mapActions(['checkPermissions', 'getComments', 'addComment']),
         display_date(date) { return Date(date) },
         comment_name(text) {
             if (text.length > 50) {
@@ -84,7 +84,7 @@ export default {
         },
         add_comment() {
             this.addComment({ item_id: this.item_id, item_model: this.item_model, text: this.comment_text })
-            .catch(error => {  this.error_message = error })
+            .then( response => { this.edit_comment_response = response })
         }
     }
 

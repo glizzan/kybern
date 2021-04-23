@@ -4,6 +4,8 @@
 
         <error-component :message=error_message></error-component>
 
+        <action-response-component :response=edit_permission_response></action-response-component>
+
         <!-- Display existing permission -->
         <b-button-group :id=pair_element_id class="my-2">
             <b-button class="rounded-left btn-sm" variant="light">
@@ -117,13 +119,14 @@ import store from '../../store'
 import Multiselect from 'vue-multiselect'
 import ErrorComponent from '../utils/ErrorComponent'
 import { ConfiguredFieldsMixin } from '../utils/Mixins'
+import ActionResponseComponent from '../actions/ActionResponseComponent'
 
 
 export default {
 
     props: ['permission', 'role_to_edit', 'item_id', 'item_model'],
     store,
-    components: { "vue-multiselect": Multiselect, ErrorComponent },
+    components: { "vue-multiselect": Multiselect, ErrorComponent, ActionResponseComponent },
     mixins: [ConfiguredFieldsMixin],
     data: function() {
         return {
@@ -132,7 +135,8 @@ export default {
             edit_condition: false,
             permission_roles_selected: [],
             permission_actors_selected: [],
-            error_message: ''
+            error_message: '',
+            edit_permission_response: null
         }
     },
     created () {
@@ -208,19 +212,23 @@ export default {
         delete_permission() {
             this.removePermission({ permission_id : this.permission.pk, item_id: this.item_id,
                     item_model: this.item_model, item_or_role : this.item_or_role })
-            .then(response => { this.clearState() })
-            .catch(error => {  this.error_message = error.message  })
+            .then(response => {
+                this.edit_permission_response = response
+                if (response.data.action_status == "implemented") { this.clearState() }
+            })
         },
         update_permission() {
             this.updatePermission({ permission_id: this.permission.pk, roles: this.get_roles(),
                 actors: this.permission_actors_selected })
-            .then(response => { this.clearState() })
-            .catch(error => {  this.error_message = error })
+            .then(response => {
+                this.edit_permission_response = response
+                if (response.data.action_status == "implemented") { this.clearState() }
+            })
         },
         toggle_anyone(enable_or_disable) {
             this.toggleAnyone({ permission_id: this.permission.pk,
                                             enable_or_disable: enable_or_disable })
-            .catch(error => {  this.error_message = error })
+            .then(response => { this.edit_permission_response = response })
         }
     }
 

@@ -77,6 +77,8 @@
 
                 </span>
 
+                <action-response-component :response=add_permission_response></action-response-component>
+
                 <b-button size="sm" class="mt-3" @click="add_permission()" id="save_permission_button">
                     Save permission</b-button>
 
@@ -96,12 +98,13 @@ import store from '../../store'
 import Multiselect from 'vue-multiselect'
 import ErrorComponent from '../utils/ErrorComponent'
 import { ConfiguredFieldsMixin } from '../utils/Mixins'
+import ActionResponseComponent from '../actions/ActionResponseComponent'
 
 
 export default {
 
     props: ['default_selection', 'role_to_edit', 'item_id', 'item_model'],  // item_model is required
-    components: { "vue-multiselect": Multiselect, ErrorComponent },
+    components: { "vue-multiselect": Multiselect, ErrorComponent, ActionResponseComponent },
     mixins: [ConfiguredFieldsMixin],
     store,
     data: function() {
@@ -109,6 +112,7 @@ export default {
             permission_exists: false,
             permission_selected: '',
             error_message: '',
+            add_permission_response: null,
             permission_roles_selected: [],
             permission_actors_selected: [],
             anyone_can_take_permission: false
@@ -206,9 +210,8 @@ export default {
         add_permission() {
             this.addPermission({ item_or_role : this.item_or_role, item_id : this.item_id, item_model: this.item_model,
                 permission_selected : this.permission_selected.value,
-                roles: this.get_roles(), actors: this.permission_actors_selected, anyone: this.anyone
-            }).then(response => { this.clearState()
-            }).catch(error => {  this.error_message = error })
+                roles: this.get_roles(), actors: this.permission_actors_selected, anyone: this.anyone })
+                .then(response => { this.add_permission_response = response })
         },
         toggle_anyone(enable_or_disable) {
             if (enable_or_disable == "enable") { this.anyone_can_take_permission = true }

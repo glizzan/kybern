@@ -10,18 +10,16 @@
 
                 <router-link v-if="model == 'simplelist'" :to="{ name: 'add-new-list'}">
                     <b-button v-if="user_permissions.add_list" variant="light"
-                        class="btn-sm ml-3" id="new_list_button">+ add new</b-button>
+                        class="btn-sm ml-3" id="add_list_default_button">+ add new</b-button>
                 </router-link>
 
-                <router-link v-if="model == 'forum'" :to="{ name: 'add-new-forum'}">
-                    <b-button v-if="user_permissions.add_forum" variant="light"
-                        class="btn-sm ml-3" id="new_forum_button">+ add new</b-button>
-                </router-link>
+                <form-button-and-modal v-if="model == 'forum' && user_permissions.add_forum"
+                    :item_model="'forum'" :button_text="'+ add new'" :supplied_variant="'light'"
+                    :supplied_classes="'btn-sm ml-3'"></form-button-and-modal>
 
-                <router-link v-if="model == 'document'" :to="{ name: 'add-new-document'}">
-                    <b-button v-if="user_permissions.add_document" variant="light"
-                        class="btn-sm ml-3" id="new_document_button">+ add new</b-button>
-                </router-link>
+                <form-button-and-modal v-if="model == 'document' && user_permissions.add_document"
+                    :item_model="'document'" :button_text="'+ add new'" :supplied_variant="'light'"
+                    :supplied_classes="'btn-sm ml-3'"></form-button-and-modal>
 
             </h5>
 
@@ -49,14 +47,17 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
+// import DocumentFormComponent from '../documents/DocumentFormComponent'
+import FormButtonAndModal from '../utils/FormButtonAndModal'
 
 
 export default {
 
+    components: { FormButtonAndModal },
     props: ['highlight_model', 'highlight_pk'],
     created (){
         if (this.lists.length == 0) { this.getLists() }
-        if (this.forums.length == 0) { this.getForumData() }
+        if (this.forums.length == 0) { this.getForums() }
         if (this.documents.length == 0) { this.getDocuments() }
         this.checkPermissions({permissions: {"add_forum": null, "add_list": null, "add_document": null}})
             .catch(error => {  this.error_message = error; console.log(error) })
@@ -78,16 +79,16 @@ export default {
         }
     },
     methods: {
-        ...Vuex.mapActions(['checkPermissions', 'getLists', 'getForumData', 'getDocuments']),
+        ...Vuex.mapActions(['checkPermissions', 'getLists', 'getForums', 'getDocuments']),
         get_router_ref(model, item) {
             if (model == "simplelist") {
                 return { name: "list-detail", params: {list_id: item.pk}}
             }
             if (model == "forum") {
-                return { name: "forum-detail", params: {forum_id: item.pk}}
+                return { name: "forum-detail", params: {item_id: item.pk}}
             }
             if (model == "document") {
-                return { name: "document-detail", params: {document_id: item.pk}}
+                return { name: "document-detail", params: {item_id: item.pk}}
             }
         }
     }

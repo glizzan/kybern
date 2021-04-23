@@ -13,12 +13,10 @@
                 </vue-multiselect>
             </span>
 
-            <b-button class="btn-sm mt-3" @click="updateMembers()" id="save_member_changes">Save your changes</b-button>
+            <action-response-component :response=add_people_response></action-response-component>
+            <action-response-component :response=remove_people_response></action-response-component>
 
-            <div class="mb-3" v-if="add_error_message || remove_error_message">
-                {{ add_error_message }}
-                {{ remove_error_message }}
-            </div>
+            <b-button class="btn-sm mt-3" @click="updateMembers()" id="save_member_changes">Save your changes</b-button>
 
         </div>
 
@@ -37,17 +35,18 @@
 import Vuex from 'vuex'
 import store from '../../store'
 import Multiselect from 'vue-multiselect'
+import ActionResponseComponent from '../actions/ActionResponseComponent'
 
 
 export default {
 
     props: ['role_selected'],
     store,
-    components: { "vue-multiselect": Multiselect },
+    components: { "vue-multiselect": Multiselect, ActionResponseComponent },
     data: function() {
         return {
-            add_error_message: '',
-            remove_error_message: '',
+            add_people_response: null,
+            remove_people_response: null,
             people_selected: []
         }
     },
@@ -103,16 +102,12 @@ export default {
 
             if (to_add.length > 0) {
                 this.addUsersToRole({ role_name: this.role_selected, user_pks: to_add })
-                .catch(error => {
-                    this.add_error_message = error
-                    this.people_selected = this.people_in_role })
+                    .then(response => { this.add_people_response = response })
             }
 
             if (to_remove.length > 0) {
                 this.removeUsersFromRole({ role_name: this.role_selected, user_pks: to_remove })
-                    .catch(error => {
-                        this.remove_error_message = error
-                        this.people_selected = this.people_in_role  })
+                    .then(response => { this.remove_people_response = response })
             }
         }
     }

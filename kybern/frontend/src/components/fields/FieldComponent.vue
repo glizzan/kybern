@@ -2,20 +2,22 @@
 
     <span>
 
-        <div v-if="field.type=='CharField'" class="d-inline-block">
+        <div v-if="field.type=='CharField'" class="d-block">
             <div class="input-group-prepend">
-                <span class="input-group-text" id=field.name>{{ label(field) }}</span>
+                <span class="input-group-text" :id="field.field_name + '_label'">{{ label(field) }}</span>
             </div>
-            <input type="text" class="form-control" aria-label=field.name aria-describedby="field.name label"
+            <input type="text" class="form-control" :id=field.field_name :name=field.field_name
+                :aria-label=field.field_name :aria-describedby="field.field_name + '_label'"
                 v-model=field.value :required=field.required>
         </div>
 
         <!-- NOTE: should display differently  -->
-        <div v-if="field.type=='PermissionedModelField'" class="d-inline-block">
+        <div v-if="field.type=='PermissionedModelField'" class="d-block">
             <div class="input-group-prepend">
-                <span class="input-group-text" id=field.name>{{ label(field) }}</span>
+                <span class="input-group-text" :id="field.field_name + '_label'">{{ label(field) }}</span>
             </div>
-            <input type="text" class="form-control" aria-label=field.name aria-describedby="field.name label"
+            <input type="text" class="form-control" :id=field.field_name :name=field.field_name
+                :aria-label=field.field_name aria-describedby="field.field_name + '_label'"
                 v-model=field.value :required=field.required>
         </div>
 
@@ -25,13 +27,12 @@
             </b-form-checkbox>
         </span>
 
-        <div v-if="field.type=='IntegerField'" class="d-inline-block">
+        <div v-if="field.type=='IntegerField'" class="d-block">
             <div class="input-group-prepend">
-                <span class="input-group-text" id=field.name>{{ label(field) }}</span>
+                <span class="input-group-text" :id="field.field_name + '_label'">{{ label(field) }}</span>
             </div>
-            <input type="number" class="form-control" aria-label=field.name aria-describedby="field.name label"
-                v-model=field.value
-                :required=field.required>
+            <input type="number" class="form-control" :aria-label="field.field_name + '_label'"
+                :aria-describedby="field.field_name + '_label'" v-model=field.value :required=field.required>
         </div>
 
         <!-- Should be a choice field populated by current roles -->

@@ -174,18 +174,6 @@ def reformat_input_data(function=None, expect_target=True):
         if "supplied_fields" in request_data:
             request_data["supplied_fields"] = reformat_supplied_fields(request_data["supplied_fields"])
 
-        # While we're here, we inspect function & kwargs and check required arguments.
-        from inspect import signature
-        for parameter_name, parameter_object in signature(function).parameters.items():
-            if parameter_name in ["request", "target"]:
-                continue
-            if str(parameter_object.default) == "<class 'inspect._empty'>":   # if no default value for param
-                if parameter_name not in request_data:
-                    raise ValueError(f"Must supply parameter {parameter_name}")
-                if request_data[parameter_name] in [None, "", [], {}]:
-                    raise ValueError(f"Must give required parameter {parameter_name} a real value, " +
-                                     f"not {request_data[parameter_name]}")
-
         return function(request, target, **request_data)
 
     return wrap

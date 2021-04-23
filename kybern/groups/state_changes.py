@@ -133,6 +133,7 @@ class AddPostStateChange(BaseStateChange):
     input_target = Post
     allowable_targets = [Forum]
     settable_classes = ["all_community_models", Forum]
+    model_based_validation = (Post, ["title", "content"])
 
     # Fields
     title = field_utils.CharField(label="Title", required=True)
@@ -159,6 +160,7 @@ class EditPostStateChange(BaseStateChange):
     allowable_targets = [Post]
     settable_classes = ["all_community_models", Forum, Post]
     linked_filters = ["CreatorOnly"]
+    model_based_validation = (Post, ["title", "content"])
 
     title = field_utils.CharField(label="Title")
     content = field_utils.CharField(label="Content")

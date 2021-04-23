@@ -19,7 +19,8 @@
         </b-form-group>
         <span v-else>{{ edited_group_description }}</span>
 
-        <error-component :message=error_message></error-component>
+        <action-response-component :response=change_name_response></action-response-component>
+        <action-response-component :response=change_description_response></action-response-component>
 
         <template v-slot:modal-footer>
             <b-button variant="outline-secondary" class="btn-sm"  @click="save_edited_group">
@@ -37,19 +38,20 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
-import ErrorComponent from '../utils/ErrorComponent'
+import ActionResponseComponent from '../actions/ActionResponseComponent'
 
 
 export default {
 
     store,
-    components: { ErrorComponent },
+    components: { ActionResponseComponent },
     data: function() {
         return {
             item_model: 'group',
             edited_group_name: '',
             edited_group_description: '',
-            error_message: ''
+            change_name_response: null,
+            change_description_response: null
         }
     },
     created () {
@@ -74,13 +76,13 @@ export default {
 
             if (this.group_name != this.edited_group_name ) {
                 this.changeGroupName({ group_pk: this.item_id, new_name: this.edited_group_name })
-                .catch(error => { this.error_message = error })
+                    .then(response => { this.change_name_response = response })
             }
 
             if (this.group_description != this.edited_group_description) {
                 this.changeGroupDescription({ group_pk: this.item_id,
                     group_description: this.edited_group_description })
-                .catch(error => { this.error_message = error })
+                    .then(response => { this.change_description_response = response })
             }
         }
     }

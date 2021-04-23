@@ -65,20 +65,6 @@ def get_model(model_name):
             pass
 
 
-def make_action_errors_readable(action):
-    """If needed, gets or creates both a developer-friendly (detailed) log and a user-friendly log."""
-
-    if action.status in ["accepted", "implemented"]:  # should be approved, but do we want accepted/approved here at all?
-        return "Your action has been implemented.", action.get_logs()    # unlikely to be displayed/accessed
-    if action.status == "waiting":
-        return "This action cannot be completed until a condition is passed.", action.get_logs()
-    if action.status == "rejected":
-        if action.rejection_reason():
-            return "This action cannot be taken because: " + action.rejection_reason(), action.get_logs()
-        return "You do not have permission to take this action", action.get_logs()
-    return "We're sorry, there was an error", action.get_logs()
-
-
 def process_action(action):
     """Method for getting action data.  The action provided is always valid."""
 
@@ -131,19 +117,20 @@ def get_action_dict(action, fetch_template_actions=False):
     if action.status == "invalid":
         return {
             "action_status": "invalid",
-            "action_log": action.error_message,
+            "user_message": action.error_message,
             "action_developer_log": action.error_message
         }
 
-    display_log, developer_log = make_action_errors_readable(action)
     action_created = True if action.status in ["implemented", "approved", "waiting", "rejected"] else False
     return {
         "action_created": action_created,
         "action_status": action.status,
         "action_pk": action.pk,
-        "action_log": display_log,
-        "action_developer_log": developer_log,
-        "is_template": action.change.get_change_type() == Changes().Actions.ApplyTemplate
+        "is_template": action.change.get_change_type() == Changes().Actions.ApplyTemplate,
+        # text
+        "action_description": action.get_description(with_actor=False, with_target=False),
+        "user_message": action.rejection_reason(),
+        "action_developer_log": action.get_logs()
     }
 
 
@@ -179,8 +166,6 @@ def serialize_existing_permission_for_vue(permission, pk_as_key=True):
         target = f"{permission.permitted_object.__class__.__name__} '{permission.permitted_object.get_name()}'"
 
     owner_permission = False
-    # if permission.get_state_change_object():
-    #     print("No state change obj: ", permission.change_type)
     if permission.permitted_object.foundational_permission_enabled or permission.get_state_change_object().is_foundational:
         owner_permission = True
 
@@ -273,7 +258,7 @@ def serialize_documents_for_vue(documents):
 ############################
 
 
-class GroupDetailView(generic.DetailView):
+class GroupDetailView(LoginRequiredMixin, generic.DetailView):
     model = Group
     template_name = 'groups/group_detail.html'
 
@@ -362,11 +347,11 @@ def get_permission_options(client):
         # get a list of permission options and save to permission_options under the model name
         model_string = model_class.__name__.lower()
         permission_options[model_string] = []
-        for permission in settable_permissions:
+        for state_change in settable_permissions:
             permission_options[model_string].append({
-                "value": permission.get_change_type(),
-                "text": permission.change_description(),
-                "group": permission.section
+                "value": state_change.get_change_type(),
+                "text": state_change.change_description(),
+                "group": state_change.section
             })
 
     return permission_options
@@ -536,7 +521,7 @@ def add_forum(request, target):
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
-        action_dict["forum_data"] = serialize_forum_for_vue(result)
+        action_dict["created_instance"] = serialize_forum_for_vue(result)
     return JsonResponse(action_dict)
 
 
@@ -556,7 +541,7 @@ def edit_forum(request, target):
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
-        action_dict["forum_data"] = serialize_forum_for_vue(result)
+        action_dict["edited_instance"] = serialize_forum_for_vue(result)
     return JsonResponse(action_dict)
 
 
@@ -621,7 +606,7 @@ def add_post(request, target):
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
-        action_dict["post_data"] = serialize_post_for_vue(result)
+        action_dict["created_instance"] = serialize_post_for_vue(result)
     return JsonResponse(action_dict)
 
 
@@ -641,7 +626,7 @@ def edit_post(request, target):
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
-        action_dict["post_data"] = serialize_post_for_vue(result)
+        action_dict["edited_instance"] = serialize_post_for_vue(result)
     return JsonResponse(action_dict)
 
 
@@ -1519,7 +1504,7 @@ def add_document(request, target, name, description=None, content=None):
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
-        action_dict["document_data"] = serialize_document_for_vue(result)
+        action_dict["created_instance"] = serialize_document_for_vue(result)
     return JsonResponse(action_dict)
 
 
@@ -1535,7 +1520,7 @@ def edit_document(request, target, document_pk, name=None, description=None, con
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
-        action_dict["document_data"] = serialize_document_for_vue(result)
+        action_dict["edited_instance"] = serialize_document_for_vue(result)
     return JsonResponse(action_dict)
 
 
@@ -1552,7 +1537,7 @@ def delete_document(request, target, document_pk):
     action_dict = get_action_dict(action)
 
     if action.status == "implemented":
-        action_dict["deleted_document_pk"] = document_pk
+        action_dict["deleted_instance_pk"] = document_pk
     return JsonResponse(action_dict)
 
 

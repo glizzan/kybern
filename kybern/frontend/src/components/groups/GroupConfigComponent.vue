@@ -42,6 +42,8 @@
         <!-- right aligned nav -->
         <span>
 
+            <action-response-component :response=group_response></action-response-component>
+
             <b-button v-if="user_permissions.join_group && !user_in_group" id="join_group_button" class="py-0"
                 variant="link" @click="join_group()">join</b-button>
 
@@ -64,14 +66,16 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
+import ActionResponseComponent from '../actions/ActionResponseComponent'
 
 
 export default {
 
+    components: { ActionResponseComponent },
     store,
     data: function() {
         return {
-            error_message: null
+            group_response: null
         }
     },
     created () {
@@ -100,12 +104,18 @@ export default {
     methods: {
         ...Vuex.mapActions(['checkPermissions', 'addMembers', 'removeMembers']),
         join_group() {
-            this.addMembers({ user_pks: [store.state.user_pk] }).then(response => window.location.reload())
-            .catch(error => {  this.error_message = error; console.log(error) })
+            this.addMembers({ user_pks: [store.state.user_pk] })
+                .then(response => {
+                    if (response.data.action_status == "implemented") { window.location.reload() }
+                    else { this.group_response = response }
+                })
         },
         leave_group() {
-            this.removeMembers({ user_pks: [store.state.user_pk] }).then(response => window.location.reload())
-            .catch(error => {  this.error_message = error; console.log(error) })
+            this.removeMembers({ user_pks: [store.state.user_pk] })
+            .then(response => {
+                if (response.data.action_status == "implemented") { window.location.reload() }
+                else { this.group_response = response }
+            })
         },
         is_active(tab_name) {
             if (this.$route.meta.tab == tab_name) { return "tab-active" } else { return "tab-inactive" }
