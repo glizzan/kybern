@@ -10,9 +10,9 @@
                 aria-describedby="role_name_prompt" v-model="new_role_name" name="role_name">
         </div>
 
-        <error-component :message=error_message></error-component>
-
-        <b-button size="sm" variant="success" @click="submitRoleName()" id="save_role_button">Save</b-button>
+        <action-response-component :response=add_role_response></action-response-component>
+        <b-button size="sm" variant="success" @click="submitRoleName()" id="save_role_button">
+            Save</b-button>
 
     </b-modal>
 
@@ -22,26 +22,26 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
-import ErrorComponent from '../utils/ErrorComponent'
-
+import ActionResponseComponent from '../actions/ActionResponseComponent'
 
 export default {
 
     store,
-    components: { ErrorComponent },
+    components: { ActionResponseComponent },
     data: function() {
         return {
-            error_message: '',
+            add_role_response: null,
             new_role_name: '',
         }
     },
     computed: {
-    ...Vuex.mapState({ roles: state => state.governance.roles }),
-    },   // Gets existing roles from data store
+        ...Vuex.mapState({ roles: state => state.governance.roles }),
+    },
     methods: {
         ...Vuex.mapActions(['addRole']),
         submitRoleName() {
-            this.addRole({ role_name: this.new_role_name }).catch(error => {  this.error_message = error  })
+            this.addRole({ role_name: this.new_role_name })
+            .then(response => { this.add_role_response = response })
         }
     }
 

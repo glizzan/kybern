@@ -42,15 +42,6 @@
                         <component v-bind:is="condition.type" :condition_pk=condition.pk
                             :condition_type=condition.type :action_details=action></component>
 
-                        <!-- <approve-condition-ui v-if="condition.type=='ApprovalCondition'" :condition_pk=condition.pk
-                            :condition_type=condition.type :action_details=action></approve-condition-ui>
-
-                        <vote-condition-ui v-if="condition.type=='VoteCondition'" :condition_pk=condition.pk
-                            :condition_type=condition.type :action_details=action></vote-condition-ui>
-
-                        <consensus-condition-ui v-if="condition.type=='ConsensusCondition'" :condition_pk=condition.pk
-                            :condition_type=condition.type :action_details=action></consensus-condition-ui> -->
-
                     </b-card-text>
                 </b-tab>
             </b-tabs>

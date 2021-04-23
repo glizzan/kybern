@@ -24,6 +24,8 @@
                     <b>There are no fields to configure.</b>
                 </span>
 
+
+                <action-response-component :response=apply_template_response></action-response-component>
                 <b-button v-if="!create_group" id="submit_apply_template"
                     v-on:click="apply_template(selected_template)" variant="outline-dark" size="sm" class="my-2">
                     Apply template</b-button>
@@ -52,12 +54,13 @@ import ErrorComponent from '../utils/ErrorComponent'
 import FieldComponent from '../fields/FieldComponent'
 import TemplateInfoComponent from '../templates/TemplateInfoComponent'
 import { ConfiguredFieldsMixin } from '../utils/Mixins'
+import ActionResponseComponent from '../actions/ActionResponseComponent'
 
 
 export default {
 
     store,
-    components: { ErrorComponent, FieldComponent, TemplateInfoComponent },
+    components: { ErrorComponent, FieldComponent, TemplateInfoComponent, ActionResponseComponent },
     mixins: [ConfiguredFieldsMixin],
     props: ['scope', 'create_group', 'target_id', 'target_model'],
     data: function() {
@@ -65,7 +68,8 @@ export default {
             selected_template: null,
             browse_templates: false,
             configuration_fields: [],
-            error_message : null
+            error_message : null,
+            apply_template_response: null
         }
     },
     created (){
@@ -117,9 +121,8 @@ export default {
         apply_template() {
             if (!this.validate_template()) { return }
             this.applyTemplate({ target_model: this.target_model, target_pk: this.target_id,
-                                    supplied_fields: this.configuration_fields, template_model_pk: this.selected_template.pk })
-            .then(response => { this.$router.go(-1) })
-            .catch(error => {  console.log(error); this.error_message = error })
+                supplied_fields: this.configuration_fields, template_model_pk: this.selected_template.pk })
+            .then(response => { this.apply_template_response = response })
         }
     }
 

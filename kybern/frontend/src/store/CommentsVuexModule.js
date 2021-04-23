@@ -11,6 +11,9 @@ const CommentsVuexModule = {
     },
 
     getters: {
+        getCommentData: (state, getters) => (comment_pk) => {
+            return state.comments[comment_pk]
+        },
         getCommentsForItem: (state, getters) => (item_key) => {
             var comments = []
             for (let index in state.item_comments[item_key]) {
@@ -48,7 +51,7 @@ const CommentsVuexModule = {
 
     actions: {
 
-        async getCommentData({ commit, state, dispatch, getters }, payload) {
+        async getComments({ commit, state, dispatch, getters }, payload) {
             var url = await getters.url_lookup('get_comment_data')
             var params = { item_id: payload.item_id, item_model: payload.item_model }
             var implementationCallback = (response) => {
@@ -73,7 +76,7 @@ const CommentsVuexModule = {
         },
         async editComment({ commit, state, dispatch, getters }, payload) {
             var url = await getters.url_lookup('edit_comment')
-            var params = { text: payload.text, comment_pk: payload.comment_pk }
+            var params = { text: payload.text, comment_pk: payload.pk }
             var implementationCallback = (response) => {
                 var pk = Object.keys(response.data.comment)[0]
                 var data = response.data.comment[pk]

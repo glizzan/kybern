@@ -63,7 +63,7 @@ const ForumsVuexModule = {
         }
     },
     actions: {
-        async getForumData({ commit, state, dispatch, getters}, payload) {
+        async getForums({ commit, state, dispatch, getters}, payload) {
             var url = await getters.url_lookup('get_forum_data')
             var implementationCallback = (response) => {
                 commit('SET_FORUMS', { forums: response.data.forums })
@@ -82,7 +82,7 @@ const ForumsVuexModule = {
             var url = await getters.url_lookup('add_forum')
             var params = { name: payload.name, description: payload.description }
             var implementationCallback = (response) => {
-                commit('ADD_OR_UPDATE_FORUM', { forum_data : response.data.forum_data })
+                commit('ADD_OR_UPDATE_FORUM', { forum_data : response.data.created_instance })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
@@ -90,7 +90,7 @@ const ForumsVuexModule = {
             var url = await getters.url_lookup('edit_forum')
             var params = { pk: payload.pk, name: payload.name, description: payload.description }
             var implementationCallback = (response) => {
-                commit('ADD_OR_UPDATE_FORUM', { forum_data : response.data.forum_data })
+                commit('ADD_OR_UPDATE_FORUM', { forum_data : response.data.edited_instance })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
@@ -123,9 +123,9 @@ const ForumsVuexModule = {
         },
         async  addPost ({ commit, state, dispatch, getters}, payload) {
             var url = await getters.url_lookup('add_post')
-            var params = { forum_pk: payload.forum_pk, title: payload.title, content: payload.content  }
+            var params = { forum_pk: payload.forum_id, title: payload.title, content: payload.content  }
             var implementationCallback = (response) => {
-                commit('ADD_POST', { post_data: response.data.post_data})
+                commit('ADD_POST', { post_data: response.data.created_instance})
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
@@ -133,7 +133,7 @@ const ForumsVuexModule = {
             var url = await getters.url_lookup('edit_post')
             var params = { pk: payload.pk, title: payload.title, content: payload.content  }
             var implementationCallback = (response) => {
-                commit('EDIT_POST', { post_data: response.data.post_data})
+                commit('EDIT_POST', { post_data: response.data.edited_instance})
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },

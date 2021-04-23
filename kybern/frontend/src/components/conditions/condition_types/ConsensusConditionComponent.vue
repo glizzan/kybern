@@ -167,7 +167,7 @@ export default {
                     this.update_action(response.data.action_pk)
                     this.get_conditional_data().catch(error => { this.error_message = error })
                 } else {
-                    this.error_message = response.data.action_log
+                    this.error_message = response.data.user_message
                 }
             }).catch(error => {  console.log("Error updating condition: ", error); this.error_message = error })
         },
@@ -179,7 +179,7 @@ export default {
                     this.update_action(response.data.action_pk)
                     this.get_conditional_data().catch(error => { this.error_message = error })
                 } else {
-                    this.error_message = response.data.action_log
+                    this.error_message = response.data.user_message
                 }
             }).catch(error => {  console.log("Error updating condition: ", error); this.error_message = error })
         }

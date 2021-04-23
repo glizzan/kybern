@@ -3,11 +3,13 @@
     <span>
 
         <h5 class="pb-3">
+
             <span class="font-weight-bold">Documents</span>
-            <router-link :to="{ name: 'add-new-document'}">
-                <b-button v-if="user_permissions.add_document" variant="light"
-                    class="btn-sm ml-3" id="new_document_button">+ add new</b-button>
-            </router-link>
+
+            <form-button-and-modal v-if="user_permissions.add_document" :item_model="'document'"
+                :button_text="'+ add new'" :supplied_variant="'light'" :supplied_classes="'btn-sm ml-3'">
+            </form-button-and-modal>
+
         </h5>
 
         <b-card-group columns>
@@ -15,7 +17,7 @@
             <b-card v-for="({ pk, name, description }, index) in documents" v-bind:key=pk class="bg-white">
                 <b-card-text>
                     <div class="font-weight-bold text-info">
-                        <router-link :to="{ name: 'document-detail', params: { document_id: pk } }" :id="'link_to_doc_' + index"
+                        <router-link :to="{ name: 'document-detail', params: { item_id: pk } }" :id="'link_to_doc_' + index"
                             class="text-info">
                             {{ name }}
                         </router-link>
@@ -36,10 +38,12 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
+import FormButtonAndModal from '../utils/FormButtonAndModal'
 
 
 export default {
 
+    components: { FormButtonAndModal },
     store,
     data: function() {
         return {

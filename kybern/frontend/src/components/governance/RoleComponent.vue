@@ -11,7 +11,7 @@
             <b-button v-if="user_permissions.apply_template" class="btn-sm mb-3" variant="info"
                 v-b-modal.apply_template_modal_role id="apply_role_templates">apply role templates</b-button>
 
-            <error-component :message=error_message></error-component>
+            <action-response-component :response=remove_role_response></action-response-component>
 
             <b-list-group>
 
@@ -58,21 +58,21 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
-import ErrorComponent from '../utils/ErrorComponent'
 import AddRoleModal from '../governance/AddRoleModal'
 import RoleMembershipComponent from '../governance/RoleMembershipComponent'
 import RolePermissionsModal from '../permissions/RolePermissionsModal'
 import TemplateModal from '../templates/TemplateModal'
+import ActionResponseComponent from '../actions/ActionResponseComponent'
 
 
 export default {
 
     store,
-    components: { ErrorComponent, AddRoleModal, RolePermissionsModal, RoleMembershipComponent, TemplateModal },
+    components: { AddRoleModal, RolePermissionsModal, RoleMembershipComponent, TemplateModal, ActionResponseComponent },
     data: function() {
         return {
             role_selected: '',
-            error_message: null,
+            remove_role_response: null,
         }
     },
     created () {
@@ -95,7 +95,7 @@ export default {
         ...Vuex.mapActions(['checkPermissions', 'removeRole']),
         remove_role(role_name) {
             this.removeRole({role_name: role_name})
-            .catch(error => {  this.error_message = error  })
+                .then(response => { this.remove_role_response = response })
         }
     }
 

@@ -39,30 +39,32 @@ const DocumentVuexModule = {
             return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async addDocument({ commit, state, dispatch, getters }, payload) {
+            console.log("We here???")
             var url = await getters.url_lookup('add_document')
             var params = { name: payload.name, description: payload.description, content: payload.content }
             var implementationCallback = (response) => {
-                commit('ADD_OR_UPDATE_DOCUMENT', { document_data : response.data.document_data })
-                return response.data.document_data
+                commit('ADD_OR_UPDATE_DOCUMENT', { document_data : response.data.created_instance })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async editDocument({ commit, state, dispatch, getters }, payload) {
             var url = await getters.url_lookup('edit_document')
-            var params = { name: payload.name, document_pk: payload.document_pk, description: payload.description,
+            var params = { name: payload.name, document_pk: payload.pk, description: payload.description,
                  content: payload.content }
+            console.log("Vuex params", params)
+            console.log("WTF:, PARAMS:::", params)
+            console.log({ name: payload.name, document_pk: payload.pk, description: payload.description,
+                content: payload.content })
             var implementationCallback = (response) => {
-                commit('ADD_OR_UPDATE_DOCUMENT', { document_data : response.data.document_data })
+                commit('ADD_OR_UPDATE_DOCUMENT', { document_data : response.data.edited_instance })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async deleteDocument({ commit, state, dispatch, getters }, payload) {
             var url = await getters.url_lookup('delete_document')
             var params = { document_pk: payload.document_pk }
-            console.log("Params: ", params)
-
             var implementationCallback = (response) => {
-                commit('DELETE_DOCUMENT', { deleted_document_pk : response.data.deleted_document_pk })
+                commit('DELETE_DOCUMENT', { deleted_document_pk : response.data.deleted_instance_pk })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         }

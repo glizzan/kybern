@@ -8,19 +8,20 @@
 
             <template v-slot:footer>
 
-                <b-button v-if="user_permissions.edit_comment" variant="outline-secondary" class="btn-sm" v-b-modal="comment_modal_id">
-                    edit</b-button>
+                <form-button-and-modal v-if="user_permissions.edit_comment" :id_add="'comment' + comment.pk"
+                    :item_id=comment.pk :item_model="'comment'" :button_text="'edit'"></form-button-and-modal>
 
-                <b-button v-if="user_permissions.delete_comment" variant="outline-secondary" class="btn-sm"
+                <b-button v-if="user_permissions.delete_comment" variant="outline-secondary" class="btn-sm mr-2"
                     @click="delete_comment(comment.pk)">delete</b-button>
+                <action-response-component :response=delete_comment_response></action-response-component>
 
                 <router-link :to="{ name: 'action-history', params: {item_id: comment.pk, item_model: 'comment',
                         item_name: comment_name(comment.text) }}">
-                    <b-button variant="outline-secondary" class="btn-sm">comment history</b-button>
+                    <b-button variant="outline-secondary" class="btn-sm mr-2">comment history</b-button>
                 </router-link>
 
                 <b-button variant="outline-secondary" id="comment_permissions" v-b-modal.item_permissions_modal
-                    class="btn-sm">comment permissions</b-button>
+                    class="btn-sm mr-2">comment permissions</b-button>
                 <item-permissions-modal :item_id=comment.pk :item_model="'comment'"
                     :item_name="comment_name(comment.text)"></item-permissions-modal>
 
@@ -33,19 +34,6 @@
 
         </b-card>
 
-        <b-modal :id="comment_modal_id" :title="title_string" hide-footer>
-
-            <b-form-group id="comment_text_group">
-                <b-form-textarea id="comment_text" name="comment_text" v-model="comment_text"
-                    placeholder="Write your comment here"></b-form-textarea>
-            </b-form-group>
-
-            <b-button variant="outline-secondary" class="btn-sm"  id="sumbit_comment_button" @click="edit_comment">submit</b-button>
-
-            <error-component :message=error_message></error-component>
-
-        </b-modal>
-
     </span>
 
 </template>
@@ -56,19 +44,22 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
-import ErrorComponent from '../utils/ErrorComponent'
 import ItemPermissionsModal from '../permissions/ItemPermissionsModal'
+import ActionResponseComponent from '../actions/ActionResponseComponent'
+import FormButtonAndModal from '../utils/FormButtonAndModal'
 
 
 export default {
 
-    components: { ErrorComponent, ItemPermissionsModal },
+    components: {ItemPermissionsModal, ActionResponseComponent, FormButtonAndModal },
     props: ['item_id', 'item_model', 'comment'],
     store,
     data: function() {
         return {
             comment_text: '',
-            error_message: ''
+            error_message: '',
+            edit_comment_response: null,
+            delete_comment_response: null
         }
     },
     created () {
@@ -81,15 +72,9 @@ export default {
     computed: {
         ...Vuex.mapState({ user_permissions: state => state.permissions.current_user_permissions }),
         ...Vuex.mapGetters(['getUserName']),
-        title_string: function() {
-            return "Edit " + this.comment_name(this.comment_text)
-        },
-        comment_modal_id: function() {
-            return "item_comment_modal_" + this.item_id + "_" + this.item_model
-        }
     },
     methods: {
-        ...Vuex.mapActions(['checkPermissions', 'editComment', 'deleteComment']),
+        ...Vuex.mapActions(['checkPermissions', 'deleteComment']),
         display_date(date) { return Date(date) },
         comment_name(text) {
             if (text.length > 50) {
@@ -98,14 +83,12 @@ export default {
                 return "Comment: '" + text + "'"
             }
         },
-        edit_comment() {
-            this.editComment({ text: this.comment_text, comment_pk: this.comment.pk })
-            .then(response => { this.mode = 'add'; this.comment_pk = null; })
-            .catch(error => {  this.error_message = error })
-        },
         delete_comment(pk) {
             this.deleteComment({ item_id: this.item_id, item_model: this.item_model, comment_pk: pk })
-            .catch(error => {  console.log(error) })
+            .then( response => {
+                if (!response.data.action_status == "implemented") {
+                    this.delete_comment_response = response
+                }})
         }
     }
 }

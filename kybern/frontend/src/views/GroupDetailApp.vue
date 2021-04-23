@@ -39,7 +39,7 @@ export default {
           }
     },
     methods: {
-    ...Vuex.mapActions(['initialize_group_data', 'getPermissionData', 'getGovernanceData', 'getForumData']),
+    ...Vuex.mapActions(['initialize_group_data', 'getPermissionData', 'getGovernanceData', 'getForums']),
     },
     created: function () {
         this.initialize_group_data({urls: initialState.urls, group_pk: initialState.group_pk,
@@ -48,7 +48,7 @@ export default {
                                     user_name: initialState.user_name })
         this.getPermissionData()
         this.getGovernanceData()
-        this.getForumData()
+        this.getForums()
     }
 
 }

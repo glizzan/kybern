@@ -22,6 +22,7 @@
             </b-form-group>
         </span>
 
+        <action-response-component :response=row_response></action-response-component>
         <b-button v-if="mode=='create'" variant="outline-secondary" class="btn-sm" id="add_row_save_button"
             @click="add_row">submit</b-button>
         <b-button v-if="mode=='edit'" variant="outline-secondary" class="btn-sm" id="edit_row_save_button"
@@ -38,19 +39,21 @@
 import Vuex from 'vuex'
 import store from '../../store'
 import ErrorComponent from '../utils/ErrorComponent'
+import ActionResponseComponent from '../actions/ActionResponseComponent'
 
 
 export default {
 
     props: ['list_id', 'row_index', 'mode'],
-    components: { ErrorComponent },
+    components: { ErrorComponent, ActionResponseComponent },
     store,
     data: function() {
         return {
             index: null,
             columns: [],
             row_length: 0,
-            error_message: null
+            error_message: null,
+            row_response: null
         }
     },
     created () {
@@ -87,15 +90,11 @@ export default {
         },
         add_row() {
             this.addRow({list_pk:this.list_id, index:parseInt(this.index), row_content: this.format_row_content()})
-            .then(response => {
-                this.$router.push({name: 'list-detail', params: {list_id: this.list_id}})
-            }).catch(error => {  this.error_message = error })
+            .then(response => { this.row_response = response })
         },
         edit_row() {
             this.editRow({list_pk:this.list_id, index:parseInt(this.index), row_content: this.format_row_content()})
-            .then(response => {
-                this.$router.push({name: 'list-detail', params: {list_id: this.list_id}})
-            }).catch(error => {  this.error_message = error })
+            .then(response => { this.row_response = response })
         },
         format_row_content() {
             var column_data = {}
