@@ -253,6 +253,20 @@ def serialize_documents_for_vue(documents):
     return serialized_docs
 
 
+def serialize_template_for_vue(template, pk_as_key=True):
+    template_dict = {
+        "pk": template.pk,
+        "name": template.name,
+        "description": template.user_description,
+        "supplied_fields": template.get_supplied_form_fields(),
+        "action_breakdown": template.get_template_breakdown(),
+        "scopes": template.get_scopes()
+    }
+    if pk_as_key:
+        return {template.pk: template_dict}
+    return template_dict
+
+
 ############################
 ### Standard Django CBVs ###
 ############################
@@ -1311,19 +1325,6 @@ def delete_comment(request):
 ######################
 ### Template Views ###
 ######################
-
-
-def serialize_template_for_vue(template, pk_as_key=True):
-    template_dict = {
-        "pk": template.pk,
-        "name": template.name,
-        "description": template.user_description,
-        "supplied_fields": template.get_supplied_form_fields(),
-        "action_breakdown": template.get_template_breakdown()
-    }
-    if pk_as_key:
-        return {template.pk: template_dict}
-    return template_dict
 
 
 @login_required

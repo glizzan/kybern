@@ -7,12 +7,13 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseRedirect, JsonResponse
 
 from concord.utils.helpers import Client
+from concord.actions.models import TemplateModel
+
+from groups.models import Group
+from groups.views import serialize_template_for_vue, process_action
 
 from accounts.models import Profile, NotificationsSettings, Notification
-from groups.models import Group
 from accounts.forms import RegistrationFormWithCode
-
-from groups.views import process_action
 
 
 class RegistrationViewWithCode(RegistrationView):
@@ -100,3 +101,21 @@ def update_notifications_settings(request):
         "approval": request.user.notify_settings.always_notify_approval,
         "resolved": request.user.notify_settings.always_notify_action_resolved
     })
+
+
+class TemplateLibraryView(generic.ListView):
+    model = TemplateModel
+    template_name = 'accounts/template_library.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        templates = [serialize_template_for_vue(t, pk_as_key=False) for t in TemplateModel.objects.all()]
+        initial_state = {
+            "user_name": self.request.user.username,
+            "user_pk": self.request.user.pk,
+            "is_authenticated": self.request.user.is_authenticated,
+            "templates": templates
+        }
+        context["initial_state"] = json.dumps(initial_state)
+        return context
+

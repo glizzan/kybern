@@ -12,6 +12,10 @@ const pages = {
     'profile_vue': {
         entry: './src/profile_main.js',
         chunks: ['chunk-vendors']
+    },
+    'template_library': {
+        entry: './src/template_library.js',
+        chunks: ['chunk-vendors']
     }
 }
 
