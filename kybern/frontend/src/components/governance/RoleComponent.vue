@@ -19,25 +19,28 @@
                     class="d-flex justify-content-between align-items-center" :id="role.name + '_role'">
 
                         <span class="role_info">
-                            <span class="role_name_display">{{ role.name }}</span>
-                            <small class="ml-2" :id="role.name + '_member_count'">
+                            <span class="role_name_display mr-2">{{ role.name }}</span>
+                            <small class="d-inline-block" :id="role.name + '_member_count'">
                             {{role.current_members.length }} people </small>
                         </span>
 
-                        <div class="role_interactions">
+                        <div class="role_interactions text-right">
 
-                            <div v-if="role.name != 'members'" class="d-inline" v-b-modal.role_membership_modal
+                            <div v-if="role.name != 'members'" class="d-inline-block" v-b-modal.role_membership_modal
                                  v-on:click="role_selected = role.name" :id="role.name + '_changemembers'">
-                                <b-icon-people class="mr-1"></b-icon-people><small>change members</small>
+                                <b-icon-people v-b-tooltip.hover title="change members">
+                                </b-icon-people>
                             </div>
 
-                            <div class="ml-3 d-inline" v-b-modal.role_permissions_modal :id="role.name + '_editrole'"
+                            <div class="ml-3 d-inline-block" v-b-modal.role_permissions_modal :id="role.name + '_editrole'"
                                 v-on:click="role_selected = role.name">
-                                <b-icon-shield-lock class="mr-1"></b-icon-shield-lock><small>change permissions</small>
+                                <b-icon-shield-lock v-b-tooltip.hover title="change permissions">
+                                </b-icon-shield-lock>
                             </div>
 
-                            <div v-if="role.name != 'members'" class="ml-3 d-inline" v-on:click="remove_role(role.name)">
-                                <b-icon-trash class="mr-1"></b-icon-trash><small>remove</small>
+                            <div v-if="role.name != 'members'" class="ml-3 d-inline-block" v-on:click="remove_role(role.name)">
+                                <b-icon-trash v-b-tooltip.hover title="delete">
+                                </b-icon-trash>
                             </div>
 
                         </div>
