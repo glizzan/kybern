@@ -204,7 +204,7 @@ def serialize_existing_comment_for_vue(comment):
     """
     return {
         comment.pk: {
-            'pk': comment.pk, 'text': comment.text, 'commentor_pk': comment.commentor.pk,
+            'pk': comment.pk, 'text': comment.text, 'commenter_pk': comment.commenter.pk,
             'created_at': comment.created_at, 'updated_at': comment.updated_at
         }
     }

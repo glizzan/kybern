@@ -28,7 +28,7 @@
                 <br />
 
                 <small class="text-muted">Posted {{ display_date(comment.created_at) }}
-                    by {{ getUserName(comment.commentor_pk) }}</small>
+                    by {{ getUserName(comment.commenter_pk) }}</small>
 
             </template>
 

@@ -8,7 +8,7 @@
         <div class="row mt-5">
         <div class="col-12">
 
-            <h3>Templates Libary</h3>
+            <h3>Templates Library</h3>
             <p>Templates are sets of actions you can apply to your communities with one click. They largely
                 set permissions and conditions, but they may also create roles or resources. You can explore
                 the existing templates here. To apply them, go to one of the "apply templates" interfaces
