@@ -37,7 +37,7 @@ module.exports = {
         variant: function() {
             if (this.status == "waiting") { return "warning"}  // yellow
             if (this.status == "invalid") { return "danger" }  // red
-            if (this.status == "rejected") { return "outline-danger" }   // blue
+            if (this.status == "rejected") { return "info" }   // blue
             if (this.status == "implemented") { return "success" }  // green
             if (this.status) {
                 console.log("WARNING: unexpected status: ", this.status )
