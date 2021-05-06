@@ -162,11 +162,13 @@ export default {
                 if (permission.anyone) { userperm = this.update_perm(userperm, true, more_info) }
                 roles_user_is_in.forEach(function(role_name){
                     if (new_dict[role_name]["has_perm"]) {
-                        if (role_name == "owners" && vue_data.owner_condition)
-                            { userperm = vue_data.update_perm(userperm, true, vue_data.owner_condition.how_to_pass_overall) }
-                        else if (role_name == "governors" && vue_data.governor_condition)
-                            { userperm = vue_data.update_perm(userperm, true, vue_data.governor_condition.how_to_pass_overall) }
-                        else {
+                        if (role_name == "owners") {
+                            var owner_info = vue_data.owner_condition ? vue_data.owner_condition.how_to_pass_overall : null
+                            userperm = vue_data.update_perm(userperm, true, owner_info)
+                        } else if (role_name == "governors") {
+                            var gov_info = vue_data.governor_condition ? vue_data.governor_condition.how_to_pass_overall : null
+                            userperm = vue_data.update_perm(userperm, true, gov_info)
+                        } else {
                             userperm = vue_data.update_perm(userperm, true, more_info)
                         }
                     }
@@ -179,6 +181,7 @@ export default {
             return Object.values(restructured_permissions)
         },
         update_perm(userperm, has_perm, more_info) {
+            console.log(userperm, has_perm, more_info)
             if (!has_perm) { return userperm }
             if (!userperm.has_perm) { return {has_perm: has_perm, more_info: more_info} }
             // if we have an existing permission and a new permsision, determine what info to give
