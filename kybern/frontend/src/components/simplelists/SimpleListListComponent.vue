@@ -4,10 +4,9 @@
 
         <h5 class="pb-3">
             <span class="font-weight-bold">Lists</span>
-            <router-link :to="{ name: 'add-new-list'}">
-                <b-button v-if="user_permissions.add_list" variant="light"
-                    class="btn-sm ml-3" id="add_list_default_button">+ add new</b-button>
-            </router-link>
+                <form-button-and-modal v-if="user_permissions.add_list"
+                    :item_model="'list'" :button_text="'+ add new'" :supplied_variant="'light'"
+                    :supplied_classes="'btn-sm ml-3'"></form-button-and-modal>
         </h5>
 
         <b-card-group columns>
@@ -37,10 +36,12 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
+import FormButtonAndModal from '../utils/FormButtonAndModal'
 
 
 export default {
 
+    components: { FormButtonAndModal },
     store,
     data: function() {
         return {

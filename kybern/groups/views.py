@@ -232,7 +232,7 @@ def serialize_forums_for_vue(forums):
 
 def serialize_list_for_vue(simple_list):
     return {'pk': simple_list.pk, 'name': simple_list.name, 'description': simple_list.description,
-            'configuration': simple_list.get_row_configuration(), 'rows': simple_list.get_rows()}
+            'columns': simple_list.get_columns(), 'rows': simple_list.get_rows()}
 
 
 def serialize_lists_for_vue(simple_lists):
@@ -1373,16 +1373,24 @@ def get_lists(request, target):
     return JsonResponse({"lists": serialized_lists})
 
 
+@reformat_input_data
+@login_required
+def get_list(request, target, list_pk):
+
+    client = Client(actor=request.user)
+    list_obj = client.List.get_list(pk=list_pk)
+    return JsonResponse({"list": serialize_list_for_vue(list_obj)})
+
+
 @login_required
 @reformat_input_data
-def add_list(request, target, name, configuration, description=None):
+def add_list(request, target, name, description=None):
 
     client = Client(actor=request.user)
     target = client.Community.get_community(community_pk=target)
     client.List.set_target(target=target)
 
-    action, result = client.List.add_list(name=name, configuration=configuration,
-                                          description=description)
+    action, result = client.List.add_list(name=name, description=description)
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
@@ -1392,14 +1400,13 @@ def add_list(request, target, name, configuration, description=None):
 
 @login_required
 @reformat_input_data
-def edit_list(request, target, list_pk, name=None, configuration=None, description=None):
+def edit_list(request, target, list_pk, name=None, description=None):
 
     client = Client(actor=request.user)
     target = client.List.get_list(pk=list_pk)
     client.List.set_target(target=target)
 
-    action, result = client.List.edit_list(name=name, configuration=configuration,
-                                           description=description)
+    action, result = client.List.edit_list(name=name, description=description)
 
     action_dict = get_action_dict(action)
     if action.status == "implemented":
@@ -1425,52 +1432,83 @@ def delete_list(request, target, list_pk):
 
 @login_required
 @reformat_input_data
-def add_row(request, target, list_pk, row_content, index=None):
+def add_column(request, target, list_pk, column_name, required, default_value):
 
     client = Client(actor=request.user)
     target = client.List.get_list(pk=list_pk)
     client.List.set_target(target=target)
 
-    action, result = client.List.add_row_to_list(row_content=row_content, index=index)
+    action, result = client.List.add_column_to_list(
+        column_name=column_name, required=required, default_value=default_value)
 
     return JsonResponse(get_action_dict(action))
 
 
 @login_required
 @reformat_input_data
-def edit_row(request, target, list_pk, row_content, index):
+def edit_column(request, target, list_pk, column_name, required=None, default_value=None, new_name=None):
 
     client = Client(actor=request.user)
     target = client.List.get_list(pk=list_pk)
     client.List.set_target(target=target)
 
-    action, result = client.List.edit_row_in_list(row_content=row_content, index=index)
+    action, result = client.List.edit_column_in_list(
+        column_name=column_name, required=required, default_value=default_value, new_name=new_name)
 
     return JsonResponse(get_action_dict(action))
 
 
 @login_required
 @reformat_input_data
-def move_row(request, target, list_pk, old_index, new_index):
+def delete_column(request, target, list_pk, column_name):
 
     client = Client(actor=request.user)
     target = client.List.get_list(pk=list_pk)
     client.List.set_target(target=target)
 
-    action, result = client.List.move_row_in_list(old_index=old_index, new_index=new_index)
+    action, result = client.List.delete_column_from_list(column_name=column_name)
 
     return JsonResponse(get_action_dict(action))
 
 
 @login_required
 @reformat_input_data
-def delete_row(request, target, list_pk, index):
+def add_row(request, target, list_pk, row_content):
 
     client = Client(actor=request.user)
     target = client.List.get_list(pk=list_pk)
     client.List.set_target(target=target)
 
-    action, result = client.List.delete_row_in_list(index=index)
+    action, result = client.List.add_row_to_list(row_content=row_content)
+
+    action_dict = get_action_dict(action)
+    if action.status == "implemented":
+        action_dict["unique_id"] = result[1]
+    return JsonResponse(action_dict)
+
+
+@login_required
+@reformat_input_data
+def edit_row(request, target, list_pk, row_content, unique_id):
+
+    client = Client(actor=request.user)
+    target = client.List.get_list(pk=list_pk)
+    client.List.set_target(target=target)
+
+    action, result = client.List.edit_row_in_list(row_content=row_content, unique_id=unique_id)
+
+    return JsonResponse(get_action_dict(action))
+
+
+@login_required
+@reformat_input_data
+def delete_row(request, target, list_pk, unique_id):
+
+    client = Client(actor=request.user)
+    target = client.List.get_list(pk=list_pk)
+    client.List.set_target(target=target)
+
+    action, result = client.List.delete_row_in_list(unique_id=unique_id)
 
     return JsonResponse(get_action_dict(action))
 

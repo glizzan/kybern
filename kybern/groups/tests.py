@@ -39,13 +39,13 @@ class UrlTestCase(TestCase):
     def test_url_views_with_target(self):
         expected_dict = {
             'delete_row': 'groups/api/1/delete_row/',
-            'move_row': 'groups/api/1/move_row/',
             'edit_row': 'groups/api/1/edit_row/',
             'add_row': 'groups/api/1/add_row/',
             'delete_list': 'groups/api/1/delete_list/',
             'edit_list': 'groups/api/1/edit_list/',
             'add_list': 'groups/api/1/add_list/',
             'get_lists': 'groups/api/1/get_lists/',
+            'get_list': 'groups/api/1/get_list/',
             'apply_template': 'groups/api/apply_template/',
             'get_templates_for_scope': 'groups/api/get_templates_for_scope/',
             'delete_comment': 'groups/api/delete_comment/',
@@ -104,6 +104,9 @@ class UrlTestCase(TestCase):
             'get_forum_data': 'groups/api/get_forum_data/1/',
             'export_as_csv': 'groups/export/csv/1',
             'export_as_json': 'groups/export/json/1',
+            'add_column': 'groups/api/1/add_column/',
+            'edit_column': 'groups/api/1/edit_column/',
+            'delete_column': 'groups/api/1/delete_column/',
         }
         response = self.client.get(reverse('generate_url_map_with_target', kwargs={"target": 1}))
         self.assertEquals(response.json()['urls'], expected_dict)

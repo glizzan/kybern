@@ -94,12 +94,15 @@ urlpatterns = [
 
     # list views
     path('api/<int:target>/get_lists/', views.get_lists, name='get_lists'),
+    path('api/<int:target>/get_list/', views.get_list, name='get_list'),
     path('api/<int:target>/add_list/', views.add_list, name='add_list'),
     path('api/<int:target>/edit_list/', views.edit_list, name='edit_list'),
     path('api/<int:target>/delete_list/', views.delete_list, name='delete_list'),
+    path('api/<int:target>/add_column/', views.add_column, name='add_column'),
+    path('api/<int:target>/edit_column/', views.edit_column, name='edit_column'),
+    path('api/<int:target>/delete_column/', views.delete_column, name='delete_column'),
     path('api/<int:target>/add_row/', views.add_row, name='add_row'),
     path('api/<int:target>/edit_row/', views.edit_row, name='edit_row'),
-    path('api/<int:target>/move_row/', views.move_row, name='move_row'),
     path('api/<int:target>/delete_row/', views.delete_row, name='delete_row'),
 
     # document views
