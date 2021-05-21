@@ -8,10 +8,9 @@
 
                 {{ display }}
 
-                <router-link v-if="model == 'simplelist'" :to="{ name: 'add-new-list'}">
-                    <b-button v-if="user_permissions.add_list" variant="light"
-                        class="btn-sm ml-3" id="add_list_default_button">+ add new</b-button>
-                </router-link>
+                <form-button-and-modal v-if="model == 'simplelist' && user_permissions.add_list"
+                    :item_model="'list'" :button_text="'+ add new'" :supplied_variant="'light'"
+                    :supplied_classes="'btn-sm ml-3'"></form-button-and-modal>
 
                 <form-button-and-modal v-if="model == 'forum' && user_permissions.add_forum"
                     :item_model="'forum'" :button_text="'+ add new'" :supplied_variant="'light'"

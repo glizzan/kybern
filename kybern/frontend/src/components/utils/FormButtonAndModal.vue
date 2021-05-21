@@ -41,6 +41,10 @@ var fields_dict = {
     ],
     "comment": [
         {field_name: "text", label: "Comment text:", type: "CharField", required: false, value: null},
+    ],
+    "list": [
+        {field_name: "name", label: "List name:", type: "CharField", required: false, value: null},
+        {field_name: "description", label: "List description:", type: "CharField", required: false, value: null},
     ]
 }
 
@@ -75,7 +79,7 @@ export default {
         item_instance: function(val) { if (val) { this.initialize_configuration_fields() } }
     },
     computed: {
-        ...Vuex.mapGetters(['getDocumentData', 'getForumData', 'getPostData', 'getCommentData']),
+        ...Vuex.mapGetters(['getDocumentData', 'getForumData', 'getPostData', 'getCommentData', 'getListData']),
         mode: function() { if (this.item_id) { return "edit"}  else { return "add" } },
         to_add: function() { if (this.id_add) { return this.id_add } else { return "default"} },
         id_preface: function() { return this.mode + "_" + this.item_model + "_" + this.to_add },
@@ -92,7 +96,7 @@ export default {
     },
     methods: {
         ...Vuex.mapActions(['addDocument', 'editDocument', 'addForum', 'editForum', 'addPost', 'editPost',
-            'addComment', 'editComment']),
+            'addComment', 'editComment', 'addList', 'editList']),
         capitalize(text) { return text.charAt(0).toUpperCase() + text.slice(1) },
         initialize_configuration_fields() {
             if (this.item_instance) {

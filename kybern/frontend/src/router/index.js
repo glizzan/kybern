@@ -20,9 +20,6 @@ import PostComponent from '../components/forums/PostComponent'
 // templates
 import TemplateComponent from '../components/templates/TemplateComponent'
 // lists
-import ListFormComponent from '../components/simplelists/ListFormComponent'
-import RowFormComponent from '../components/simplelists/RowFormComponent'
-import SimpleListComponent from '../components/simplelists/SimpleListComponent'
 import SimpleListDetailComponent from '../components/simplelists/SimpleListDetailComponent'
 // documents
 import DocumentDetailComponent from '../components/documents/DocumentDetailComponent'
@@ -175,27 +172,6 @@ const routes = [
 
     // Lists
     {
-        name: 'add-new-list',
-        path: '/lists/new',
-        meta: { tab: 'resources'},
-        components: {
-            sidebar: GroupConfigComponent,
-            main: GroupResourcesComponent,
-            modal: ListFormComponent
-        }
-    },
-    {
-        name: 'edit-list-info',
-        path: '/lists/edit/:list_id',
-        meta: { tab: 'resources'},
-        props: { sidebar: false, main: false, modal: true },
-        components: {
-            sidebar: GroupConfigComponent,
-            main: GroupResourcesComponent,
-            modal: ListFormComponent
-        }
-    },
-    {
         name: 'list-detail',
         path: '/lists/detail/:list_id',
         meta: { tab: 'resources'},
@@ -203,28 +179,6 @@ const routes = [
         components: {
             sidebar: GroupConfigComponent,
             main: SimpleListDetailComponent
-        }
-    },
-    {
-        name: 'edit-list-row',
-        path: '/lists/detail/:list_id/rows/:mode/:row_index',
-        meta: { tab: 'resources'},
-        props: { sidebar: false, main: true, modal: true},
-        components: {
-            sidebar: GroupConfigComponent,
-            main: SimpleListComponent,
-            modal: RowFormComponent
-        }
-    },
-    {
-        name: 'add-list-row',
-        path: '/lists/detail/:list_id/rows/:mode',
-        meta: { tab: 'resources'},
-        props: { sidebar: false, main: true, modal: true},
-        components: {
-            sidebar: GroupConfigComponent,
-            main: SimpleListComponent,
-            modal: RowFormComponent
         }
     },
 

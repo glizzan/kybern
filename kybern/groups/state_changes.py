@@ -1,3 +1,5 @@
+from django.core.exceptions import ValidationError
+
 from concord.actions.state_changes import BaseStateChange
 from concord.permission_resources.utils import delete_permissions_on_target
 from concord.utils import field_utils
@@ -75,12 +77,8 @@ class EditForumStateChange(BaseStateChange):
     description = field_utils.CharField(label="Forum description")
 
     def validate(self, actor, target):
-        if not super().validate(actor=actor, target=target):
-            return False
         if not self.name and not self.description:
-            self.set_validation_error("Must provide either a new name or a new description")
-            return False
-        return True
+            raise ValidationError("Must provide either a new name or a new description")
 
     def implement(self, actor, target, action):
         target.name = self.name if self.name else target.name
@@ -102,12 +100,8 @@ class DeleteForumStateChange(BaseStateChange):
     settable_classes = ["all_community_models", Forum]
 
     def validate(self, actor, target):
-        if not super().validate(actor=actor, target=target):
-            return False
         if target.special == "Gov":
-            self.set_validation_error(message="You cannot delete a governance forum")
-            return False
-        return True
+            raise ValidationError("You cannot delete a governance forum")
 
     def implement(self, actor, target, action):
         pk = target.pk
@@ -170,12 +164,8 @@ class EditPostStateChange(BaseStateChange):
         return {"post": action.target, "forum": action.target.forum}
 
     def validate(self, actor, target):
-        if not super().validate(actor=actor, target=target):
-            return False
         if not self.title and not self.content:
-            self.set_validation_error("Must provide either a new title or new content when editing post")
-            return False
-        return True
+            raise ValidationError("Must provide either a new title or new content when editing post")
 
     def implement(self, actor, target, action):
         target.title = self.title if self.title else target.title
