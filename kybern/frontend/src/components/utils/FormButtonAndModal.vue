@@ -2,8 +2,10 @@
 
     <span>
 
-        <b-button :id=button_id :variant=variant :class=classes v-b-modal="modal_id">
+        <b-button v-if="button_text" :id=button_id :variant=variant :class=classes v-b-modal="modal_id">
             {{ button_text }}</b-button>
+        <b-icon-pencil v-else v-b-modal="modal_id" class="mr-2" :id=button_id
+            v-b-tooltip.hover :title="'edit ' + item_model"></b-icon-pencil>
 
         <b-modal :id=modal_id :title=title_string size="lg" hide-footer>
 
@@ -28,23 +30,23 @@
 
 var fields_dict = {
     "document": [
-        {field_name: "name", label: "Document name:", type: "CharField", required: false, value: null},
-        {field_name: "description", label: "Document description:", type: "CharField", required: false, value: null},
+        {field_name: "name", label: "Name", type: "CharField", required: false, value: null},
+        {field_name: "description", label: "Description", type: "CharField", required: false, value: null},
     ],
     "forum": [
-        {field_name: "name", label: "Forum name:", type: "CharField", required: false, value: null},
-        {field_name: "description", label: "Forum description:", type: "CharField", required: false, value: null},
+        {field_name: "name", label: "Name", type: "CharField", required: false, value: null},
+        {field_name: "description", label: "Description", type: "CharField", required: false, value: null},
     ],
     "post": [
-        {field_name: "title", label: "Post title:", type: "CharField", required: false, value: null},
-        {field_name: "content", label: "Post content:", type: "CharField", required: false, value: null},
+        {field_name: "title", label: "Title", type: "CharField", required: false, value: null},
+        {field_name: "content", label: "Content", type: "CharField", required: false, value: null},
     ],
     "comment": [
-        {field_name: "text", label: "Comment text:", type: "CharField", required: false, value: null},
+        {field_name: "text", label: "Content", type: "CharField", required: false, value: null},
     ],
     "list": [
-        {field_name: "name", label: "List name:", type: "CharField", required: false, value: null},
-        {field_name: "description", label: "List description:", type: "CharField", required: false, value: null},
+        {field_name: "name", label: "Name", type: "CharField", required: false, value: null},
+        {field_name: "description", label: "Description", type: "CharField", required: false, value: null},
     ]
 }
 

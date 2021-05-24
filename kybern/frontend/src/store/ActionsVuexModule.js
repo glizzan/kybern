@@ -56,7 +56,8 @@ const ActionsVuexModule = {
         },
         async loadActions({ state, commit, rootState, dispatch, getters }, payload) {
             var url = await getters.url_lookup('get_action_data_for_target')
-            var params = { item_id: payload.item_id, item_model: payload.item_model }
+            var item_model = payload.item_model == "list" ? "simplelist" : payload.item_model
+            var params = { item_id: payload.item_id, item_model: item_model }
             var implementationCallback = (response) => {
                 var item_key = payload.item_id + "_" + payload.item_model
                 commit('REPLACE_ACTIONS_FOR_ITEM', { action_data : response.data.action_data, item_key : item_key })

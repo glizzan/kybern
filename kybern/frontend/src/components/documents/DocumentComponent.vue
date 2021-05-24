@@ -2,36 +2,30 @@
 
     <div v-if="document" class="bg-white p-3">
 
-        <h3 class="mt-3">{{ document.name }}</h3>
+        <div class="title-and-actions mb-4">
+
+            <span class="h3 font-weight-bold">{{ document.name }}</span>
+
+            <resource-action-icons class="float-right" v-on:delete="delete_document" :item_id=item_id
+                :item_model="'document'" :item_name=document.name :edit_permission="user_permissions.edit_document"
+                :delete_permission="user_permissions.delete_document"></resource-action-icons>
+
+        </div>
+
+        <action-response-component :response=document_response></action-response-component>
+
         <p>{{ document.description }}</p>
 
-        <!-- buttons -->
-
-        <form-button-and-modal v-if="user_permissions.edit_document" :id_add="'main'" :item_id=item_id
-            :item_model="'document'" :button_text="'edit metadata'"></form-button-and-modal>
-
-        <b-button v-if="user_permissions.edit_document && !edit_mode" variant="outline-secondary"
-            class="btn-sm mr-2" id="edit_content_start_button" @click="edit_mode=true">edit content</b-button>
-
-        <b-button v-if="user_permissions.delete_document" variant="outline-secondary" class="btn-sm mr-2"
-            id="delete_document_button" @click="delete_document(item_id)">delete document</b-button>
-        <action-response-component :response=delete_document_response></action-response-component>
-
-        <router-link :to="{ name: 'action-history', params: {item_id: item_id, item_model: 'document',
-            item_name: document.name }}">
-            <b-button variant="outline-secondary" class="btn-sm mr-2" id="document_history_button">
-                document history</b-button>
-        </router-link>
-
-        <b-button variant="outline-secondary" id="document_permissions_button" v-b-modal.item_permissions_modal
-            class="btn-sm mr-2">document permissions</b-button>
-        <item-permissions-modal :item_id=item_id :item_model="'document'" :item_name=document.name>
-        </item-permissions-modal>
+        <!-- Document-specific actions -->
 
         <router-link :to="{ name: 'document-full-page', params: {item_id: item_id}}">
             <b-button variant="outline-secondary" class="btn-sm mr-2" id="document_fullpage">
                 view full page</b-button>
         </router-link>
+
+        <b-button v-if="user_permissions.edit_document && !edit_mode" variant="outline-secondary"
+            class="btn-sm mr-2" id="edit_content_start_button" @click="edit_mode=true">edit content</b-button>
+
 
         <!-- Content -->
 
@@ -56,17 +50,16 @@ import Vuex from 'vuex'
 import store from '../../store'
 import marked from 'marked'
 import { UtilityMixin } from '../utils/Mixins'
-import ItemPermissionsModal from '../permissions/ItemPermissionsModal'
 import DocumentMarkdownComponent from '../documents/DocumentMarkdownComponent'
 import ActionResponseComponent from '../actions/ActionResponseComponent'
-import FormButtonAndModal from '../utils/FormButtonAndModal'
+import ResourceActionIcons from '../utils/ResourceActionIcons'
 
 
 export default {
 
     props: ['item_id'],
     store,
-    components: {ItemPermissionsModal, DocumentMarkdownComponent, FormButtonAndModal, ActionResponseComponent },
+    components: {DocumentMarkdownComponent, ActionResponseComponent, ResourceActionIcons },
     mixins: [UtilityMixin],
     data: function() {
             return {
@@ -74,7 +67,7 @@ export default {
                 edit_mode: false,
                 new_name: "",
                 new_description: "",
-                delete_document_response: null,
+                document_response: null,
                 edit_document_content_response: null
             }
         },
@@ -113,7 +106,7 @@ export default {
             this.deleteDocument({ document_pk: this.item_id })
             .then(response => {
                 if (response.data.action_status == "implemented") { this.$router.push({name: 'home'}) }
-                else { this.edit_document_content_response = response }
+                else { this.document_response = response }
             })
         }
     }

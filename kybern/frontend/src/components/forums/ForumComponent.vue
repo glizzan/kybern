@@ -2,27 +2,20 @@
 
     <div v-if="forum" class="bg-white p-3">
 
-        <h3 class="mt-3">{{ forum.name }}</h3>
+        <div class="title-and-actions mb-4">
+
+            <span class="h3 font-weight-bold">{{ forum.name }}</span>
+
+            <resource-action-icons class="float-right" v-on:delete="delete_forum" :item_id=item_id
+                :item_model="'forum'" :item_name=forum.name :edit_permission="user_permissions.edit_forum"
+                :delete_permission="user_permissions.delete_forum && !is_governance_forum" :export_url=json_export_url
+                :export_text="'export as json'"></resource-action-icons>
+
+        </div>
+
+        <action-response-component :response=list_response class="mt-4"></action-response-component>
+
         <p>{{ forum.description }}</p>
-
-        <form-button-and-modal v-if="user_permissions.edit_forum" :id_add="'main'" :item_id=item_id
-            :item_model="'forum'" :button_text="'edit metadata'"></form-button-and-modal>
-
-        <action-response-component :response=delete_forum_response></action-response-component>
-        <b-button v-if="user_permissions.delete_forum && !is_governance_forum" variant="outline-secondary"
-            class="btn-sm mr-2" id="delete_forum_button" @click="delete_forum">delete forum</b-button>
-
-        <router-link :to="{ name: 'action-history', params: {item_id: item_id, item_model: 'forum', item_name: forum.name }}">
-            <b-button variant="outline-secondary" class="btn-sm mr-2" id="forum_history_button">forum history</b-button>
-        </router-link>
-
-        <b-button variant="outline-secondary" id="forum_permissions_button" v-b-modal.item_permissions_modal
-            class="btn-sm mr-2">forum permissions</b-button>
-        <item-permissions-modal :item_id=item_id :item_model="'forum'" :item_name=forum.name>
-        </item-permissions-modal>
-
-        <b-button :href=json_export_url variant="outline-secondary" class="btn-sm" download>
-            export as json</b-button>
 
         <hr >
 
@@ -48,16 +41,16 @@
 import Vuex from 'vuex'
 import store from '../../store'
 import { UtilityMixin } from '../utils/Mixins'
-import ItemPermissionsModal from '../permissions/ItemPermissionsModal'
 import FormButtonAndModal from '../utils/FormButtonAndModal'
 import ActionResponseComponent from '../actions/ActionResponseComponent'
+import ResourceActionIcons from '../utils/ResourceActionIcons'
 
 
 export default {
 
     props: ['item_id'],
     store,
-    components: { ItemPermissionsModal, FormButtonAndModal, ActionResponseComponent },
+    components: { FormButtonAndModal, ActionResponseComponent, ResourceActionIcons },
     mixins: [UtilityMixin],
     data: function() {
             return {

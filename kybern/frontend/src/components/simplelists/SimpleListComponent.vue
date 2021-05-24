@@ -2,28 +2,20 @@
 
     <div class="bg-white p-3" v-if="list">
 
-        <h3>{{ list.name }}</h3>
+        <div class="title-and-actions mb-4">
+
+            <span class="h3 font-weight-bold">{{ list.name }}</span>
+
+            <resource-action-icons class="float-right" v-on:delete="delete_list" :item_id=list_id
+                :item_model="'list'" :item_name=list.name :edit_permission="user_permissions.edit_list"
+                :delete_permission="user_permissions.delete_list" :export_url=csv_export_url
+                :export_text="'export as csv'"></resource-action-icons>
+
+        </div>
+
+        <action-response-component :response=list_response class="mt-4"></action-response-component>
+
         <p>{{ list.description }}</p>
-
-        <form-button-and-modal v-if="user_permissions.edit_list" :id_add="'main'" :item_id=list_id
-            :item_model="'list'" :button_text="'edit metadata'"></form-button-and-modal>
-
-        <action-response-component :response=delete_list_response></action-response-component>
-        <b-button v-if="user_permissions.delete_list" variant="outline-secondary" class="btn-sm mr-2"
-            id="delete_list_button" @click="delete_list(list_id)">delete list</b-button>
-
-        <router-link :to="{ name: 'action-history', params: {item_id: list_id, item_model: 'simplelist', item_name: list.name }}">
-                <b-button variant="outline-secondary" class="btn-sm mr-2" id="list_history_button">
-                    list history</b-button>
-        </router-link>
-
-        <b-button variant="outline-secondary" id="list_permissions" v-b-modal.item_permissions_modal
-            class="btn-sm mr-2">list permissions</b-button>
-        <item-permissions-modal :item_id=list_id :item_model="'simplelist'" :item_name=list.name>
-        </item-permissions-modal>
-
-        <b-button :href=csv_export_url variant="outline-secondary" class="btn-sm  mr-2" download>
-            export as csv</b-button>
 
         <action-response-component :response=row_response class="mt-4"></action-response-component>
 
@@ -111,21 +103,20 @@
 import Vuex from 'vuex'
 import store from '../../store'
 import { UtilityMixin } from '../utils/Mixins'
-import ItemPermissionsModal from '../permissions/ItemPermissionsModal'
 import ActionResponseComponent from '../actions/ActionResponseComponent'
 import ColumnModalComponent from './ColumnModalComponent'
-import FormButtonAndModal from '../utils/FormButtonAndModal'
+import ResourceActionIcons from '../utils/ResourceActionIcons'
 
 
 export default {
 
-    components: { ItemPermissionsModal, ActionResponseComponent, ColumnModalComponent, FormButtonAndModal},
+    components: { ActionResponseComponent, ColumnModalComponent, ResourceActionIcons },
     props: ['list_id'],
     store,
     mixins: [UtilityMixin],
     data: function() {
             return {
-                delete_list_response: null,
+                list_response: null,
                 row_response: null,
                 base_export_url: "",
                 edit_item: null,
@@ -198,11 +189,11 @@ export default {
             this.mode = mode
             this.column_data = data ? data : { key: "", required: false, default_value: "" }
         },
-        delete_list(list_id) {
-            this.deleteList({list_pk: list_id})
+        delete_list() {
+            this.deleteList({list_pk: this.list_id})
             .then(response => {
                 if (response.data.action_status == "implemented") { this.$router.push({name: 'home'}) }
-                else { this.delete_list_response = response }
+                else { this.list_response = response }
             })
         },
         add_row() {

@@ -9,31 +9,20 @@
 
             <div class="bg-white p-3" v-if="post">
 
-                <h3>{{ post.title }}</h3>
-                <small class="text-muted">Posted in {{ forum_name }} on {{ display_date(post.created) }}
+                <div class="title-and-actions mb-4">
+
+                    <span class="h3 font-weight-bold">{{ post.title }}</span>
+
+                    <resource-action-icons class="float-right" v-on:delete="delete_post" :item_id=item_id
+                        :item_model="'post'" :item_name=post.title :edit_permission="user_permissions.edit_post"
+                        :delete_permission="user_permissions.delete_post"></resource-action-icons>
+
+                    <br /><small class="text-muted">Posted in {{ forum_name }} on {{ display_date(post.created) }}
                     by {{ getUserName(post.author) }}</small>
 
-                <!-- Nav links -->
-
-                <div class="my-3">
-
-                    <form-button-and-modal v-if="user_permissions.edit_post" :item_id=item_id
-                        :item_model="'post'" :button_text="'edit post'" :id_add="'main'"></form-button-and-modal>
-
-                    <action-response-component :response=delete_post_response></action-response-component>
-                    <b-button v-if="user_permissions.delete_post" variant="outline-secondary" class="btn-sm mr-2"
-                        id="delete_post_button" @click="delete_post(item_id)">delete post</b-button>
-
-                    <router-link :to="{ name: 'action-history', params: {item_id: item_id, item_model: 'post', item_name: post.title }}">
-                        <b-button variant="outline-secondary" id="post_history_button" class="btn-sm mr-2">post history</b-button>
-                    </router-link>
-
-                    <b-button variant="outline-secondary" id="post_permissions" v-b-modal.item_permissions_modal
-                        class="btn-sm mr-2">post permissions</b-button>
-                    <item-permissions-modal :item_id=item_id :item_model="'post'" :item_name=post.title>
-                    </item-permissions-modal>
-
                 </div>
+
+                <action-response-component :response=delete_post_response></action-response-component>
 
                 <!-- Content -->
                 <p class="mb-3 text-secondary">  {{ post.content }}  </p>
@@ -53,16 +42,15 @@ import store from '../../store'
 import { UtilityMixin } from '../utils/Mixins'
 import CommentListComponent from '../comments/CommentListComponent'
 import ResourceSidebarComponent from '../groups/ResourceSidebarComponent'
-import ItemPermissionsModal from '../permissions/ItemPermissionsModal'
-import FormButtonAndModal from '../utils/FormButtonAndModal'
 import ActionResponseComponent from '../actions/ActionResponseComponent'
+import ResourceActionIcons from '../utils/ResourceActionIcons'
 
 
 export default {
 
     props: ['forum_id', 'item_id'],
     store,
-    components: { CommentListComponent, ResourceSidebarComponent, ItemPermissionsModal, FormButtonAndModal, ActionResponseComponent },
+    components: { CommentListComponent, ResourceSidebarComponent, ActionResponseComponent, ResourceActionIcons },
     mixins: [UtilityMixin],
     data: function() {
             return {

@@ -8,27 +8,15 @@
 
             <template v-slot:footer>
 
-                <form-button-and-modal v-if="user_permissions.edit_comment" :id_add="'comment' + comment.pk"
-                    :item_id=comment.pk :item_model="'comment'" :button_text="'edit'"></form-button-and-modal>
-
-                <b-button v-if="user_permissions.delete_comment" variant="outline-secondary" class="btn-sm mr-2"
-                    @click="delete_comment(comment.pk)">delete</b-button>
                 <action-response-component :response=delete_comment_response></action-response-component>
-
-                <router-link :to="{ name: 'action-history', params: {item_id: comment.pk, item_model: 'comment',
-                        item_name: comment_name(comment.text) }}">
-                    <b-button variant="outline-secondary" class="btn-sm mr-2">comment history</b-button>
-                </router-link>
-
-                <b-button variant="outline-secondary" id="comment_permissions" v-b-modal.item_permissions_modal
-                    class="btn-sm mr-2">comment permissions</b-button>
-                <item-permissions-modal :item_id=comment.pk :item_model="'comment'"
-                    :item_name="comment_name(comment.text)"></item-permissions-modal>
-
-                <br />
 
                 <small class="text-muted">Posted {{ display_date(comment.created_at) }}
                     by {{ getUserName(comment.commenter_pk) }}</small>
+
+                <resource-action-icons class="float-right" v-on:delete="delete_comment(comment.pk)"
+                    :item_id=comment.pk :item_name="comment_name(comment.text)" :item_model="'comment'"
+                    :id_add="'comment' + comment.pk" :edit_permission="user_permissions.edit_comment"
+                    :delete_permission="user_permissions.delete_comment"></resource-action-icons>
 
             </template>
 
@@ -44,14 +32,13 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
-import ItemPermissionsModal from '../permissions/ItemPermissionsModal'
 import ActionResponseComponent from '../actions/ActionResponseComponent'
-import FormButtonAndModal from '../utils/FormButtonAndModal'
+import ResourceActionIcons from '../utils/ResourceActionIcons'
 
 
 export default {
 
-    components: {ItemPermissionsModal, ActionResponseComponent, FormButtonAndModal },
+    components: { ActionResponseComponent, ResourceActionIcons },
     props: ['item_id', 'item_model', 'comment'],
     store,
     data: function() {

@@ -378,7 +378,8 @@ const PermissionsVuexModule = {
         },
         async getPermissionsForItem({ commit, state, dispatch, getters }, payload) {
             var url = await getters.url_lookup('get_permissions')
-            var params = { item_id: payload.item_id, item_model: payload.item_model }
+            var item_model = payload.item_model == "list" ? "simplelist" : payload.item_model
+            var params = { item_id: payload.item_id, item_model: item_model }
             var implementationCallback = (response) => {
                 commit('REPLACE_ITEM_PERMISSIONS', { item_id: response.data.item_id,
                                                      item_model: response.data.item_model,

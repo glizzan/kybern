@@ -1,6 +1,6 @@
 <template>
 
-    <b-modal id="item_permissions_modal" :title="title_string" size="xl" hide-footer>
+    <b-modal :id="modal_id" :title="title_string" size="xl" hide-footer>
 
         <simple-permissions-display-component :permissions=permissions :item_id=item_id
             :item_model=item_model :item_name=item_name></simple-permissions-display-component>
@@ -18,7 +18,7 @@ import SimplePermissionsDisplayComponent from '../permissions/SimplePermissionsD
 
 export default {
 
-    props: ['item_id', 'item_model', 'item_name'],
+    props: ['item_id', 'item_model', 'item_name', 'id_add'],
     components: { SimplePermissionsDisplayComponent },
     store,
     created: function () {
@@ -31,6 +31,10 @@ export default {
         permissions: function() {
             return this.permissionsForItem(this.item_id + "_" + this.item_model, true)
         },
+        modal_id: function() {
+            if (this.id_add) { return "item_permissions_modal_" + this.id_add }
+            else { return "item_permissions_modal" }
+        }
     },
     methods: {
         ...Vuex.mapActions(['getPermissionsForItem']),
