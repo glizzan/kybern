@@ -13,7 +13,7 @@
             </b-list-group>
 
             <b-card v-if="governance_forum" class="bg-white mb-3">
-                <router-link :to="{ name: 'forum-detail', params: { forum_id: governance_forum.pk } }"
+                <router-link :to="{ name: 'forum-detail', params: { item_id: governance_forum.pk } }"
                     class="text-info">{{ governance_forum.name }}</router-link>
                 <p id="forum-description" class="my-2"> {{ governance_forum.description }} of {{ group_name }}</p>
             </b-card>

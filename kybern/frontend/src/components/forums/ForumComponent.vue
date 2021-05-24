@@ -1,6 +1,6 @@
 <template>
 
-    <div v-if="forum" class="bg-white p-3">
+    <div v-if="forum" class="bg-white p-3 rounded">
 
         <div class="title-and-actions mb-4">
 
@@ -13,7 +13,7 @@
 
         </div>
 
-        <action-response-component :response=list_response class="mt-4"></action-response-component>
+        <action-response-component :response=delete_forum_response class="mt-4"></action-response-component>
 
         <p>{{ forum.description }}</p>
 
@@ -23,11 +23,12 @@
             :button_text="'+ add post'" :supplied_params="{'forum_id':item_id}"></form-button-and-modal>
 
         <b-card v-for="{ pk, title, content, author, created } in posts" v-bind:key=pk
-                                            class="bg-light text-info border-secondary mt-3">
+                                            class="bg-light text-info mt-3 rounded">
             <router-link :to="{ name: 'post-detail', params: { forum_id: item_id, item_id: pk } }">
-                <b-card-title class="post-link">{{ title }}</b-card-title></router-link>
-            <p class="mb-1 text-secondary post-content">  {{ shorten_text(content, 100) }} </p>
-            <small class="text-muted">Posted by {{ author }} on {{ display_date(created) }}</small>
+                <span class="post-link text-info pb-1">{{ title }} </span>
+            </router-link>
+            <p class="mb-1 post-content text-dark">  {{ shorten_text(content, 100) }} </p>
+            <small class="text-muted">posted by {{ getUserName(author) }} on {{ display_date(created) }}</small>
         </b-card>
 
         <span v-if="Object.keys(posts).length === 0">There are no posts yet in this forum.</span>
@@ -103,7 +104,7 @@ export default {
     },
     methods: {
         ...Vuex.mapActions(['checkPermissions', 'getForum', 'getPosts', 'deleteForum']),
-        display_date(date) { return Date(date) },
+        display_date(date) { return new Date(date).toUTCString() },
         delete_forum() {
             this.deleteForum({ pk: this.item_id })
             .then(response => {
@@ -116,3 +117,21 @@ export default {
 }
 
 </script>
+
+<style scoped>
+
+ .text-info {
+     border: none;
+ }
+
+ a {
+     font-size: 120%;
+     font-weight: bold;
+ }
+
+ a:hover {
+     text-decoration: none;
+ }
+
+
+</style>

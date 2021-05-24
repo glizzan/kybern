@@ -1,9 +1,9 @@
 <template>
 
-  <div class="bg-white p-3">
+  <div class="bg-white p-3 rounded">
 
     <b-container fluid id="action_history_table">
-      <b-row>
+      <b-row align-h="end" class="my-2">
 
           <b-col lg="6" class="my-4">
               <b-form-group label="Filter" label-cols-sm="3" label-align-sm="left" label-size="sm"
@@ -15,50 +15,36 @@
               </b-form-group>
           </b-col>
 
-          <b-col lg="6" class="my-4">
-              <b-form-group label="Sort" label-cols-sm="3" label-align-sm="right" label-size="sm"
-                                                              label-for="sortBySelect" class="mb-0">
-                <b-input-group size="sm">
-                  <b-form-select v-model="sortBy" id="sortBySelect" :options="sortOptions" class="w-75">
-                    <template v-slot:first><option value=""></option></template>
-                  </b-form-select>
-                  <b-form-select v-model="sortDesc" size="sm" :disabled="!sortBy" class="w-25">
-                    <option :value="false">Asc</option>
-                    <option :value="true">Desc</option>
-                  </b-form-select>
-                </b-input-group>
-              </b-form-group>
-          </b-col>
         </b-row>
 
-          <b-table hover fixed :items="item_actions" :fields="action_fields"
+          <b-table hover :items="item_actions" :fields="action_fields"
               :sort-by.sync="sortBy" :sort-desc.sync="sortDesc" :filter="filter"
-              :filterIncludedFields="filterOn" id="action_history_table_element">
+              :filterIncludedFields="filterOn" id="action_history_table_element" responsive>
 
-          <!-- Custom formatting for see more column -->
-          <template v-slot:cell(description)="data">
-
-            <router-link :to="{ name: 'user-permissions', params: { user_pk: data.item.actor_pk }}" class="text-info">
-                {{ data.item.actor}}
+          <template v-slot:cell(actor)="data">
+            <router-link :to="{ name: 'user-permissions', params: { user_pk: data.item.actor_pk }}"
+                class="font-weight-bold text-info">{{ data.item.actor}}
             </router-link>
-            {{ data.item.description}}
+          </template>
 
+          <template v-slot:cell(action)="data">
+              {{ data.item.description}}
+          </template>
+
+          <template v-slot:cell(date)="data">
+              {{ data.item.display_date }}
+          </template>
+
+          <template v-slot:cell(status)="data">
+              {{ data.item.status }}
+          </template>
+
+          <template v-slot:cell(more)="data">
             <router-link :to="{ name: 'action-detail', params: { action_id: data.item.action_pk }}">
-                <b-button variant="outline-secondary" class="btn-sm action-link-button float-right">link</b-button>
+                <b-button variant="outline-secondary" class="btn-sm ml-2 action-link-button">see more</b-button>
             </router-link>
-
-            <br />
-
-            <small>
-                  <b>Status: {{ data.item.status }}
-                    <span v-if="data.item.status == 'implemented'">
-                        (passed via {{ data.item.resolution_passed_by }} permission)</span></b>
-
-                  {{ data.item.display_date }}
-            </small>
-            <b-badge v-if="data.item.has_condition.exists" variant="info">has condition</b-badge>
-            <b-badge v-if="data.item.is_template" variant="warning">template action</b-badge>
-
+            <b-badge v-if="data.item.has_condition.exists" variant="info" class="ml=2">has condition</b-badge>
+            <b-badge v-if="data.item.is_template" variant="warning" class="ml=2">template action</b-badge>
           </template>
 
         </b-table>
@@ -83,7 +69,12 @@ export default {
     data: function() {
           return {
             action_fields: [
-              { key: 'description', label: "Actions", sortable: false },
+                { key: 'actor', label: "Actor", sortable: true },
+                { key: 'action', label: "Action", sortable: true },
+                { key: 'date', label: "When", sortable: true },
+                { key: 'status', label: "Status", sortable: true },
+                { key: 'more', label: "More Info", sortable: true }
+
             ],
             sortBy: 'created',
             sortDesc: true,

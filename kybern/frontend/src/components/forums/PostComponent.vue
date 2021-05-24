@@ -7,7 +7,7 @@
         </b-col>
         <b-col cols=9>
 
-            <div class="bg-white p-3" v-if="post">
+            <div class="bg-white p-3 rounded" v-if="post">
 
                 <div class="title-and-actions mb-4">
 
@@ -17,15 +17,16 @@
                         :item_model="'post'" :item_name=post.title :edit_permission="user_permissions.edit_post"
                         :delete_permission="user_permissions.delete_post"></resource-action-icons>
 
-                    <br /><small class="text-muted">Posted in {{ forum_name }} on {{ display_date(post.created) }}
-                    by {{ getUserName(post.author) }}</small>
+                    <div id="author" class="mt-2"> by <span class="user-link">{{ getUserName(post.author) }}</span></div>
+                    <div id="post-info" class="mt-2 small">
+                        posted in {{ forum_name }} on {{ display_date(post.created) }}</div>
 
                 </div>
 
                 <action-response-component :response=delete_post_response></action-response-component>
 
                 <!-- Content -->
-                <p class="mb-3 text-secondary">  {{ post.content }}  </p>
+                <p class="mb-4 post-text">  {{ post.content }}  </p>
                 <CommentListComponent :item_id=item_id :item_model="'post'" class="mt-3"></CommentListComponent>
 
             </div>
@@ -85,7 +86,9 @@ export default {
     },
     methods: {
         ...Vuex.mapActions(['checkPermissions', 'deletePost', 'getPost', 'getForum', 'getGovernanceData']),
-        display_date(date) { return Date(date) },
+        display_date(date) {
+            return new Date(date).toUTCString()
+        },
         delete_post(pk) {
             this.deletePost({ pk : pk, forum_pk: this.forum_id })
             .then(response => {
@@ -100,3 +103,16 @@ export default {
 }
 
 </script>
+
+<style scoped>
+
+    .post-text {
+        font-size: 120%;
+    }
+
+    .user-link {
+        color: #17a2b8;
+        font-weight: bold;
+    }
+
+</style>

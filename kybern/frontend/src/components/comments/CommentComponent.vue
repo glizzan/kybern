@@ -2,7 +2,7 @@
 
     <span>
 
-        <b-card class="my-3">
+        <b-card class="my-3 rounded">
 
             <b-card-text>{{ comment.text }}</b-card-text>
 
@@ -10,8 +10,8 @@
 
                 <action-response-component :response=delete_comment_response></action-response-component>
 
-                <small class="text-muted">Posted {{ display_date(comment.created_at) }}
-                    by {{ getUserName(comment.commenter_pk) }}</small>
+                <small class="text-muted">posted by <span class="user-link">{{ getUserName(comment.commenter_pk) }}</span>
+                    on {{ display_date(comment.created_at) }}</small>
 
                 <resource-action-icons class="float-right" v-on:delete="delete_comment(comment.pk)"
                     :item_id=comment.pk :item_name="comment_name(comment.text)" :item_model="'comment'"
@@ -62,7 +62,7 @@ export default {
     },
     methods: {
         ...Vuex.mapActions(['checkPermissions', 'deleteComment']),
-        display_date(date) { return Date(date) },
+        display_date(date) { return  new Date(date).toUTCString() },
         comment_name(text) {
             if (text.length > 50) {
                 return "Comment: " + text.substr(0, 50) + "...'"
@@ -81,3 +81,15 @@ export default {
 }
 
 </script>
+
+<style scoped>
+    .card-text {
+        color: #404040
+    }
+
+    .user-link {
+        color: #17a2b8;
+        font-weight: bold;
+    }
+
+</style>
