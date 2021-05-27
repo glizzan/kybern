@@ -5,8 +5,8 @@
             <p>In addition to the required "members" role, groups can add custom roles which different people can
             be assigned to. Each role has different rights and responsibilities within the community.</p>
 
-            <b-button v-if="user_permissions.add_role_to_community" class="btn-sm mr-3 mb-3" variant="info"
-                v-b-modal.add_role_modal id="add_role_button">add a role</b-button>
+            <b-button class="btn-sm mr-3 mb-3" variant="info" v-b-modal.add_role_modal
+                id="add_role_button">add a role</b-button>
 
             <b-button v-if="user_permissions.apply_template" class="btn-sm mb-3" variant="info"
                 v-b-modal.apply_template_modal_role id="apply_role_templates">apply role templates</b-button>
@@ -79,7 +79,7 @@ export default {
         }
     },
     created () {
-        this.checkPermissions({permissions: {"add_role_to_community": null, "apply_template": null}})
+        this.checkPermissions({permissions: {"apply_template": null}})
         .catch(error => {  this.error_message = error; console.log(error) })
     },
     computed: {

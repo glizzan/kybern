@@ -8,8 +8,9 @@
                     <h3>Action Details</h3>
                     <div class="info"><span class="label">Action ID</span>: {{ action.action_pk }}</div>
                     <div class="info"><span class="label">Actor</span>: <span class="user-link">{{ action.actor }}</span></div>
-                    <div class="info"><span class="label">Datee</span>: {{ action.display_date }}</div>
+                    <div class="info"><span class="label">Time</span>: {{ action.display_date }}</div>
                     <div class="info"><span class="label">Description</span>: {{ action.description }}</div>
+                    <div class="info"><span class="label">Actor's note</span>: {{ action.note }}</div>
 
                     <div v-if=action.is_template>
                         <h6>This is a template action.</h6>

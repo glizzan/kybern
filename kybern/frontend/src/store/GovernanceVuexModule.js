@@ -276,11 +276,17 @@ const GovernanceVuexModule = {
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async addRole ({ commit, state, dispatch, getters}, payload) {
-            var url = await getters.url_lookup('add_role_to_group')
-            var params = { role_name: payload.role_name }
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "add_role_to_community", role_name: payload.role_name }
             var implementationCallback = () => { commit('ADD_ROLE', { role_name: payload.role_name }) }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
+        // async addRole ({ commit, state, dispatch, getters}, payload) {
+        //     var url = await getters.url_lookup('add_role_to_group')
+        //     var params = { role_name: payload.role_name }
+        //     var implementationCallback = () => { commit('ADD_ROLE', { role_name: payload.role_name }) }
+        //     return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+        // },
         async removeRole ({ commit, state, dispatch, getters}, payload) {
             var url = await getters.url_lookup('remove_role_from_group')
             var params = { role_name: payload.role_name }

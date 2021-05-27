@@ -27,13 +27,14 @@ urlpatterns = [
     path('api/get_permission_data/<int:target>/', views.get_permission_data, name='get_permission_data'),
     path('api/get_forum_data/<int:target>/', views.get_forum_data, name='get_forum_data'),
 
+    # dynamic views
+    path('api/<int:target>/take_action', views.take_action, name='take_action'),
+
     # group change views
     path('api/change_group_name/', views.change_group_name, name='change_group_name'),
     path('api/change_group_description/', views.change_group_description, name='change_group_description'),
 
     # role & membership views
-    path('api/add_role/<int:target>/', views.add_role, name='add_role_to_group'),
-    path('api/remove_role/<int:target>/', views.remove_role, name='remove_role_from_group'),
     path('api/add_people_to_role/<int:target>/', views.add_people_to_role, name='add_people_to_role'),
     path('api/remove_people_from_role/<int:target>/', views.remove_people_from_role, name='remove_people_from_role'),
     path('api/add_members/<int:target>/', views.add_members, name='add_members'),
@@ -49,6 +50,7 @@ urlpatterns = [
     path('api/change_item_permission_override/', views.change_item_permission_override,
          name='change_item_permission_override'),
     path('api/toggle_anyone/<int:target>/', views.toggle_anyone, name='toggle_anyone'),
+    path('api/check_permission/<int:target>/', views.check_permission, name='check_permission'),
     path('api/check_permissions/<int:target>/', views.check_permissions, name='check_permissions'),
 
     # path('get_user_permissions/<int:target>/', views.get_user_permissions, name='get_user_permissions'),
@@ -63,6 +65,7 @@ urlpatterns = [
     path('api/update_governors/<int:target>/', views.update_governors, name='update_governors'),
 
     # action and condition-instance views
+    path('api/add_note_to_action/', views.add_note_to_action, name='add_note_to_action'),
     path('api/get_action_data/', views.get_action_data, name='get_action_data'),
     path('api/get_action_data_for_target/', views.get_action_data_for_target, name='get_action_data_for_target'),
     path('api/get_conditional_data/', views.get_conditional_data, name='get_conditional_data'),

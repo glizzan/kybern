@@ -427,6 +427,22 @@ const PermissionsVuexModule = {
         return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
 
+        // TODO: simplify implementation callback, possibly (copied from checkPermissions)
+        async checkPermission ({ commit, state, dispatch, getters }, payload) {
+            var url = await getters.url_lookup('check_permission')
+            var params = { permission_name: payload.name, alt_target: payload.alt_target, params: payload.params }
+            var implementationCallback = (response) => {
+                var permissions = null
+                if (payload.aliases) {
+                    permissions = swap_aliases(payload.aliases, response.data.user_permissions)
+                } else {
+                    permissions = response.data.user_permissions
+                }
+                commit('ADD_OR_UPDATE_CURRENT_USER_PERMISSIONS', { user_permissions: permissions })
+            }
+            return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+        },
+
         async checkPermissions ({ commit, state, dispatch, getters }, payload) {
             var url = await getters.url_lookup('check_permissions')
             var params = { permissions: payload.permissions }

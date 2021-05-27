@@ -96,6 +96,7 @@ def process_action(action):
         "actor": action.actor.username,
         "actor_pk": action.actor.pk,
         "status": action.status,
+        "note": action.note,
         "resolution_passed_by": action.approved_through(),
         "display": action_string,
         "is_template": action.change.get_change_type() == Changes().Actions.ApplyTemplate,
@@ -434,6 +435,27 @@ def get_forum_data(request, target):
     })
 
 
+#####################
+### Dynamic Views ###
+#####################
+
+
+@login_required
+def take_action(request, target):
+
+    request_data = json.loads(request.body.decode('utf-8'))
+
+    client = Client(actor=request.user)
+    target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=target)
+
+    action_name = request_data.pop('action_name')
+    method = client.get_method(action_name)
+    action, result = method(**request_data)
+
+    return JsonResponse(get_action_dict(action))
+
+
 ####################
 ### Group Views ###
 ####################
@@ -664,34 +686,6 @@ def delete_post(request, target):
 ################################################################################
 ### Helper methods, likely to be moved to concord, called by vuex data store ###
 ################################################################################
-
-
-@login_required
-def add_role(request, target):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-
-    client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=target)
-    client.update_target_on_all(target=target)
-
-    action, result = client.Community.add_role_to_community(role_name=request_data['role_name'])
-
-    return JsonResponse(get_action_dict(action))
-
-
-@login_required
-def remove_role(request, target):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-
-    client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=target)
-    client.update_target_on_all(target=target)
-
-    action, result = client.Community.remove_role_from_community(role_name=request_data['role_name'])
-
-    return JsonResponse(get_action_dict(action))
 
 
 @login_required
@@ -1272,6 +1266,27 @@ def get_comment_data(request):
 
 
 @login_required
+def add_note_to_action(request):
+    """This is a hacky temporary view to handle overriding any permissions issues and letting
+    an actor update their action with anote. Once actions have been cleaned up and
+    we can edit the process in just one place, we can merge this with the normal action process."""
+
+    request_data = json.loads(request.body.decode('utf-8'))
+    action_pk = request_data.get("action_pk")
+    note = request_data.get("note")
+
+    from concord.actions.models import Action
+    action = Action.objects.get(pk=int(action_pk))
+    if not action.note:
+        action.note = note
+        action.save()
+    else:
+        print(f"Warning, action already had note {action.note}")
+
+    return JsonResponse({"success": True})
+
+
+@login_required
 def add_comment(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -1603,6 +1618,29 @@ def get_alt_target(client, params):
             comments mostly), we automatically give people access to Action comments"""
             return "action"
         return client.Action.get_object_given_model_and_pk(model, int(pk))
+
+
+def get_alt_target2(client, alt_target):
+    model, pk = alt_target.split("_")
+    if model == "action":
+        """Action is not a PermissionedModel but rarely gets set as target (through
+        comments mostly), we automatically give people access to Action comments"""
+        return "action"
+    return client.Action.get_object_given_model_and_pk(model, int(pk))
+
+
+@transaction.non_atomic_requests
+@reformat_input_data
+@login_required
+def check_permission(request, target, permission_name, alt_target=None, params=None):
+
+    client = Client(actor=request.user)
+    default_target = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=default_target)
+
+    result = client.PermissionResource.has_permission(client, permission_name, params, exclude_conditional=True)
+
+    return JsonResponse({"user_permissions": {permission_name: result} })
 
 
 @transaction.non_atomic_requests

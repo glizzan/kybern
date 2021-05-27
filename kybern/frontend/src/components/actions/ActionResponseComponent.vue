@@ -3,8 +3,8 @@
     <div v-if="response">
 
         <b-alert :show=showAlert :variant=variant dismissible @dismissed="showAlert = false">
-            <span v-if="status == 'waiting' || status == 'implemented'" v-html=processed_message></span>
-            <span v-else>{{ processed_message }}</span>
+            <span v-if="status == 'invalid'" >{{ processed_message }}</span>
+            <span v-else v-html=processed_message></span>
         </b-alert>
 
     </div>
@@ -60,16 +60,23 @@ module.exports = {
                     return this.response.data.user_message
                 }
                 if (this.status == "rejected") {
-                    if (this.response.data.user_message) {
-                        return "This action cannot be taken because: " + this.response.data.user_message
-                    } else {
-                        return "You do not have permission to take this action."
-                    }
+                    return "Your action has been rejected because you do not have permission to take it. " +
+                        "You can discuss the issue further <a id='history_link' href='" + link + "'>here</a>."
                 }
             }
+            console.log("Warning, no response given for status ", this.status)
         }
     }
 
 }
 
 </script>
+
+<style scoped>
+
+    a, a:hover {
+        font-weight: bold;
+        text-decoration: none;
+    }
+
+</style>
