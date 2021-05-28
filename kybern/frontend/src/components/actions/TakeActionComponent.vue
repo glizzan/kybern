@@ -45,7 +45,7 @@ import ActionResponseComponent from '../actions/ActionResponseComponent'
 
 export default {
 
-    props: ['verb', 'action_name', 'alt_target', 'response', 'check_permissions_params', 'inline'],
+    props: ['verb', 'action_name', 'alt_target', 'response', 'check_permissions_params', 'inline', 'unique'],
     components: { ActionFormComponent, ActionResponseComponent },
     store,
     data: function() {
@@ -66,7 +66,10 @@ export default {
     },
     computed: {
         ...Vuex.mapState({ user_permissions: state => state.permissions.current_user_permissions }),
-        modal_id: function() { return this.verb + "_action_modal" },
+        modal_id: function() {
+            var unique = this.unique ? this.unique : ""
+            return this.verb + "_action_modal_" +  unique
+        },
         button_template_provided () {
             return !!this.$slots.default
         },

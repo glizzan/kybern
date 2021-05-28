@@ -501,6 +501,28 @@ def take_proposed_action(request, target):
     return JsonResponse({"action_data": process_action(action)})
 
 
+# @login_required
+# def add_comment_to_template(request):
+#     """Helper method for the odd edge cases of adding comments in the templates library.
+#     (Editing and deleting comments can be handled through the typical methods, with the
+#     comment specified as alt_target."""
+#     from concord.actions.models import TemplateModel
+
+#     request_data = json.loads(request.body.decode('utf-8'))
+
+#     pk = request_data.get("pk")
+#     target = TemplateModel.objects.get(pk=pk)
+#     text = request_data.get("text")
+
+#     client = Client(actor=request.user, target=target)
+#     action, result = client.Comment.add_comment(text=text)
+
+#     action_dict = get_action_dict(action)
+#     if result:
+#         action_dict.update({'comment': serialize_existing_comment_for_vue(result)})
+#     return JsonResponse(action_dict)
+
+
 ####################
 ### Group Views ###
 ####################
@@ -1505,8 +1527,15 @@ def get_alt_target2(client, alt_target):
 def check_permission(request, target, permission_name, alt_target=None, params=None):
 
     client = Client(actor=request.user)
-    default_target = client.Community.get_community(community_pk=target)
-    client.update_target_on_all(target=default_target)
+
+    if alt_target:
+        target_to_use = get_alt_target2(client, alt_target)
+    else:
+        target_to_use = client.Community.get_community(community_pk=target)
+    client.update_target_on_all(target=target_to_use)
+
+    # if target_to_use.__class__.__name__ == "TemplateModel":
+    #         return JsonResponse({"user_permissions": {permission_name: True} })
 
     result = client.PermissionResource.has_permission(client, permission_name, params, exclude_conditional=True)
 

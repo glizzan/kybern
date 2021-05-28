@@ -19,8 +19,8 @@
 
         <hr >
 
-        <form-button-and-modal v-if="user_permissions.add_post" :item_model="'post'"
-            :button_text="'+ add post'" :supplied_params="{'forum_id':item_id}"></form-button-and-modal>
+        <form-button-and-modal :item_model="'post'" :button_text="'+ add post'" :supplied_params="{'forum_id':item_id}">
+        </form-button-and-modal>
 
         <b-card v-for="{ pk, title, content, author, created } in posts" v-bind:key=pk
                                             class="bg-light text-info mt-3 rounded">

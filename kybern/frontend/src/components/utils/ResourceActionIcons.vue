@@ -4,7 +4,8 @@
 
         <form-button-and-modal :id_add=id_to_add :item_id=item_id :item_model=item_model></form-button-and-modal>
 
-        <take-action-component v-on:take-action="$emit('delete')" :verb="'delete ' + item_model" :response=response>
+        <take-action-component v-on:take-action="$emit('delete')" :verb="'delete ' + item_model"
+            :alt_target="item_model + '_' + item_id" :response=response :unique=item_id>
             <b-icon-trash :id="'delete_' + item_model + '_button'" class="mr-2" v-b-tooltip.hover
                 :title="'delete ' + item_model"></b-icon-trash>
         </take-action-component>

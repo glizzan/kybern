@@ -39,11 +39,12 @@ const GovernanceVuexModule = {
         rolesAsOptions: (state, getters) => {
             return getters.allRoles.map(role => { return {name: role.name } })
         },
-        getUser: (state) => (pk) => {
+        getUser: (state, getters) => (pk) => {
             return state.users.find(user => user.pk == pk)
         },
         getUserName: (state, getters) => (pk) => {
-            return getters.getUser(pk).name
+            var user = getters.getUser(pk)
+            if (user) { return user.name } else { console.log("Warning: user not found for ", pk); return pk }
         },
         userInGroup: (state, getters) => (pk) => {
             return state.members.includes(pk)
