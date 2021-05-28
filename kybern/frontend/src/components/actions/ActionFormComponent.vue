@@ -24,6 +24,7 @@
         <action-response-component :response=response></action-response-component>
 
         <b-button v-if="!complete" variant="info" id="submit_action" @click="submit">submit</b-button>
+        <b-spinner v-if="action_sent && !response" small label="Spinner" class="ml-2"></b-spinner>
 
     </div>
 
@@ -47,6 +48,7 @@ export default {
             warning: null,
             action_note_text: "",
             complete: false,
+            action_sent: false
         }
     },
     created () { if (!this.actor_can_take) { this.mode = "propose"} },
@@ -98,7 +100,14 @@ export default {
                 return
             }
             this.warning = null
-            this.$emit('take-action')  // may need more data passed back
+            this.action_sent = true
+
+            if (this.mode == "propose") {
+                var proposed = this.actor_can_take ? "propose-vol" : "propose-req"
+                this.$emit('take-action', {proposed: proposed})
+            } else {
+                this.$emit('take-action', {})  // may need more data passed back
+            }
         }
     }
 

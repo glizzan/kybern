@@ -85,6 +85,15 @@ const ActionsVuexModule = {
                 dispatch('addOrUpdateAction', { action_pk: payload.action_pk })
             }
             return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+        },
+
+        async retakeAction ({ state, commit, rootState, dispatch, getters }, payload) {
+            var url = await getters.url_lookup('take_proposed_action')
+            var params = { action_pk : payload.action_pk }
+            var implementationCallback = (response) => {
+                dispatch('addOrUpdateAction', { action_pk: payload.action_pk })
+            }
+            return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         }
     }
 }

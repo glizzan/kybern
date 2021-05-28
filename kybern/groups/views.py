@@ -122,9 +122,9 @@ def get_action_dict(action, fetch_template_actions=False):
             "action_developer_log": action.error_message
         }
 
-    action_created = True if action.status in ["implemented", "approved", "waiting", "rejected"] else False
+    created_statuses = ["implemented", "approved", "waiting", "rejected", "propose-req", "propose-vol"]
     return {
-        "action_created": action_created,
+        "action_created": True if action.status in created_statuses else False,
         "action_status": action.status,
         "action_pk": action.pk,
         "is_template": action.change.get_change_type() == Changes().Actions.ApplyTemplate,
@@ -440,20 +440,65 @@ def get_forum_data(request, target):
 #####################
 
 
+def serialize_item(result):
+    """Workaround for now, we should probably just have a serialize method on these guys."""
+    if result.__class__.__name__ == "Forum":
+        return serialize_forum_for_vue(result)
+    if result.__class__.__name__ == "Post":
+        return serialize_post_for_vue(result)
+    print("Warning, no serializing match found for result: ", result)
+
+
 @login_required
 def take_action(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
-
     client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=target)
-    client.update_target_on_all(target=target)
 
+    # set target as community, unless alt_target is provided
+    alt_target = request_data.pop("alt_target", None)
+    if alt_target:
+        model, pk = alt_target.split("_")
+        new_target = client.Action.get_object_given_model_and_pk(model, int(pk))
+        client.update_target_on_all(target=new_target)
+    else:
+        target = client.Community.get_community(community_pk=target)
+        client.update_target_on_all(target=target)
+
+    data_to_return = request_data.pop("return", None)
+    extra_data = request_data.pop("extra_data", None)
+    proposed = extra_data.pop("proposed", None)
+
+    # actually call backend method to take action
     action_name = request_data.pop('action_name')
     method = client.get_method(action_name)
-    action, result = method(**request_data)
+    action, result = method(proposed=proposed, **request_data)
 
-    return JsonResponse(get_action_dict(action))
+    # process data to return
+    action_dict = get_action_dict(action)
+    if data_to_return and action.status == "implemented":
+        if data_to_return == "deleted_item_pk":
+            action_dict["deleted_item_pk"] = result
+        else:  # the only other options are created_instance + edited_instance, which are handled the same
+            action_dict[data_to_return] = serialize_item(result)
+
+    return JsonResponse(action_dict)
+
+
+@login_required
+def take_proposed_action(request, target):
+    request_data = json.loads(request.body.decode('utf-8'))
+    client = Client(actor=request.user)
+    action_pk = request_data.pop("action_pk", None)
+    action = client.Action.get_action_given_pk(pk=action_pk)
+
+    if action.actor != request.user:
+        return JsonResponse({
+            "action_status": "invalid", "action_developer_log": None,
+            "user_message": "you can only take an action you proposed"})
+
+    action = client.Action.retake_action(action=action)
+    return JsonResponse({"action_data": process_action(action)})
 
 
 ####################
@@ -543,62 +588,6 @@ def get_forum(request, target):
 
 
 @login_required
-def add_forum(request, target):
-
-    client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=target)
-    client.update_target_on_all(target=target)
-
-    request_data = json.loads(request.body.decode('utf-8'))
-    name = request_data.get("name")
-    description = request_data.get("description", None)
-
-    action, result = client.Forum.add_forum(name=name, description=description)
-
-    action_dict = get_action_dict(action)
-    if action.status == "implemented":
-        action_dict["created_instance"] = serialize_forum_for_vue(result)
-    return JsonResponse(action_dict)
-
-
-@login_required
-def edit_forum(request, target):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-    pk = request_data.get("pk")
-    name = request_data.get("name", None)
-    description = request_data.get("description", None)
-
-    client = Client(actor=request.user)
-    forum = client.Forum.get_forum_given_pk(pk)
-    client.Forum.set_target(target=forum)
-
-    action, result = client.Forum.edit_forum(name=name, description=description)
-
-    action_dict = get_action_dict(action)
-    if action.status == "implemented":
-        action_dict["edited_instance"] = serialize_forum_for_vue(result)
-    return JsonResponse(action_dict)
-
-
-@login_required
-def delete_forum(request, target):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-    pk = request_data.get("pk")
-
-    client = Client(actor=request.user)
-    forum = client.Forum.get_forum_given_pk(pk)
-    client.Forum.set_target(target=forum)
-
-    action, result = client.Forum.delete_forum()
-
-    action_dict = get_action_dict(action)
-    action_dict["deleted_forum_pk"] = pk
-    return JsonResponse(action_dict)
-
-
-@login_required
 def get_posts_for_forum(request, target):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -626,128 +615,9 @@ def get_post(request, target):
     return JsonResponse({'post': serialize_post_for_vue(post)})
 
 
-@login_required
-def add_post(request, target):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-    forum_pk = request_data.get("forum_pk")
-    title = request_data.get("title")
-    content = request_data.get("content", None)
-
-    client = Client(actor=request.user)
-    forum = client.Forum.get_forum_given_pk(forum_pk)
-    client.Forum.set_target(target=forum)
-
-    action, result = client.Forum.add_post(title=title, content=content)
-
-    action_dict = get_action_dict(action)
-    if action.status == "implemented":
-        action_dict["created_instance"] = serialize_post_for_vue(result)
-    return JsonResponse(action_dict)
-
-
-@login_required
-def edit_post(request, target):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-    pk = request_data.get("pk")
-    title = request_data.get("title", None)
-    content = request_data.get("content", None)
-
-    client = Client(actor=request.user)
-    post = client.Forum.get_post_given_pk(pk)
-    client.Forum.set_target(target=post)
-
-    action, result = client.Forum.edit_post(title=title, content=content)
-
-    action_dict = get_action_dict(action)
-    if action.status == "implemented":
-        action_dict["edited_instance"] = serialize_post_for_vue(result)
-    return JsonResponse(action_dict)
-
-
-@login_required
-def delete_post(request, target):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-    pk = request_data.get("pk")
-
-    client = Client(actor=request.user)
-    post = client.Forum.get_post_given_pk(pk)
-    client.Forum.set_target(target=post)
-
-    action, result = client.Forum.delete_post()
-
-    action_dict = get_action_dict(action)
-    action_dict["deleted_post_pk"] = pk
-    return JsonResponse(action_dict)
-
-
 ################################################################################
 ### Helper methods, likely to be moved to concord, called by vuex data store ###
 ################################################################################
-
-
-@login_required
-def add_members(request, target):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-
-    client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=target)
-    client.update_target_on_all(target=target)
-
-    action, result = client.Community.add_members_to_community(member_pk_list=request_data["user_pks"])
-
-    return JsonResponse(get_action_dict(action))
-
-
-@login_required
-def remove_members(request, target):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-
-    client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=target)
-    client.update_target_on_all(target=target)
-
-    action, result = client.Community.remove_members_from_community(member_pk_list=request_data['user_pks'])
-
-    return JsonResponse(get_action_dict(action))
-
-
-@login_required
-def add_people_to_role(request, target):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-
-    client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=target)
-    client.update_target_on_all(target=target)
-
-    action, result = client.Community.add_people_to_role(
-        role_name=request_data['role_name'],
-        people_to_add=request_data['user_pks']
-    )
-
-    return JsonResponse(get_action_dict(action))
-
-
-@login_required
-def remove_people_from_role(request, target):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-
-    client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=target)
-    client.update_target_on_all(target=target)
-
-    action, result = client.Community.remove_people_from_role(
-        role_name=request_data['role_name'],
-        people_to_remove=request_data['user_pks']
-    )
-
-    return JsonResponse(get_action_dict(action))
 
 
 ####################################

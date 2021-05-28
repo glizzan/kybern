@@ -39,8 +39,8 @@ export default {
     },
     methods: {
         ...Vuex.mapActions(['addRole']),
-        submitRoleName() {
-            this.addRole({ role_name: this.new_role_name })
+        submitRoleName(extra_data) {
+            this.addRole({ role_name: this.new_role_name, extra_data: extra_data })
             .then(response => { this.response = response })
         }
     }

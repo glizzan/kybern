@@ -1,13 +1,17 @@
 <template>
 
+<span>
+
     <div v-if="response">
 
-        <b-alert :show=showAlert :variant=variant dismissible @dismissed="showAlert = false">
+        <b-alert :show=showAlert :variant=variant dismissible @dismissed="suppress_alert = true">
             <span v-if="status == 'invalid'" >{{ processed_message }}</span>
             <span v-else v-html=processed_message></span>
         </b-alert>
 
     </div>
+
+</span>
 
 </template>
 
@@ -19,14 +23,15 @@ module.exports = {
     data: function() {
         return {
             unique_identifier: null,
-            showAlert: false
+            suppress_alert: false
         }
-    },
-    watch: {
-        response: function(val) { if (val) { this.showAlert = true } }
     },
     computed: {
         ...Vuex.mapState({group_pk: state => state.group_pk}),
+        showAlert: function() {
+            if (this.response && !this.suppress_alert) { return true }
+            return false
+        },
         status: function() {
             if (this.response && this.response.data.action_status) {
                 return this.response.data.action_status
@@ -35,7 +40,7 @@ module.exports = {
             }
         },
         variant: function() {
-            if (this.status == "waiting") { return "warning"}  // yellow
+            if (["waiting", "propose-req", "propose-vol"].includes(this.status)) { return "warning"}  // yellow
             if (this.status == "invalid") { return "danger" }  // red
             if (this.status == "rejected") { return "info" }   // blue
             if (this.status == "implemented") { return "success" }  // green
@@ -62,6 +67,14 @@ module.exports = {
                 if (this.status == "rejected") {
                     return "Your action has been rejected because you do not have permission to take it. " +
                         "You can discuss the issue further <a id='history_link' href='" + link + "'>here</a>."
+                }
+                if (this.status == "propose-vol") {
+                    return "Your action has been proposed. Visit <a id='history_link' href='" + link + "'>this link</a>" +
+                        " to discuss further or to go ahead and take your action."
+                }
+                if (this.status == "propose-req") {
+                    return "Your action has been proposed. Visit <a id='history_link' href='" + link + "'>this link</a>" +
+                        " for further discussion."
                 }
             }
             console.log("Warning, no response given for status ", this.status)

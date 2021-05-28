@@ -29,16 +29,13 @@ urlpatterns = [
 
     # dynamic views
     path('api/<int:target>/take_action', views.take_action, name='take_action'),
+    path('api/<int:target>/take_proposed_action', views.take_proposed_action, name='take_proposed_action'),
 
     # group change views
     path('api/change_group_name/', views.change_group_name, name='change_group_name'),
     path('api/change_group_description/', views.change_group_description, name='change_group_description'),
 
     # role & membership views
-    path('api/add_people_to_role/<int:target>/', views.add_people_to_role, name='add_people_to_role'),
-    path('api/remove_people_from_role/<int:target>/', views.remove_people_from_role, name='remove_people_from_role'),
-    path('api/add_members/<int:target>/', views.add_members, name='add_members'),
-    path('api/remove_members/<int:target>/', views.remove_members, name='remove_members'),
     path('api/get_data_for_role/<int:target>/', views.get_data_for_role, name='get_data_for_role'),
 
     # permission views
@@ -76,14 +73,8 @@ urlpatterns = [
     # forum views
     path('api/<int:target>/forums/', views.get_forums, name='get_forums'),
     path('api/<int:target>/get_forum/', views.get_forum, name='get_forum'),
-    path('api/<int:target>/add_forum/', views.add_forum, name='add_forum'),
-    path('api/<int:target>/edit_forum/', views.edit_forum, name='edit_forum'),
-    path('api/<int:target>/delete_forum/', views.delete_forum, name='delete_forum'),
     path('api/<int:target>/get_posts/', views.get_posts_for_forum, name='get_posts_for_forum'),
     path('api/<int:target>/get_post/', views.get_post, name='get_post'),
-    path('api/<int:target>/add_post/', views.add_post, name='add_post'),
-    path('api/<int:target>/edit_post/', views.edit_post, name='edit_post'),
-    path('api/<int:target>/delete_post/', views.delete_post, name='delete_post'),
 
     # comment views
     path('api/get_comment_data/', views.get_comment_data, name='get_comment_data'),

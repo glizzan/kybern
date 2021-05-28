@@ -10,7 +10,14 @@
                     <div class="info"><span class="label">Actor</span>: <span class="user-link">{{ action.actor }}</span></div>
                     <div class="info"><span class="label">Time</span>: {{ action.display_date }}</div>
                     <div class="info"><span class="label">Description</span>: {{ action.description }}</div>
+                    <div class="info"><span class="label">Status</span>: {{ status }}
+                        <span v-if="extra_context" class="extra">{{ extra_context }}</span>
+                    </div>
                     <div class="info"><span class="label">Actor's note</span>: {{ action.note }}</div>
+
+                    {{ response }}
+                    <b-button v-if="user_is_actor && action.status == 'propose-vol'" variant="outline-secondary"
+                        class="my-2" @click="retake_proposed_action">Take your action</b-button>
 
                     <div v-if=action.is_template>
                         <h6>This is a template action.</h6>
@@ -84,7 +91,8 @@ export default {
     data: function() {
         return {
             ready_to_render: false,
-            action: null
+            action: null,
+            response: null
         }
     },
     created () {
@@ -106,17 +114,41 @@ export default {
     },
     computed: {
         ...Vuex.mapGetters(['getActionData']),
-        ...Vuex.mapState({ actions: state => state.concord_actions.actions }),
+        ...Vuex.mapState({
+            actions: state => state.concord_actions.actions,
+            user_pk: state => state.user_pk
+        }),
+        user_is_actor: function() { return this.action.actor_pk == this.user_pk },
         ordered_conditions: function() {
             return this.action.has_condition.conditions.slice().sort(function(a,b){
                 if (a.pk < b.pk) { return -1 }
                 if (a.pk > b.pk) { return 1 }
                 return 0
             })
+        },
+        status: function() {
+            if (this.action.status.includes("propose")) { return "proposed" }
+            else { return this.action.status }
+        },
+        extra_context: function() {
+            if (this.action.status == "propose-vol") {
+                return "note: the actor had permission to implement but chose to propose"
+            }
+            if (this.action.status == "propose-req") {
+                return "note: the actor does not have permission to take the action but is proposing it anyway"
+            }
+            return null
         }
     },
     methods: {
-        ...Vuex.mapActions(['addOrUpdateAction']),
+        ...Vuex.mapActions(['addOrUpdateAction', 'retakeAction']),
+        retake_proposed_action() {
+            this.retakeAction({action_pk: this.action_id})
+                .then(response => {
+                    this.action = this.getActionData(this.action_id)
+                    this.response = response
+                })
+        }
     }
 
 }
@@ -128,6 +160,11 @@ export default {
     .label { font-weight: bold; }
     .user-link {
         color: #17a2b8;
+        font-weight: bold;
+    }
+    .extra {
+        display: block;
+        color: #6c757d;
         font-weight: bold;
     }
 </style>

@@ -7,15 +7,13 @@
         <b-icon-pencil v-else v-b-modal="modal_id" class="mr-2" :id=button_id
             v-b-tooltip.hover :title="'edit ' + item_model"></b-icon-pencil>
 
-        <b-modal :id=modal_id :title=title_string size="lg" hide-footer>
+        <b-modal :id=modal_id :title=title_string size="lg" hide-footer @hide="refresh">
 
             <field-component v-for="field in configuration_fields" v-bind:key=field.field_name
                 :initial_field=field v-on:field-changed="change_field"></field-component>
 
-            <action-response-component class="my-2" :response=action_response></action-response-component>
-
-            <b-button variant="outline-secondary" class="btn-sm" :id="submit_button_id"
-                 @click="takeAction">submit</b-button>
+            <take-action-component v-on:take-action=takeAction :response=response :inline="'true'"
+                :verb="verb"></take-action-component>
 
         </b-modal>
 
@@ -53,20 +51,20 @@ var fields_dict = {
 import Vuex from 'vuex'
 import store from '../../store'
 import { ConfiguredFieldsMixin } from '../utils/Mixins'
-import ActionResponseComponent from '../actions/ActionResponseComponent'
 import FieldComponent from '../fields/FieldComponent'
+import TakeActionComponent from '../actions/TakeActionComponent'
 
 
 export default {
 
     props: ['item_id', 'item_model', 'button_text', 'supplied_variant', 'supplied_classes', 'supplied_params', 'id_add'],
-    components: { ActionResponseComponent, FieldComponent },
+    components: { TakeActionComponent, FieldComponent },
     mixins: [ConfiguredFieldsMixin],
     store,
     data: function() {
         return {
             item_instance: null,
-            action_response: null,
+            response: null,
             configuration_fields: []
         }
     },
@@ -94,6 +92,9 @@ export default {
         },
         classes: function() {
             if (this.supplied_classes) { return this.supplied_classes } else { return "btn-sm mr-2" }
+        },
+        verb: function() {
+            return this.mode + " " + this.item_model
         }
     },
     methods: {
@@ -122,14 +123,11 @@ export default {
         },
         takeAction() {
             var actionMethodName = this.mode + this.capitalize(this.item_model)
-            this[actionMethodName](this.get_params()).then( response => {
-                this.action_response = response
-                if (this.mode == "add" && response.data.action_status == "implemented" && this.item_model != 'comment') {
-                    var params_dict = {item_id: response.data.created_instance.pk}
-                    if (this.supplied_params) { params_dict = Object.assign({}, params_dict, this.supplied_params) }
-                    this.$router.push({name: this.item_model + '-detail', params: params_dict})
-                }
-            })
+            this[actionMethodName](this.get_params())
+                .then( response => { this.response = response })
+        },
+        refresh() {
+            this.response = null
         }
     }
 

@@ -36,7 +36,10 @@
           </template>
 
           <template v-slot:cell(status)="data">
-              {{ data.item.status }}
+              <span v-if="data.item.status == 'propose-req'">proposed </span>
+              <span v-if="data.item.status == 'propose-vol'">proposed (voluntary)</span>
+              <span v-if="data.item.status != 'propose-req' && data.item.status != 'propose-vol'">
+                  {{ data.item.status }}</span>
           </template>
 
           <template v-slot:cell(more)="data">

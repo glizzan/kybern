@@ -23,8 +23,6 @@
 
                 </div>
 
-                <action-response-component :response=delete_post_response></action-response-component>
-
                 <!-- Content -->
                 <p class="mb-4 post-text">  {{ post.content }}  </p>
                 <CommentListComponent :item_id=item_id :item_model="'post'" class="mt-3"></CommentListComponent>
@@ -43,7 +41,6 @@ import store from '../../store'
 import { UtilityMixin } from '../utils/Mixins'
 import CommentListComponent from '../comments/CommentListComponent'
 import ResourceSidebarComponent from '../groups/ResourceSidebarComponent'
-import ActionResponseComponent from '../actions/ActionResponseComponent'
 import ResourceActionIcons from '../utils/ResourceActionIcons'
 
 
@@ -51,13 +48,13 @@ export default {
 
     props: ['forum_id', 'item_id'],
     store,
-    components: { CommentListComponent, ResourceSidebarComponent, ActionResponseComponent, ResourceActionIcons },
+    components: { CommentListComponent, ResourceSidebarComponent, ResourceActionIcons },
     mixins: [UtilityMixin],
     data: function() {
             return {
                 post: null,
                 forum: null,
-                delete_post_response: null
+                response: null
             }
         },
     created (){
@@ -89,13 +86,13 @@ export default {
         display_date(date) {
             return new Date(date).toUTCString()
         },
-        delete_post(pk) {
-            this.deletePost({ pk : pk, forum_pk: this.forum_id })
+        delete_post() {
+            this.deletePost({ pk : this.item_id })
             .then(response => {
+                this.response = response
                 if (response.data.action_status == "implemented") {
                     this.$router.push({name: 'forum-detail', params: {forum_id: this.forum_id}})
                 }
-                else { this.delete_post_response = response }
             })
         }
     }
