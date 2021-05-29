@@ -88,7 +88,8 @@
                                     {{condition.passing_description }}</b-button>
 
                                 <!-- Linked Modal -->
-                                <b-modal :id="condition.type + condition.pk" :title="condition.type" size="xl">
+                                <b-modal :id="condition.type + condition.pk" :title="reformat(condition.type)" size="xl"
+                                    :body-bg-variant="'light'" hide-footer>
                                    <component v-bind:is="condition.type" :condition_pk=condition.pk
                                         :condition_type=condition.type :action_details=action></component>
                                 </b-modal>
@@ -186,6 +187,9 @@ export default {
     },
     methods: {
         ...Vuex.mapActions(['addOrUpdateAction', 'retakeAction']),
+        reformat(condition_name) {
+            return condition_name.replace(/([A-Z])/g, ' $1').trim()
+        },
         retake_proposed_action() {
             this.retakeAction({action_pk: this.action_id})
                 .then(response => {
