@@ -5,21 +5,30 @@
     <b-container fluid id="action_history_table">
       <b-row align-h="end" class="my-2">
 
-          <b-col lg="6" class="my-4">
-              <b-form-group label="Filter" label-cols-sm="3" label-align-sm="left" label-size="sm"
-                                                              label-for="filterInput" class="mb-0">
-                <b-input-group size="sm">
-                  <b-form-input v-model="filter" type="search" id="filterInput"
-                                        placeholder="Type to Search"></b-form-input>
-                </b-input-group>
-              </b-form-group>
-          </b-col>
+        <!-- Quick Filter Buttons -->
+        <b-col lg="7" class="my-4">
+        <b-button-group>
+            <b-button :variant="get_variant('open')" @click="setFilter('open')">Open proposals</b-button>
+            <b-button :variant="get_variant('waiting')" @click="setFilter('waiting')">Waiting on decisions</b-button>
+            <b-button :variant="get_variant('governing')" @click="setFilter('governing')">Governing actions</b-button>
+            <b-button :variant="get_variant('yours')" @click="setFilter('yours')">Your actions</b-button>
+        </b-button-group>
+        </b-col>
+
+        <b-col lg="5" class="my-4">
+            <b-form-group>
+            <b-input-group size="sm">
+                <b-form-input v-model="filterObject.filter_text" type="search" id="filterInput"
+                    placeholder="Type to Search"></b-form-input>
+            </b-input-group>
+            </b-form-group>
+        </b-col>
 
         </b-row>
 
           <b-table hover :items="item_actions" :fields="action_fields"
-              :sort-by.sync="sortBy" :sort-desc.sync="sortDesc" :filter="filter"
-              :filterIncludedFields="filterOn" id="action_history_table_element" responsive>
+              :sort-by.sync="sortBy" :sort-desc.sync="sortDesc" :filter=filterObject :filter-function=filterFunction
+              id="action_history_table_element" responsive>
 
           <template v-slot:cell(actor)="data">
             <router-link :to="{ name: 'user-permissions', params: { user_pk: data.item.actor_pk }}"
@@ -29,6 +38,7 @@
 
           <template v-slot:cell(action)="data">
               {{ data.item.description}}
+              <b-badge v-if="data.item.is_template" variant="warning" class="ml-2">template action</b-badge>
           </template>
 
           <template v-slot:cell(date)="data">
@@ -40,14 +50,13 @@
               <span v-if="data.item.status == 'propose-vol'">proposed (voluntary)</span>
               <span v-if="data.item.status != 'propose-req' && data.item.status != 'propose-vol'">
                   {{ data.item.status }}</span>
+              <b-badge v-if="data.item.has_condition.exists" variant="info" class="ml-2">has condition</b-badge>
           </template>
 
           <template v-slot:cell(more)="data">
             <router-link :to="{ name: 'action-detail', params: { action_id: data.item.action_pk }}">
                 <b-button variant="outline-secondary" class="btn-sm ml-2 action-link-button">see more</b-button>
             </router-link>
-            <b-badge v-if="data.item.has_condition.exists" variant="info" class="ml=2">has condition</b-badge>
-            <b-badge v-if="data.item.is_template" variant="warning" class="ml=2">template action</b-badge>
           </template>
 
         </b-table>
@@ -86,7 +95,7 @@ export default {
               { text: "Status", value: "status" },
               { text: "Actor", value: "actor" },
             ],
-            filter: null,
+            filterObject: { filter_text: null, filter_function: null },
             filterOn: []
           }
     },
@@ -95,7 +104,10 @@ export default {
         .catch(error => {  console.log(error) })
     },
     computed: {
-      ...Vuex.mapState({ actions: state => state.concord_actions.actions }),
+      ...Vuex.mapState({
+          actions: state => state.concord_actions.actions,
+          user_pk: state => state.user_pk
+        }),
       final_item_id: function() {
         return (typeof this.item_id === "undefined") ? store.state.group_pk : this.item_id },
       final_item_model: function() {
@@ -111,7 +123,40 @@ export default {
       }
     },
     methods: {
-      ...Vuex.mapActions(['loadActions'])
+      ...Vuex.mapActions(['loadActions']),
+      get_variant(filter_name) {
+          if (this.filterObject.filter_function == filter_name) { return "secondary" } else { return "outline-secondary" }
+      },
+      setFilter(filter_name) {
+          if (this.filterObject.filter_function == filter_name ) {
+              this.filterObject.filter_function = null
+            }
+          else { this.filterObject.filter_function = filter_name }
+      },
+      filter_item(item) {
+          if (this.filterObject.filter_function == "open") {
+              return item.status == "propose-req" || item.status == "propose-vol"
+          }
+          if (this.filterObject.filter_function == "waiting") {
+              return item.has_condition.exists && item.status == "waiting"
+          }
+          if (this.filterObject.filter_function == "governing") {
+              return item.resolution_passed_by == "governing"
+          }
+          if (this.filterObject.filter_function == "yours") {
+              return item.actor_pk == this.user_pk
+          }
+      },
+      filterFunction(item, filterObject) {
+
+        // passed_text is true if the text is found in the item or if there is no filter_text specified
+        var passed_text = filterObject.filter_text ? JSON.stringify(item).includes(filterObject.filter_text) : true
+
+        // passed_function is true if it passes the specified function or if there is no function set
+        var passed_function = filterObject.filter_function ? this.filter_item(item) : true
+
+        return passed_text && passed_function
+      }
     }
 
 }

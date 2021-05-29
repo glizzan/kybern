@@ -7,20 +7,17 @@
             <span class="h3 font-weight-bold">{{ forum.name }}</span>
 
             <resource-action-icons class="float-right" v-on:delete="delete_forum" :item_id=item_id
-                :item_model="'forum'" :item_name=forum.name :edit_permission="user_permissions.edit_forum"
-                :delete_permission="user_permissions.delete_forum && !is_governance_forum" :export_url=json_export_url
-                :export_text="'export as json'"></resource-action-icons>
+                :item_model="'forum'" :item_name=forum.name :export_url=json_export_url
+                :export_text="'export as json'" :response=response></resource-action-icons>
 
         </div>
-
-        <action-response-component :response=delete_forum_response class="mt-4"></action-response-component>
 
         <p>{{ forum.description }}</p>
 
         <hr >
 
-        <form-button-and-modal :item_model="'post'" :button_text="'+ add post'" :supplied_params="{'forum_id':item_id}">
-        </form-button-and-modal>
+        <form-button-and-modal :item_model="'post'" :button_text="'+ add post'" :supplied_params="{'forum_id':item_id}"
+            :alt_target="'forum_'+item_id"></form-button-and-modal>
 
         <b-card v-for="{ pk, title, content, author, created } in posts" v-bind:key=pk
                                             class="bg-light text-info mt-3 rounded">
@@ -43,7 +40,6 @@ import Vuex from 'vuex'
 import store from '../../store'
 import { UtilityMixin } from '../utils/Mixins'
 import FormButtonAndModal from '../utils/FormButtonAndModal'
-import ActionResponseComponent from '../actions/ActionResponseComponent'
 import ResourceActionIcons from '../utils/ResourceActionIcons'
 
 
@@ -51,13 +47,13 @@ export default {
 
     props: ['item_id'],
     store,
-    components: { FormButtonAndModal, ActionResponseComponent, ResourceActionIcons },
+    components: { FormButtonAndModal, ResourceActionIcons },
     mixins: [UtilityMixin],
     data: function() {
             return {
                 forum: null,
                 posts: null,
-                delete_forum_response: null,
+                response: null,
                 base_export_url: ""
             }
         },
@@ -77,23 +73,13 @@ export default {
             })
         }
 
-        var alt_target = "forum_" + this.item_id
-        this.checkPermissions({ permissions:
-                {edit_forum: {alt_target : alt_target},
-                delete_forum: {alt_target : alt_target},
-                add_post: {alt_target : alt_target}}
-        })
-
         this.url_lookup('export_as_json').then(response => this.base_export_url = response)
     },
     watch: {
         forums: function(val) { this.forum = this.getForumData(this.item_id) }
     },
     computed: {
-        ...Vuex.mapState({
-            user_permissions: state => state.permissions.current_user_permissions,
-            forums: state => state.forums.forums
-        }),
+        ...Vuex.mapState({ forums: state => state.forums.forums }),
         ...Vuex.mapGetters(['getForumData', 'getPostsDataForForum', 'getUserName', 'url_lookup']),
         is_governance_forum: function() {
             if (this.forum) { return this.forum.special == "Gov" } return undefined
@@ -103,13 +89,13 @@ export default {
         }
     },
     methods: {
-        ...Vuex.mapActions(['checkPermissions', 'getForum', 'getPosts', 'deleteForum']),
+        ...Vuex.mapActions(['getForum', 'getPosts', 'deleteForum']),
         display_date(date) { return new Date(date).toUTCString() },
-        delete_forum() {
-            this.deleteForum({ pk: this.item_id })
+        delete_forum(extra_data) {
+            this.deleteForum({ pk: this.item_id, extra_data: extra_data })
             .then(response => {
                 if (response.data.action_status == "implemented") { this.$router.push({name: 'home'}) }
-                else { this.delete_forum_response = response }
+                else { this.response = response }
             })
         }
     }

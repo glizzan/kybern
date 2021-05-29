@@ -181,7 +181,6 @@ export default {
             return Object.values(restructured_permissions)
         },
         update_perm(userperm, has_perm, more_info) {
-            console.log(userperm, has_perm, more_info)
             if (!has_perm) { return userperm }
             if (!userperm.has_perm) { return {has_perm: has_perm, more_info: more_info} }
             // if we have an existing permission and a new permsision, determine what info to give

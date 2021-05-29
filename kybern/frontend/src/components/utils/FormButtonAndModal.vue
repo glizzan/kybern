@@ -13,7 +13,7 @@
                 :initial_field=field v-on:field-changed="change_field"></field-component>
 
             <take-action-component v-on:take-action=takeAction :response=response :inline="'true'"
-                :verb="verb"></take-action-component>
+                :verb="verb" :alt_target=alt_target></take-action-component>
 
         </b-modal>
 
@@ -57,7 +57,7 @@ import TakeActionComponent from '../actions/TakeActionComponent'
 
 export default {
 
-    props: ['item_id', 'item_model', 'button_text', 'supplied_variant', 'supplied_classes', 'supplied_params', 'id_add'],
+    props: ['item_id', 'item_model', 'button_text', 'supplied_variant', 'supplied_classes', 'supplied_params', 'id_add', 'alt_target'],
     components: { TakeActionComponent, FieldComponent },
     mixins: [ConfiguredFieldsMixin],
     store,
@@ -109,8 +109,8 @@ export default {
                 }
             }
         },
-        get_params() {
-            var params_dict = {}
+        get_params(extra_data) {
+            var params_dict = {extra_data: extra_data}
             if (this.item_id) { params_dict["pk"] = this.item_id }
             if (this.supplied_params) { params_dict = Object.assign({}, params_dict, this.supplied_params) }
             for (let i in this.configuration_fields) {
@@ -121,9 +121,9 @@ export default {
             }
             return params_dict
         },
-        takeAction() {
+        takeAction(extra_data) {
             var actionMethodName = this.mode + this.capitalize(this.item_model)
-            this[actionMethodName](this.get_params())
+            this[actionMethodName](this.get_params(extra_data))
                 .then( response => { this.response = response })
         },
         refresh() {

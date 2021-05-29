@@ -37,9 +37,6 @@ export default new Vuex.Store({
     getters: {
         url_lookup: (state, getters) => (url_name) => {
 
-            console.log("Looking for ", url_name)
-            console.log("In ", state.urls)
-
             return new Promise((resolve, reject) => {
 
                 var url_lookup_interval = setInterval(function() {

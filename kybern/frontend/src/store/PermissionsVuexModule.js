@@ -431,8 +431,6 @@ const PermissionsVuexModule = {
         async checkPermission ({ commit, state, dispatch, getters }, payload) {
             var url = await getters.url_lookup('check_permission')
             var params = { permission_name: payload.name, alt_target: payload.alt_target, params: payload.params }
-            console.log("Checking perm with params: ", params)
-            console.log(url)
             var implementationCallback = (response) => {
                 var permissions = null
                 if (payload.aliases) {

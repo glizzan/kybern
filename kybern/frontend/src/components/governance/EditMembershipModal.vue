@@ -68,14 +68,14 @@ export default {
             this.members_to_remove_selected = []
             this.response = null
         },
-        add_members() {
+        add_members(extra_data) {
             var members_to_add = this.members_to_add_selected.map(actor => actor.pk)
-            this.addMembers({ member_pk_list: members_to_add })
+            this.addMembers({ member_pk_list: members_to_add, extra_data: extra_data })
                 .then(response => { this.response = response })
         },
-        remove_members() {
+        remove_members(extra_data) {
             var members_to_remove = this.members_to_remove_selected.map(actor => actor.pk)
-            this.removeMembers({ member_pk_list: members_to_remove })
+            this.removeMembers({ member_pk_list: members_to_remove, extra_data: extra_data })
                 .then(response => { this.response = response })
         }
     }

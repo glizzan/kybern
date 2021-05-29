@@ -42,7 +42,7 @@
                                 </b-icon-shield-lock>
                             </div>
 
-                            <take-action-component v-if="role.name != 'members'" v-on:take-action=remove_role(role.name)
+                            <take-action-component v-if="role.name != 'members'" v-on:take-action="remove_role(role.name, $event)"
                                 :response=response :verb="'remove role ' + role.name" :action_name="'remove_role_from_community'">
                                 <b-icon-trash v-b-tooltip.hover title="delete" class="ml-3 d-inline-block"></b-icon-trash>
                             </take-action-component>
@@ -101,8 +101,8 @@ export default {
     },
     methods: {
         ...Vuex.mapActions(['checkPermissions', 'removeRole']),
-        remove_role(role_name) {
-            this.removeRole({role_name: role_name})
+        remove_role(role_name, extra_data) {
+            this.removeRole({role_name: role_name, extra_data: extra_data})
                 .then(response => { this.response = response })
         }
     }

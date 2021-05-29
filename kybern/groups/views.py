@@ -85,6 +85,11 @@ def process_action(action):
 
     conditions = Client().Conditional.get_condition_items_for_action(action_pk=action.pk)
 
+    is_template = action.change.get_change_type() == Changes().Actions.ApplyTemplate
+    template_info = action.get_template_info()
+    if is_template:
+        template_info["full_description"] = TemplateModel.objects.get(name=template_info["name"]).user_description
+
     return {
         "action_pk": action.pk,
         "action_target_pk": action.object_id,
@@ -99,8 +104,8 @@ def process_action(action):
         "note": action.note,
         "resolution_passed_by": action.approved_through(),
         "display": action_string,
-        "is_template": action.change.get_change_type() == Changes().Actions.ApplyTemplate,
-        "template_description": action.get_template_info(),
+        "is_template": is_template,
+        "template_description": template_info,
         "has_condition": {
             "exists": True if conditions else False,
             "conditions": [{"pk": condition.pk, "type": condition.__class__.__name__,
@@ -467,7 +472,7 @@ def take_action(request, target):
 
     data_to_return = request_data.pop("return", None)
     extra_data = request_data.pop("extra_data", None)
-    proposed = extra_data.pop("proposed", None)
+    proposed = extra_data.pop("proposed", None) if extra_data else None
 
     # actually call backend method to take action
     action_name = request_data.pop('action_name')
@@ -499,28 +504,6 @@ def take_proposed_action(request, target):
 
     action = client.Action.retake_action(action=action)
     return JsonResponse({"action_data": process_action(action)})
-
-
-# @login_required
-# def add_comment_to_template(request):
-#     """Helper method for the odd edge cases of adding comments in the templates library.
-#     (Editing and deleting comments can be handled through the typical methods, with the
-#     comment specified as alt_target."""
-#     from concord.actions.models import TemplateModel
-
-#     request_data = json.loads(request.body.decode('utf-8'))
-
-#     pk = request_data.get("pk")
-#     target = TemplateModel.objects.get(pk=pk)
-#     text = request_data.get("text")
-
-#     client = Client(actor=request.user, target=target)
-#     action, result = client.Comment.add_comment(text=text)
-
-#     action_dict = get_action_dict(action)
-#     if result:
-#         action_dict.update({'comment': serialize_existing_comment_for_vue(result)})
-#     return JsonResponse(action_dict)
 
 
 ####################
@@ -1533,9 +1516,6 @@ def check_permission(request, target, permission_name, alt_target=None, params=N
     else:
         target_to_use = client.Community.get_community(community_pk=target)
     client.update_target_on_all(target=target_to_use)
-
-    # if target_to_use.__class__.__name__ == "TemplateModel":
-    #         return JsonResponse({"user_permissions": {permission_name: True} })
 
     result = client.PermissionResource.has_permission(client, permission_name, params, exclude_conditional=True)
 

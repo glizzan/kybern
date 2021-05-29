@@ -14,8 +14,7 @@
                     <span class="h3 font-weight-bold">{{ post.title }}</span>
 
                     <resource-action-icons class="float-right" v-on:delete="delete_post" :item_id=item_id
-                        :item_model="'post'" :item_name=post.title :edit_permission="user_permissions.edit_post"
-                        :delete_permission="user_permissions.delete_post"></resource-action-icons>
+                        :item_model="'post'" :item_name=post.title></resource-action-icons>
 
                     <div id="author" class="mt-2"> by <span class="user-link">{{ getUserName(post.author) }}</span></div>
                     <div id="post-info" class="mt-2 small">
@@ -70,24 +69,18 @@ export default {
             this.getForum({forum_pk: parseInt(this.forum_id)}).then(response => {
             this.forum = this.getForumData(this.forum_id)})
         }
-        // Check permissions
-        var alt_target = "post_" + this.item_id
-        this.checkPermissions({ permissions: {edit_post: {alt_target:alt_target},
-            delete_post: {alt_target:alt_target}}
-        }).catch(error => {  this.error_message = error; console.log(error) })
     },
     computed: {
-        ...Vuex.mapState({user_permissions: state => state.permissions.current_user_permissions}),
         ...Vuex.mapGetters(['getUserName', 'getPostData', 'getForumData']),
         forum_name: function() { if (this.forum) { return this.forum.name } else { return "" } }
     },
     methods: {
-        ...Vuex.mapActions(['checkPermissions', 'deletePost', 'getPost', 'getForum', 'getGovernanceData']),
+        ...Vuex.mapActions(['deletePost', 'getPost', 'getForum', 'getGovernanceData']),
         display_date(date) {
             return new Date(date).toUTCString()
         },
-        delete_post() {
-            this.deletePost({ pk : this.item_id })
+        delete_post(extra_data) {
+            this.deletePost({ pk : this.item_id, extra_data : extra_data })
             .then(response => {
                 this.response = response
                 if (response.data.action_status == "implemented") {

@@ -81,7 +81,7 @@ export default {
             this.people_selected = []
             this.no_valid_action = null
         },
-        updateMembers() {
+        updateMembers(extra_data) {
 
             var old_array = this.people_in_role.map(person => person.pk)
             var new_array  =this.people_selected.map(person => person.pk)
@@ -90,7 +90,7 @@ export default {
 
                 var to_add = new_array.filter(x => !old_array.includes(x))
                 if (to_add.length > 0) {
-                    this.addUsersToRole({ role_name: this.role_selected, people_to_add: to_add })
+                    this.addUsersToRole({ role_name: this.role_selected, people_to_add: to_add, extra_data: extra_data })
                         .then(response => { this.response = response })
                 }
 
@@ -98,8 +98,8 @@ export default {
 
                 var to_remove = old_array.filter(x => !new_array.includes(x))
                 if (to_remove.length > 0) {
-                    this.removeUsersFromRole({ role_name: this.role_selected, people_to_remove: to_remove })
-                        .then(response => { this.response = response })
+                    this.removeUsersFromRole({ role_name: this.role_selected, people_to_remove: to_remove,
+                        extra_data: extra_data }).then(response => { this.response = response })
                 }
 
             }

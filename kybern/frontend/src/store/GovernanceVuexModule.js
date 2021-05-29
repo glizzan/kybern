@@ -249,13 +249,15 @@ const GovernanceVuexModule = {
         },
         async addMembers ({ commit, state, dispatch, getters}, payload) {
             var url = await getters.url_lookup('take_action')
-            var params = { action_name: "add_members_to_community", member_pk_list : payload.member_pk_list }
+            var params = { action_name: "add_members_to_community", member_pk_list : payload.member_pk_list,
+                extra_data: payload.extra_data }
             var implementationCallback = () => { commit('ADD_MEMBERS', { user_pks: payload.member_pk_list }) }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async removeMembers ({ commit, state, dispatch, getters}, payload) {
             var url = await getters.url_lookup('take_action')
-            var params = { action_name: "remove_members_from_community", member_pk_list: payload.member_pk_list }
+            var params = { action_name: "remove_members_from_community", member_pk_list: payload.member_pk_list,
+                extra_data: payload.extra_data }
             var implementationCallback = () => {
                 commit('REMOVE_USERS_FROM_ALL_ROLES', { user_pks: payload.member_pk_list })
                 commit('REMOVE_MEMBERS', { user_pks: payload.member_pk_list })
@@ -265,7 +267,7 @@ const GovernanceVuexModule = {
         async addUsersToRole ({ commit, state, dispatch, getters}, payload) {
             var url = await getters.url_lookup('take_action')
             var params = { action_name: "add_people_to_role", role_name : payload.role_name,
-                people_to_add: payload.people_to_add }
+                people_to_add: payload.people_to_add, extra_data: payload.extra_data }
             var implementationCallback = () => { commit('ADD_USERS_TO_ROLE',
                 { role_name : payload.role_name, user_pks: payload.people_to_add }) }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
@@ -273,13 +275,12 @@ const GovernanceVuexModule = {
         async  removeUsersFromRole ({ commit, state, dispatch, getters}, payload) {
             var url = await getters.url_lookup('take_action')
             var params = { action_name: "remove_people_from_role", role_name : payload.role_name,
-                           people_to_remove: payload.people_to_remove }
+                           people_to_remove: payload.people_to_remove, extra_data: payload.extra_data }
             var implementationCallback = () => { commit('REMOVE_USERS_FROM_ROLE',
                 { role_name : payload.role_name, user_pks: payload.people_to_remove}) }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async addRole ({ commit, state, dispatch, getters}, payload) {
-            console.log("This should also only get called once")
             var url = await getters.url_lookup('take_action')
             var params = { action_name: "add_role_to_community", role_name: payload.role_name,
                 extra_data: payload.extra_data }
@@ -288,7 +289,8 @@ const GovernanceVuexModule = {
         },
         async removeRole ({ commit, state, dispatch, getters}, payload) {
             var url = await getters.url_lookup('take_action')
-            var params = { action_name: "remove_role_from_community", role_name: payload.role_name }
+            var params = { action_name: "remove_role_from_community", role_name: payload.role_name,
+                extra_data: payload.extra_data }
             var implementationCallback = () => { commit('REMOVE_ROLE', { role_name: payload.role_name }) }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },

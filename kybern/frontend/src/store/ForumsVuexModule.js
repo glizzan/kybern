@@ -80,7 +80,7 @@ const ForumsVuexModule = {
         },
         async addForum({ commit, state, dispatch, getters }, payload) {
             var url = await getters.url_lookup('take_action')
-            var params = { action_name: "add_forum", return: "created_instance",
+            var params = { action_name: "add_forum", return: "created_instance", extra_data: payload.extra_data,
                 name: payload.name, description: payload.description }
             var implementationCallback = (response) => {
                 commit('ADD_OR_UPDATE_FORUM', { forum_data : response.data.created_instance })
@@ -89,7 +89,7 @@ const ForumsVuexModule = {
         },
         async editForum({ commit, state, dispatch, getters }, payload) {
             var url = await getters.url_lookup('take_action')
-            var params = { action_name: "edit_forum", return: "edited_instance",
+            var params = { action_name: "edit_forum", return: "edited_instance", extra_data: payload.extra_data,
                 alt_target: "forum_" + payload.pk, name: payload.name, description: payload.description }
             var implementationCallback = (response) => {
                 commit('ADD_OR_UPDATE_FORUM', { forum_data : response.data.edited_instance })
@@ -98,7 +98,8 @@ const ForumsVuexModule = {
         },
         async deleteForum({ commit, state, dispatch, getters }, payload) {
             var url = await getters.url_lookup('take_action')
-            var params = { action_name: "delete_forum", return: "deleted_item_pk", alt_target: "forum_" + payload.pk }
+            var params = { action_name: "delete_forum", return: "deleted_item_pk", alt_target: "forum_" + payload.pk,
+                    extra_data: payload.extra_data }
             var implementationCallback = (response) => {
                 commit('DELETE_FORUM', { pk : response.data.deleted_item_pk })
                 // TODO: need to delete permissions set on forum in state.permissions plus key-value in item_permissions
@@ -125,7 +126,7 @@ const ForumsVuexModule = {
         },
         async  addPost ({ commit, state, dispatch, getters}, payload) {
             var url = await getters.url_lookup('take_action')
-            var params = { action_name: "add_post", return: "created_instance",
+            var params = { action_name: "add_post", return: "created_instance", extra_data: payload.extra_data,
                 alt_target: "forum_" + payload.forum_id, title: payload.title, content: payload.content }
             console.log(params)
                 var implementationCallback = (response) => {
@@ -135,7 +136,7 @@ const ForumsVuexModule = {
         },
         async editPost ({ commit, state, dispatch, getters}, payload) {
             var url = await getters.url_lookup('take_action')
-            var params = { action_name: "edit_post", return: "edited_instance",
+            var params = { action_name: "edit_post", return: "edited_instance", extra_data: payload.extra_data,
                 alt_target: "post_" + payload.pk, title: payload.title, content: payload.content  }
             var implementationCallback = (response) => {
                 commit('EDIT_POST', { post_data: response.data.edited_instance})
@@ -144,7 +145,8 @@ const ForumsVuexModule = {
         },
         async deletePost ({ commit, state, dispatch, getters}, payload) {
             var url = await getters.url_lookup('take_action')
-            var params = { action_name: "delete_post", return: "deleted_item_pk", alt_target: "post_" + payload.pk}
+            var params = { action_name: "delete_post", return: "deleted_item_pk", alt_target: "post_" + payload.pk,
+                extra_data: payload.extra_data}
             var implementationCallback = (response) => {
                 commit('DELETE_POST', { pk: response.data.deleted_item_pk })
             }
