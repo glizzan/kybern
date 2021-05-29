@@ -82,19 +82,14 @@ export default {
           return {
             action_fields: [
                 { key: 'actor', label: "Actor", sortable: true },
-                { key: 'action', label: "Action", sortable: true },
-                { key: 'date', label: "When", sortable: true },
+                { key: 'description', label: "Action", sortable: true },
+                { key: 'display_date', label: "When", sortable: true },
                 { key: 'status', label: "Status", sortable: true },
-                { key: 'more', label: "More Info", sortable: true }
+                { key: 'more', label: "More Info", sortable: false }
 
             ],
             sortBy: 'created',
             sortDesc: true,
-            sortOptions: [
-              { text: "Date created", value: "created" },
-              { text: "Status", value: "status" },
-              { text: "Actor", value: "actor" },
-            ],
             filterObject: { filter_text: null, filter_function: null },
             filterOn: []
           }
