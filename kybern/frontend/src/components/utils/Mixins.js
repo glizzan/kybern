@@ -24,4 +24,28 @@ var ConfiguredFieldsMixin = {
     }
 }
 
-export { UtilityMixin, ConfiguredFieldsMixin }
+var ReplacePKsWithUsernamesMixin = {
+    methods: {
+        process_description(description, pk) {
+            var pks = description.match(/\d+/g)
+            if (!pks) { return description }
+            pks.forEach(pk => {
+                var username = this.getUserName(pk)
+                description = description.replace(pk, username)
+            })
+            return description
+        },
+        replace_pks_with_usernames(actions) {
+            for (let index in actions) {
+                var action_item = actions[index]
+                if (["AddMembers", "RemoveMembers", "AddGovernor", "RemoveGovernor", "AddOwner", "RemoveOwner",
+                        "AddPeopleToRole", "RemovePeopleFromRole"].includes(action_item.change_type)) {
+                    action_item.description = this.process_description(action_item.description)
+                }
+            }
+            return actions
+          }
+    }
+}
+
+export { UtilityMixin, ConfiguredFieldsMixin, ReplacePKsWithUsernamesMixin }

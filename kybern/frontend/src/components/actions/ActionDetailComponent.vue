@@ -9,7 +9,7 @@
                     <div class="info"><span class="label">Action ID</span>: {{ action.action_pk }}</div>
                     <div class="info"><span class="label">Actor</span>: <span class="user-link">{{ action.actor }}</span></div>
                     <div class="info"><span class="label">Time</span>: {{ action.display_date }}</div>
-                    <div class="info"><span class="label">Description</span>: {{ action.description }}</div>
+                    <div class="info"><span class="label">Description</span>: {{ process_description(action.description) }}</div>
                     <div class="info"><span class="label">Status</span>: {{ status }}
                         <span v-if="extra_context" class="extra">{{ extra_context }}</span>
                     </div>
@@ -120,6 +120,7 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
+import { ReplacePKsWithUsernamesMixin } from '../utils/Mixins'
 import CommentListComponent from '../comments/CommentListComponent'
 import ApprovalConditionComponent from '../conditions/condition_types/ApprovalConditionComponent'
 import ConsensusConditionComponent from '../conditions/condition_types/ConsensusConditionComponent'
@@ -132,6 +133,7 @@ export default {
     components: { CommentListComponent, "ApprovalCondition": ApprovalConditionComponent,
         "ConsensusCondition": ConsensusConditionComponent, "VoteCondition": VoteConditionComponent  },
     store,
+    mixins: [ReplacePKsWithUsernamesMixin],
     data: function() {
         return {
             ready_to_render: false,
@@ -158,7 +160,7 @@ export default {
         }
     },
     computed: {
-        ...Vuex.mapGetters(['getActionData']),
+        ...Vuex.mapGetters(['getActionData', 'getUserName']),
         ...Vuex.mapState({
             actions: state => state.concord_actions.actions,
             user_pk: state => state.user_pk

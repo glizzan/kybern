@@ -37,7 +37,7 @@
           </template>
 
           <template v-slot:cell(action)="data">
-              {{ data.item.description}}
+              {{ data.item.description }}
               <b-badge v-if="data.item.is_template" variant="warning" class="ml-2">template action</b-badge>
           </template>
 
@@ -72,12 +72,14 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
+import { ReplacePKsWithUsernamesMixin } from '../utils/Mixins'
 
 
 export default {
 
     props: ['item_id', 'item_model', 'item_name'],
     store,
+    mixins: [ReplacePKsWithUsernamesMixin],
     data: function() {
           return {
             action_fields: [
@@ -91,14 +93,22 @@ export default {
             sortBy: 'created',
             sortDesc: true,
             filterObject: { filter_text: null, filter_function: null },
-            filterOn: []
+            filterOn: [],
+            processed_item_actions: []
           }
     },
     created: function () {
       this.loadActions({ item_id: this.final_item_id, item_model: this.final_item_model })
+        .then(response => this.processed_item_actions = this.replace_pks_with_usernames(this.actions[this.item_key]) )
         .catch(error => {  console.log(error) })
     },
+    watch: {
+        item_actions: function(val) {
+            this.processed_item_actions = this.replace_pks_with_usernames(val)
+        }
+    },
     computed: {
+      ...Vuex.mapGetters(['getUserName']),
       ...Vuex.mapState({
           actions: state => state.concord_actions.actions,
           user_pk: state => state.user_pk
@@ -109,9 +119,11 @@ export default {
         return (typeof this.item_model === "undefined") ? 'group' : this.item_model },
       final_item_name: function() {
         return (typeof this.item_name === "undefined") ? store.state.group_name : this.item_name },
+      item_key: function() {
+          return this.final_item_id + "_" + this.final_item_model
+      },
       item_actions: function() {
-        var item_key = this.final_item_id + "_" + this.final_item_model
-        if (this.actions[item_key]) { return this.actions[item_key] } else { return [] }
+        if (this.actions[this.item_key]) { return this.actions[this.item_key] } else { return [] }
       },
       modal_id: function() {
         return "action_history_modal_" + this.final_item_id + "_" + this.final_item_model
