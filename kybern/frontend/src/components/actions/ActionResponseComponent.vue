@@ -18,6 +18,9 @@
 
 <script>
 
+import Vuex from 'vuex'
+
+
 module.exports = {
 
     props: ['response'],
