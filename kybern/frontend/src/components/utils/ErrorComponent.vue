@@ -15,7 +15,7 @@
 
 <script>
 
-module.exports = {
+export default {
 
     props: ['message', 'dismissable'],
     data: function() {

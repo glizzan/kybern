@@ -21,7 +21,7 @@
 import Vuex from 'vuex'
 
 
-module.exports = {
+export default {
 
     props: ['response'],
     data: function() {
