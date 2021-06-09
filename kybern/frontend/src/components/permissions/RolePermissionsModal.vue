@@ -29,7 +29,12 @@ export default {
             error_message: ""
         }
     },
-    created () { if (this.role_to_edit) { this.prepEditRole() } },
+    created () {
+        this.getPermissionsForItem({ item_id: this.group_id, item_model: 'group' })
+        if (this.role_to_edit) {
+            this.prepEditRole()
+        }
+    },
     computed: {
         ...Vuex.mapGetters(['permissionsForRole']),
         ...Vuex.mapState({ group_id: state => state.group_pk }),
@@ -51,7 +56,7 @@ export default {
         }
     },
     methods: {
-        ...Vuex.mapActions(['refreshRoleData']),
+        ...Vuex.mapActions(['refreshRoleData', 'getPermissionsForItem']),
         prepEditRole() {
             this.refreshRoleData({ role: this.role_to_edit }).catch(error => {
                 this.error_message = error

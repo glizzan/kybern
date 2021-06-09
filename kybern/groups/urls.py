@@ -31,10 +31,6 @@ urlpatterns = [
     path('api/<int:target>/take_action', views.take_action, name='take_action'),
     path('api/<int:target>/take_proposed_action', views.take_proposed_action, name='take_proposed_action'),
 
-    # group change views
-    path('api/change_group_name/', views.change_group_name, name='change_group_name'),
-    path('api/change_group_description/', views.change_group_description, name='change_group_description'),
-
     # role & membership views
     path('api/get_data_for_role/<int:target>/', views.get_data_for_role, name='get_data_for_role'),
 
@@ -57,16 +53,10 @@ urlpatterns = [
     path('api/edit_condition/<int:target>/', views.edit_condition, name='edit_condition'),
     path('api/remove_condition/<int:target>/', views.remove_condition, name='remove_condition'),
 
-    # leadership views
-    path('api/update_owners/<int:target>/', views.update_owners, name='update_owners'),
-    path('api/update_governors/<int:target>/', views.update_governors, name='update_governors'),
-
     # action and condition-instance views
-    path('api/add_note_to_action/', views.add_note_to_action, name='add_note_to_action'),
     path('api/get_action_data/', views.get_action_data, name='get_action_data'),
     path('api/get_action_data_for_target/', views.get_action_data_for_target, name='get_action_data_for_target'),
     path('api/get_conditional_data/', views.get_conditional_data, name='get_conditional_data'),
-    path('api/update_approval_condition/', views.update_approval_condition, name='update_approval_condition'),
     path('api/update_vote_condition/', views.update_vote_condition, name='update_vote_condition'),
     path('api/update_consensus_condition/', views.update_consensus_condition, name='update_consensus_condition'),
 
@@ -78,9 +68,6 @@ urlpatterns = [
 
     # comment views
     path('api/get_comment_data/', views.get_comment_data, name='get_comment_data'),
-    path('api/add_comment/', views.add_comment, name='add_comment'),
-    path('api/edit_comment/', views.edit_comment, name='edit_comment'),
-    path('api/delete_comment/', views.delete_comment, name='delete_comment'),
 
     # template views
     path('api/get_templates_for_scope/', views.get_templates_for_scope, name='get_templates_for_scope'),
@@ -89,19 +76,7 @@ urlpatterns = [
     # list views
     path('api/<int:target>/get_lists/', views.get_lists, name='get_lists'),
     path('api/<int:target>/get_list/', views.get_list, name='get_list'),
-    path('api/<int:target>/add_list/', views.add_list, name='add_list'),
-    path('api/<int:target>/edit_list/', views.edit_list, name='edit_list'),
-    path('api/<int:target>/delete_list/', views.delete_list, name='delete_list'),
-    path('api/<int:target>/add_column/', views.add_column, name='add_column'),
-    path('api/<int:target>/edit_column/', views.edit_column, name='edit_column'),
-    path('api/<int:target>/delete_column/', views.delete_column, name='delete_column'),
-    path('api/<int:target>/add_row/', views.add_row, name='add_row'),
-    path('api/<int:target>/edit_row/', views.edit_row, name='edit_row'),
-    path('api/<int:target>/delete_row/', views.delete_row, name='delete_row'),
 
     # document views
     path('api/<int:target>/get_documents/', views.get_documents, name='get_documents'),
-    path('api/<int:target>/add_document/', views.add_document, name='add_document'),
-    path('api/<int:target>/edit_document/', views.edit_document, name='edit_document'),
-    path('api/<int:target>/delete_document/', views.delete_document, name='delete_document'),
 ]

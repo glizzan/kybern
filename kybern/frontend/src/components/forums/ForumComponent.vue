@@ -8,7 +8,8 @@
 
             <resource-action-icons class="float-right" v-on:delete="delete_forum" :item_id=item_id
                 :item_model="'forum'" :item_name=forum.name :export_url=json_export_url
-                :export_text="'export as json'" :response=response></resource-action-icons>
+                :export_text="'export as json'" :response=response :hide_delete=is_governance_forum>
+            </resource-action-icons>
 
         </div>
 
@@ -19,7 +20,7 @@
         <form-button-and-modal :item_model="'post'" :button_text="'+ add post'" :supplied_params="{'forum_id':item_id}"
             :alt_target="'forum_'+item_id"></form-button-and-modal>
 
-        <b-card v-for="{ pk, title, content, author, created } in posts" v-bind:key=pk
+        <b-card v-for="{ pk, title, content, author, created } in posts_for_forum" v-bind:key=pk
                                             class="bg-light text-info mt-3 rounded">
             <router-link :to="{ name: 'post-detail', params: { forum_id: item_id, item_id: pk } }">
                 <span class="post-link text-info pb-1">{{ title }} </span>
@@ -52,35 +53,35 @@ export default {
     data: function() {
             return {
                 forum: null,
-                posts: null,
                 response: null,
                 base_export_url: ""
             }
         },
     created (){
-
         this.forum = this.getForumData(this.item_id)
         if (!this.forum) {
             this.getForum({ forum_pk: parseInt(this.item_id) }).then( response => {
                 this.forum = this.getForumData(this.item_id)
             })
         }
-
-        this.posts = this.getPostsDataForForum(this.item_id)
-        if (!this.posts || this.posts.length == 0) {
-            this.getPosts({ forum_pk: parseInt(this.item_id) }).then( response => {
-                this.posts = this.getPostsDataForForum(this.item_id)
-            })
-        }
-
+        this.getPosts({ forum_pk: parseInt(this.item_id) })
         this.url_lookup('export_as_json').then(response => this.base_export_url = response)
     },
     watch: {
         forums: function(val) { this.forum = this.getForumData(this.item_id) }
     },
     computed: {
-        ...Vuex.mapState({ forums: state => state.forums.forums }),
+        ...Vuex.mapState({
+            forums: state => state.forums.forums,
+            posts: state => state.forums.posts
+        }),
         ...Vuex.mapGetters(['getForumData', 'getPostsDataForForum', 'getUserName', 'url_lookup']),
+        posts_for_forum: function() {
+            if (this.forum && this.posts ) {
+                return this.posts.filter(post => post.forum_pk == this.forum.pk)
+            }
+            return []
+        },
         is_governance_forum: function() {
             if (this.forum) { return this.forum.special == "Gov" } return undefined
         },

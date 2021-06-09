@@ -13,11 +13,11 @@ from groups.models import Group
 from groups.views import serialize_template_for_vue, process_action, get_urls
 
 from accounts.models import Profile, NotificationsSettings, Notification
-from accounts.forms import RegistrationFormWithCode
+from accounts.forms import RegistrationFormCleanEmail
 
 
 class RegistrationViewWithCode(RegistrationView):
-    form_class = RegistrationFormWithCode
+    form_class = RegistrationFormCleanEmail
     success_url = "/register/complete/"
 
 

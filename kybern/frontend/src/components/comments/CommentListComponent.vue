@@ -2,7 +2,7 @@
 
     <span>
 
-        <form-button-and-modal :item_model="'comment'" :button_text="'+ add comment'"
+        <form-button-and-modal :item_model="'comment'" :button_text="'+ add comment'" :alt_target="alt_target"
             :supplied_params="{'item_id':item_id, 'item_model':item_model}"></form-button-and-modal>
 
         <b-button v-if="item_comments.length > 0 && show_comments == false" class="btn-sm show-comments mr-2"
@@ -47,7 +47,6 @@ export default {
         .catch(error => { console.log("Error getting comment data")  })
     },
     computed: {
-        ...Vuex.mapState({ user_permissions: state => state.permissions.current_user_permissions }),
         ...Vuex.mapGetters(['getCommentsForItem', 'getUserName']),
         item_comments: function() {
             if (this.item_id && this.item_model) {
@@ -55,10 +54,13 @@ export default {
             } else {
                 return []
             }
+        },
+        alt_target: function() {
+            return this.item_model + "_" + this.item_id
         }
     },
     methods: {
-        ...Vuex.mapActions(['getComments', 'addComment']),
+        ...Vuex.mapActions(['getComments']),
         display_date(date) { return Date(date) },
         comment_name(text) {
             if (text.length > 50) {
@@ -66,10 +68,6 @@ export default {
             } else {
                 return "Comment: '" + text + "'"
             }
-        },
-        add_comment() {
-            this.addComment({ item_id: this.item_id, item_model: this.item_model, text: this.comment_text })
-            .then( response => { this.edit_comment_response = response })
         }
     }
 

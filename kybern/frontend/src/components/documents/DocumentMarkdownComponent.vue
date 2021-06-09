@@ -45,7 +45,6 @@ export default {
     },
     watch: {
         content: function(val) {
-            console.log("Time to overwrite! with ", this.content)
             if (typeof this.content !== "undefined") {
                 this.current_content = this.content
             }

@@ -88,11 +88,12 @@ const GovernanceVuexModule = {
             return role_list.map(role => { return  { name: role } })
         },
         user_pk_to_options: (state, getters) => (pk_list) => {
-            if (pk_list) {
-                return pk_list.map(pk => { return  { pk: pk, name: getters.getUser(pk).name }  })
-            } else {
-                return []
+            if (!pk_list) { return [] }
+            if (!Array.isArray(pk_list)) {
+                console.log("WARNING: user_pk_to_options passed in non-array: ", pk_list);
+                return pk_list
             }
+            return pk_list.map(pk => { return  { pk: pk, name: getters.getUser(pk).name }  })
         },
         groupMembersAsOptions: (state, getters) => {
             return getters.user_pk_to_options(state.members)
@@ -134,6 +135,44 @@ const GovernanceVuexModule = {
         },
         SET_GOVERNANCE_INFO(state, data) {
             Vue.set(state, "governance_info", data.governance_info)
+        },
+        ADD_OWNERS (state, data) {
+            data.roles_to_add.forEach(function(role){
+                if (!state.owners.roles.includes(role)) {
+                    state.owners.roles.push(role) }
+            })
+            data.actors_to_add.forEach(function(actor){
+                if (!state.owners.actors.includes(actor)) {
+                    state.owners.actors.push(actor) }
+            })
+        },
+        REMOVE_OWNERS (state, data) {
+            data.roles_to_remove.forEach(function(role){
+                var index = state.owners.roles.indexOf(role)
+                if (index > -1) { state.owners.roles.splice(index, 1)}
+            })
+            data.actors_to_remove.forEach(function(actor){
+                var index = state.owners.actors.indexOf(actor)
+                if (index > -1) { state.owners.actors.splice(index, 1)}
+            })
+        },
+        ADD_GOVERNORS (state, data) {
+            data.roles_to_add.forEach(function(role){
+                if (!state.governors.roles.includes(role)) { state.governors.roles.push(role) }
+            })
+            data.actors_to_add.forEach(function(actor){
+                if (!state.governors.actors.includes(actor)) { state.governors.actors.push(actor) }
+            })
+        },
+        REMOVE_GOVERNORS (state, data) {
+            data.roles_to_remove.forEach(function(role){
+                var index = state.governors.roles.indexOf(role)
+                if (index > -1) { state.governors.roles.splice(index, 1)}
+            })
+            data.actors_to_remove.forEach(function(actor){
+                var index = state.governors.actors.indexOf(actor)
+                if (index > -1) { state.governors.actors.splice(index, 1)}
+            })
         },
         ADD_ROLE (state, data) {
             var role_exists = state.roles.find(role => role.name == data.role_name)
@@ -181,44 +220,6 @@ const GovernanceVuexModule = {
                     var index_of_user_in_role = role.current_members.indexOf(user_pk)
                     if (index_of_user_in_role > -1 ) { role.current_members.splice(index_of_user_in_role, 1) }
                 })
-            })
-        },
-        ADD_OWNERS (state, data) {
-            data.roles_to_add.forEach(function(role){
-                if (!state.owners.roles.includes(role)) {
-                    state.owners.roles.push(role) }
-            })
-            data.actors_to_add.forEach(function(actor){
-                if (!state.owners.actors.includes(actor)) {
-                    state.owners.actors.push(actor) }
-            })
-        },
-        REMOVE_OWNERS (state, data) {
-            data.roles_to_remove.forEach(function(role){
-                var index = state.owners.roles.indexOf(role)
-                if (index > -1) { state.owners.roles.splice(index, 1)}
-            })
-            data.actors_to_remove.forEach(function(actor){
-                var index = state.owners.actors.indexOf(actor)
-                if (index > -1) { state.owners.actors.splice(index, 1)}
-            })
-        },
-        ADD_GOVERNORS (state, data) {
-            data.roles_to_add.forEach(function(role){
-                if (!state.governors.roles.includes(role)) { state.governors.roles.push(role) }
-            })
-            data.actors_to_add.forEach(function(actor){
-                if (!state.governors.actors.includes(actor)) { state.governors.actors.push(actor) }
-            })
-        },
-        REMOVE_GOVERNORS (state, data) {
-            data.roles_to_remove.forEach(function(role){
-                var index = state.governors.roles.indexOf(role)
-                if (index > -1) { state.governors.roles.splice(index, 1)}
-            })
-            data.actors_to_remove.forEach(function(actor){
-                var index = state.governors.actors.indexOf(actor)
-                if (index > -1) { state.governors.actors.splice(index, 1)}
             })
         },
         SET_MEMBERSHIP_OPTION_SELECTED (state, data) {
@@ -294,32 +295,31 @@ const GovernanceVuexModule = {
             var implementationCallback = () => { commit('REMOVE_ROLE', { role_name: payload.role_name }) }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
+
         async updateOwners({ commit, state, dispatch, getters}, payload) {
-            var url = await getters.url_lookup('update_owners')
-            var params = { owner_roles: payload.roles, owner_actors: payload.actors }
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "change_owners_of_community", roles_to_add: payload.roles_to_add,
+                actors_to_add: payload.actors_to_add, roles_to_remove: payload.roles_to_remove,
+                actors_to_remove: payload.actors_to_remove, extra_data: payload.extra_data }
             var implementationCallback = () => {
-                var roles_to_add = payload.roles.filter(x => !state.owners.roles.includes(x))
-                var actors_to_add = payload.actors.filter(x => !state.owners.actors.includes(x))
-                var roles_to_remove = state.owners.roles.filter(x => !payload.roles.includes(x))
-                var actors_to_remove = state.owners.actors.filter(x => !payload.actors.includes(x))
-                commit('ADD_OWNERS', { roles_to_add: roles_to_add, actors_to_add: actors_to_add })
-                commit('REMOVE_OWNERS', { roles_to_remove: roles_to_remove, actors_to_remove: actors_to_remove })
+                commit('ADD_OWNERS', { roles_to_add: payload.roles_to_add, actors_to_add: payload.actors_to_add })
+                commit('REMOVE_OWNERS', { roles_to_remove: payload.roles_to_remove, actors_to_remove: payload.actors_to_remove })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
+
         async updateGovernors({ commit, state, dispatch, getters}, payload) {
-            var url = await getters.url_lookup('update_governors')
-            var params = { governor_roles: payload.roles, governor_actors: payload.actors }
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "change_governors_of_community", roles_to_add: payload.roles_to_add,
+                actors_to_add: payload.actors_to_add, roles_to_remove: payload.roles_to_remove,
+                actors_to_remove: payload.actors_to_remove, extra_data: payload.extra_data }
             var implementationCallback = () => {
-                var roles_to_add = payload.roles.filter(x => !state.governors.roles.includes(x))
-                var actors_to_add = payload.actors.filter(x => !state.governors.actors.includes(x))
-                var roles_to_remove = state.governors.roles.filter(x => !payload.roles.includes(x))
-                var actors_to_remove = state.governors.actors.filter(x => !payload.actors.includes(x))
-                commit('ADD_GOVERNORS', { roles_to_add: roles_to_add, actors_to_add: actors_to_add })
-                commit('REMOVE_GOVERNORS', { roles_to_remove: roles_to_remove, actors_to_remove: actors_to_remove })
+                commit('ADD_GOVERNORS', { roles_to_add: payload.roles_to_add, actors_to_add: payload.actors_to_add })
+                commit('REMOVE_GOVERNORS', { roles_to_remove: payload.roles_to_remove, actors_to_remove: payload.actors_to_remove })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         }
+
      }
 
 }

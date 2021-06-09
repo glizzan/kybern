@@ -97,7 +97,7 @@ import Vuex from 'vuex'
 import store from '../../store'
 import Multiselect from 'vue-multiselect'
 import ErrorComponent from '../utils/ErrorComponent'
-import { ConfiguredFieldsMixin } from '../utils/Mixins'
+import { ConfiguredFieldsMixin, PermissionGroupMixin } from '../utils/Mixins'
 import ActionResponseComponent from '../actions/ActionResponseComponent'
 
 
@@ -105,7 +105,7 @@ export default {
 
     props: ['default_selection', 'role_to_edit', 'item_id', 'item_model'],  // item_model is required
     components: { "vue-multiselect": Multiselect, ErrorComponent, ActionResponseComponent },
-    mixins: [ConfiguredFieldsMixin],
+    mixins: [ConfiguredFieldsMixin, PermissionGroupMixin],
     store,
     data: function() {
         return {
@@ -182,26 +182,6 @@ export default {
                         return this.permission_options_to_use[group_index].permissions[permission_index]
                     }}}
             return undefined
-        },
-        create_permission_groups(permission_options) {
-            var new_options = {}
-            for (let index in permission_options) {
-                var option = permission_options[index]
-                if (option.group in new_options) {
-                    new_options[option.group].push(option)
-                } else {
-                    new_options[option.group] = [option]
-                }
-            }
-            var grouped_options = []
-            for (let group in new_options) {
-                if (["Leadership", "Community", "Permissions", "Miscellaneous"].indexOf(group) > -1) {
-                    grouped_options.push({section: group, permissions: new_options[group]})
-                } else {
-                    grouped_options.unshift({section: group, permissions: new_options[group]})
-                }
-            }
-            return grouped_options
         },
         get_roles() {
             if (this.item_or_role == "role") { return [this.role_to_edit] }

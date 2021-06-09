@@ -97,6 +97,7 @@ def process_action(action):
         "action_target_content_type": action.content_type.pk,
         "description": action.get_description(with_actor=False, with_target=False),
         "created": str(action.created_at),
+        "change_type": action.change.short_name(),
         "display_date": action_time,
         "actor": action.actor.username,
         "actor_pk": action.actor.pk,
@@ -371,7 +372,9 @@ def get_permission_options(client):
             permission_options[model_string].append({
                 "value": state_change.get_change_type(),
                 "text": state_change.change_description(),
-                "group": state_change.section
+                "group": state_change.section,
+                "change_field_options": state_change.get_change_field_options(),
+                "dependent_field_options": state_change.get_context_keys()
             })
 
     return permission_options
@@ -451,26 +454,62 @@ def serialize_item(result):
         return serialize_forum_for_vue(result)
     if result.__class__.__name__ == "Post":
         return serialize_post_for_vue(result)
+    if result.__class__.__name__ == "Comment":
+        return serialize_existing_comment_for_vue(result)
+    if result.__class__.__name__ == "SimpleList":
+        return serialize_list_for_vue(result)
+    if result.__class__.__name__ == "Document":
+        return serialize_document_for_vue(result)
+    if result.__class__.__name__ == "PermissionsItem":
+        return serialize_existing_permission_for_vue(result, pk_as_key=False)
     print("Warning, no serializing match found for result: ", result)
 
 
-@login_required
-def take_action(request, target):
+def process_taken_action(action, result, target, data_to_return):
 
-    request_data = json.loads(request.body.decode('utf-8'))
+    action_dict = get_action_dict(action)
+
+    if data_to_return and action.status == "implemented":
+        if data_to_return == "deleted_item_pk":
+            action_dict["deleted_item_pk"] = result
+        elif data_to_return == "target_pk":
+            action_dict["target_pk"] = target.pk
+        elif data_to_return == "governance_info":
+            action_dict.update({"governance_info": json.dumps(client.Community.get_governance_info_as_text())})
+        elif data_to_return == "unique_row_id":
+            action_dict["unique_id"] = result[1]  # hack for returning row ID on add row
+        elif data_to_return == "condition_data":
+            if (target.__class__.__name__ == "PermissionsItem"):
+                action_dict["condition_data"] = target.get_condition_data()
+            else:
+                action_dict["owner"] = target.get_condition_data("owner")
+                action_dict["governor"] = target.get_condition_data("governor")
+        elif data_to_return == "created_instance":
+            action_dict["created_instance"] = serialize_item(result)
+        elif data_to_return == "edited_instance":
+            action_dict["edited_instance"] = serialize_item(result)
+
+    return action_dict
+
+
+@login_required
+@reformat_input_data
+def take_action(request, target, request_data):
+
+    # request_data = json.loads(request.body.decode('utf-8'))
     client = Client(actor=request.user)
 
     # set target as community, unless alt_target is provided
     alt_target = request_data.pop("alt_target", None)
     if alt_target:
         model, pk = alt_target.split("_")
-        new_target = client.Action.get_object_given_model_and_pk(model, int(pk))
-        client.update_target_on_all(target=new_target)
+        target = client.Action.get_object_given_model_and_pk(model, int(pk), include_actions=True)
+        client.update_target_on_all(target=target)
     else:
         target = client.Community.get_community(community_pk=target)
         client.update_target_on_all(target=target)
 
-    data_to_return = request_data.pop("return", None)
+    data_to_return = request_data.pop("data_to_return", None)
     extra_data = request_data.pop("extra_data", None)
     proposed = extra_data.pop("proposed", None) if extra_data else None
 
@@ -479,15 +518,12 @@ def take_action(request, target):
     method = client.get_method(action_name)
     action, result = method(proposed=proposed, **request_data)
 
-    # process data to return
-    action_dict = get_action_dict(action)
-    if data_to_return and action.status == "implemented":
-        if data_to_return == "deleted_item_pk":
-            action_dict["deleted_item_pk"] = result
-        else:  # the only other options are created_instance + edited_instance, which are handled the same
-            action_dict[data_to_return] = serialize_item(result)
+    note = extra_data.pop("note", None) if extra_data else None
+    if note:
+        action.note = note
+        action.save()
 
-    return JsonResponse(action_dict)
+    return JsonResponse(process_taken_action(action, result, target, data_to_return))
 
 
 @login_required
@@ -522,44 +558,10 @@ def create_group(request):
 
     # add description - need to do this separately as create_community is a Concord method that doesn't know about the
     # Group description field
-    client.Community.set_target(community)
-    client.Community.change_group_description(group_description=group_description)
+    client.update_target_on_all(community)
+    client.Group.edit_group(description=group_description)
 
     return JsonResponse({"group_pk": community.pk})
-
-
-@login_required
-def change_group_name(request):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-    group_pk = request_data.get("group_pk")
-    new_name = request_data.get("new_name")
-
-    client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=group_pk)
-    client.Community.set_target(target=target)
-
-    action, result = client.Community.change_name_of_community(name=new_name)
-    action_dict = get_action_dict(action)
-    action_dict["group_name"] = new_name
-    return JsonResponse(action_dict)
-
-
-@login_required
-def change_group_description(request):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-    group_pk = request_data.get("group_pk")
-    group_description = request_data.get("group_description")
-
-    client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=group_pk)
-    client.Community.set_target(target=target)
-
-    action, result = client.Community.change_group_description(group_description=group_description)
-    action_dict = get_action_dict(action)
-    action_dict["group_description"] = group_description
-    return JsonResponse(action_dict)
 
 
 ####################
@@ -670,7 +672,7 @@ def get_permission_info(permission):
 @login_required
 @reformat_input_data
 def add_permission(request, target, permission_type, item_or_role, permission_actors=None,
-                   permission_roles=None, item_id=None, item_model=None):
+                   permission_roles=None, item_id=None, item_model=None, condition_data=None):
 
     if item_or_role == "item":    # If an item has been passed in, make it the target
         model_class = get_model(item_model)
@@ -681,7 +683,8 @@ def add_permission(request, target, permission_type, item_or_role, permission_ac
     client = Client(actor=request.user, target=target)
 
     action, result = client.PermissionResource.add_permission(
-        change_type=permission_type, actors=permission_actors, roles=permission_roles)
+        change_type=permission_type, actors=permission_actors, roles=permission_roles,
+        condition_data=condition_data)
 
     action_dict = get_action_dict(action)
     permission_info = get_permission_info(result) if action.status == "implemented" else None
@@ -848,24 +851,6 @@ def remove_condition(request, target, permission_or_leadership, target_permissio
 
 
 @login_required
-def update_approval_condition(request):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-    condition_pk = request_data.get("condition_pk", None)
-    action_to_take = request_data.get("action_to_take", None)
-
-    approvalClient = Client(actor=request.user).Conditional.\
-        get_condition_as_client(condition_type="ApprovalCondition", pk=condition_pk)
-
-    if action_to_take == "approve":
-        action, result = approvalClient.approve()
-    elif action_to_take == "reject":
-        action, result = approvalClient.reject()
-
-    return JsonResponse(get_action_dict(action))
-
-
-@login_required
 def update_vote_condition(request):
 
     request_data = json.loads(request.body.decode('utf-8'))
@@ -960,44 +945,44 @@ def get_action_data_for_target(request):
 ####################################
 
 
-@login_required
-def update_owners(request, target):
+# @login_required
+# def update_owners(request, target):
 
-    request_data = json.loads(request.body.decode('utf-8'))
-    owner_roles = request_data.get("owner_roles", "")  # no need to make into list, leadershipcomponent handles that
-    owner_actors = request_data.get("owner_actors", "")  # no need to make into list, leadershipcomponent handles that
+#     request_data = json.loads(request.body.decode('utf-8'))
+#     owner_roles = request_data.get("owner_roles", "")  # no need to make into list, leadershipcomponent handles that
+#     owner_actors = request_data.get("owner_actors", "")  # no need to make into list, leadershipcomponent handles that
 
-    client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=target)
-    client.update_target_on_all(target)
+#     client = Client(actor=request.user)
+#     target = client.Community.get_community(community_pk=target)
+#     client.update_target_on_all(target)
 
-    actions = client.Community.update_owners(new_owner_data={"individuals": owner_actors, "roles": owner_roles})
+#     actions = client.Community.update_owners(new_owner_data={"individuals": owner_actors, "roles": owner_roles})
 
-    action_dict = get_multiple_action_dicts(actions)
-    action_dict.update({"governance_info": json.dumps(client.Community.get_governance_info_as_text())})
+#     action_dict = get_multiple_action_dicts(actions)
+#     action_dict.update({"governance_info": json.dumps(client.Community.get_governance_info_as_text())})
 
-    return JsonResponse(action_dict)
+#     return JsonResponse(action_dict)
 
 
-@login_required
-def update_governors(request, target):
+# @login_required
+# def update_governors(request, target):
 
-    request_data = json.loads(request.body.decode('utf-8'))
-    governor_roles = request_data.get("governor_roles", "")
-    governor_actors = request_data.get("governor_actors", "")
+#     request_data = json.loads(request.body.decode('utf-8'))
+#     governor_roles = request_data.get("governor_roles", "")
+#     governor_actors = request_data.get("governor_actors", "")
 
-    client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=target)
-    client.update_target_on_all(target)
+#     client = Client(actor=request.user)
+#     target = client.Community.get_community(community_pk=target)
+#     client.update_target_on_all(target)
 
-    actions = client.Community.update_governors(
-        new_governor_data={"individuals": governor_actors, "roles": governor_roles}
-    )
+#     actions = client.Community.update_governors(
+#         new_governor_data={"individuals": governor_actors, "roles": governor_roles}
+#     )
 
-    action_dict = get_multiple_action_dicts(actions)
-    action_dict.update({"governance_info": json.dumps(client.Community.get_governance_info_as_text())})
+#     action_dict = get_multiple_action_dicts(actions)
+#     action_dict.update({"governance_info": json.dumps(client.Community.get_governance_info_as_text())})
 
-    return JsonResponse(action_dict)
+#     return JsonResponse(action_dict)
 
 
 #############################
@@ -1140,78 +1125,6 @@ def get_comment_data(request):
     })
 
 
-@login_required
-def add_note_to_action(request):
-    """This is a hacky temporary view to handle overriding any permissions issues and letting
-    an actor update their action with anote. Once actions have been cleaned up and
-    we can edit the process in just one place, we can merge this with the normal action process."""
-
-    request_data = json.loads(request.body.decode('utf-8'))
-    action_pk = request_data.get("action_pk")
-    note = request_data.get("note")
-
-    from concord.actions.models import Action
-    action = Action.objects.get(pk=int(action_pk))
-    if not action.note:
-        action.note = note
-        action.save()
-    else:
-        print(f"Warning, action already had note {action.note}")
-
-    return JsonResponse({"success": True})
-
-
-@login_required
-def add_comment(request):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-
-    item_id = request_data.get("item_id")
-    model_class = get_model(request_data.get("item_model"))
-    target = model_class.objects.get(pk=item_id)
-    text = request_data.get("text")
-
-    client = Client(actor=request.user, target=target)
-    action, result = client.Comment.add_comment(text=text)
-
-    action_dict = get_action_dict(action)
-    if result:
-        action_dict.update({'comment': serialize_existing_comment_for_vue(result)})
-    return JsonResponse(action_dict)
-
-
-@login_required
-def edit_comment(request):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-    client = Client(actor=request.user)
-    comment = client.Comment.get_comment(pk=int(request_data.get("comment_pk")))
-    client.update_target_on_all(comment)
-
-    text = request_data.get("text")
-    action, result = client.Comment.edit_comment(text=text)
-
-    action_dict = get_action_dict(action)
-    action_dict.update({'comment': serialize_existing_comment_for_vue(result)})
-    return JsonResponse(action_dict)
-
-
-@login_required
-def delete_comment(request):
-
-    request_data = json.loads(request.body.decode('utf-8'))
-    client = Client(actor=request.user)
-    comment_pk = request_data.get("comment_pk")
-    comment = client.Comment.get_comment(pk=comment_pk)
-    client.update_target_on_all(comment)
-
-    action, result = client.Comment.delete_comment()
-
-    action_dict = get_action_dict(action)
-    action_dict.update({'deleted_comment_pk': comment_pk})
-    return JsonResponse(action_dict)
-
-
 ######################
 ### Template Views ###
 ######################
@@ -1272,137 +1185,6 @@ def get_list(request, target, list_pk):
     return JsonResponse({"list": serialize_list_for_vue(list_obj)})
 
 
-@login_required
-@reformat_input_data
-def add_list(request, target, name, description=None):
-
-    client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=target)
-    client.List.set_target(target=target)
-
-    action, result = client.List.add_list(name=name, description=description)
-
-    action_dict = get_action_dict(action)
-    if action.status == "implemented":
-        action_dict["list_data"] = serialize_list_for_vue(result)
-    return JsonResponse(action_dict)
-
-
-@login_required
-@reformat_input_data
-def edit_list(request, target, list_pk, name=None, description=None):
-
-    client = Client(actor=request.user)
-    target = client.List.get_list(pk=list_pk)
-    client.List.set_target(target=target)
-
-    action, result = client.List.edit_list(name=name, description=description)
-
-    action_dict = get_action_dict(action)
-    if action.status == "implemented":
-        action_dict["list_data"] = serialize_list_for_vue(result)
-    return JsonResponse(action_dict)
-
-
-@login_required
-@reformat_input_data
-def delete_list(request, target, list_pk):
-    client = Client(actor=request.user)
-    target = client.List.get_list(pk=list_pk)
-    client.List.set_target(target=target)
-
-    action, result = client.List.delete_list()
-
-    action_dict = get_action_dict(action)
-
-    if action.status == "implemented":
-        action_dict["deleted_list_pk"] = list_pk
-    return JsonResponse(action_dict)
-
-
-@login_required
-@reformat_input_data
-def add_column(request, target, list_pk, column_name, required, default_value):
-
-    client = Client(actor=request.user)
-    target = client.List.get_list(pk=list_pk)
-    client.List.set_target(target=target)
-
-    action, result = client.List.add_column_to_list(
-        column_name=column_name, required=required, default_value=default_value)
-
-    return JsonResponse(get_action_dict(action))
-
-
-@login_required
-@reformat_input_data
-def edit_column(request, target, list_pk, column_name, required=None, default_value=None, new_name=None):
-
-    client = Client(actor=request.user)
-    target = client.List.get_list(pk=list_pk)
-    client.List.set_target(target=target)
-
-    action, result = client.List.edit_column_in_list(
-        column_name=column_name, required=required, default_value=default_value, new_name=new_name)
-
-    return JsonResponse(get_action_dict(action))
-
-
-@login_required
-@reformat_input_data
-def delete_column(request, target, list_pk, column_name):
-
-    client = Client(actor=request.user)
-    target = client.List.get_list(pk=list_pk)
-    client.List.set_target(target=target)
-
-    action, result = client.List.delete_column_from_list(column_name=column_name)
-
-    return JsonResponse(get_action_dict(action))
-
-
-@login_required
-@reformat_input_data
-def add_row(request, target, list_pk, row_content):
-
-    client = Client(actor=request.user)
-    target = client.List.get_list(pk=list_pk)
-    client.List.set_target(target=target)
-
-    action, result = client.List.add_row_to_list(row_content=row_content)
-
-    action_dict = get_action_dict(action)
-    if action.status == "implemented":
-        action_dict["unique_id"] = result[1]
-    return JsonResponse(action_dict)
-
-
-@login_required
-@reformat_input_data
-def edit_row(request, target, list_pk, row_content, unique_id):
-
-    client = Client(actor=request.user)
-    target = client.List.get_list(pk=list_pk)
-    client.List.set_target(target=target)
-
-    action, result = client.List.edit_row_in_list(row_content=row_content, unique_id=unique_id)
-
-    return JsonResponse(get_action_dict(action))
-
-
-@login_required
-@reformat_input_data
-def delete_row(request, target, list_pk, unique_id):
-
-    client = Client(actor=request.user)
-    target = client.List.get_list(pk=list_pk)
-    client.List.set_target(target=target)
-
-    action, result = client.List.delete_row_in_list(unique_id=unique_id)
-
-    return JsonResponse(get_action_dict(action))
-
-
 ######################
 ### Document Views ###
 ######################
@@ -1419,55 +1201,6 @@ def get_documents(request, target):
     serialized_docs = serialize_documents_for_vue(docs)
 
     return JsonResponse({"documents": serialized_docs})
-
-
-@login_required
-@reformat_input_data
-def add_document(request, target, name, description=None, content=None):
-
-    client = Client(actor=request.user)
-    target = client.Community.get_community(community_pk=target)
-    client.Document.set_target(target=target)
-
-    action, result = client.Document.add_document(name=name, description=description, content=content)
-
-    action_dict = get_action_dict(action)
-    if action.status == "implemented":
-        action_dict["created_instance"] = serialize_document_for_vue(result)
-    return JsonResponse(action_dict)
-
-
-@login_required
-@reformat_input_data
-def edit_document(request, target, document_pk, name=None, description=None, content=None):
-
-    client = Client(actor=request.user)
-    target = client.Document.get_document(pk=document_pk)
-    client.Document.set_target(target=target)
-
-    action, result = client.Document.edit_document(name=name, description=description, content=content)
-
-    action_dict = get_action_dict(action)
-    if action.status == "implemented":
-        action_dict["edited_instance"] = serialize_document_for_vue(result)
-    return JsonResponse(action_dict)
-
-
-@login_required
-@reformat_input_data
-def delete_document(request, target, document_pk):
-
-    client = Client(actor=request.user)
-    target = client.Document.get_document(pk=document_pk)
-    client.Document.set_target(target=target)
-
-    action, result = client.Document.delete_document()
-
-    action_dict = get_action_dict(action)
-
-    if action.status == "implemented":
-        action_dict["deleted_instance_pk"] = document_pk
-    return JsonResponse(action_dict)
 
 
 ######################################################################
@@ -1502,6 +1235,23 @@ def get_alt_target2(client, alt_target):
         comments mostly), we automatically give people access to Action comments"""
         return "action"
     return client.Action.get_object_given_model_and_pk(model, int(pk))
+
+
+def update_leadership_check(client, permission_name, params):
+    """Temporary hack to handle the permissions check for update owners and update governors, which are not
+    single state changes."""
+    if permission_name == "update_owners":
+        for perm in ["add_owner_to_community", "add_owner_role_to_community", "remove_owner_from_community",
+            "remove_owner_role_from_community"]:
+            if client.PermissionResource.has_permission(client, perm, params, exclude_conditional=True):
+                return True
+        return False
+    if permission_name == "update_governors":
+        for perm in ["add_governor_to_community", "add_governor_role_to_community", "remove_governor_from_community",
+            "remove_governor_role_from_community"]:
+            if client.PermissionResource.has_permission(client, perm, params, exclude_conditional=True):
+                return True
+        return False
 
 
 @transaction.non_atomic_requests

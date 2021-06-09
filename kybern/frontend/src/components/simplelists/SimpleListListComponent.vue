@@ -4,8 +4,7 @@
 
         <h5 class="pb-3">
             <span class="font-weight-bold">Lists</span>
-                <form-button-and-modal v-if="user_permissions.add_list"
-                    :item_model="'list'" :button_text="'+ add new'" :supplied_variant="'light'"
+                <form-button-and-modal :item_model="'list'" :button_text="'+ add new'" :supplied_variant="'light'"
                     :supplied_classes="'btn-sm ml-3'"></form-button-and-modal>
         </h5>
 
@@ -50,17 +49,14 @@ export default {
     computed: {
         ...Vuex.mapState({
             lists: state => state.simplelists.lists,
-            user_permissions: state => state.permissions.current_user_permissions,
             group_name: state => state.group_name
         }),
     },
     created () {
         this.getLists()
-        this.checkPermissions({ permissions: { add_list: null }})
-            .catch(error => {  this.error_message = error; console.log(error) })
     },
     methods: {
-        ...Vuex.mapActions(['checkPermissions', 'getLists'])
+        ...Vuex.mapActions(['getLists'])
     }
 
 }

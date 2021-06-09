@@ -11,7 +11,7 @@
                 <small class="text-muted">posted by <span class="user-link">{{ getUserName(comment.commenter_pk) }}</span>
                     on {{ display_date(comment.created_at) }}</small>
 
-                <resource-action-icons class="float-right" v-on:delete="delete_comment(comment.pk)"
+                <resource-action-icons class="float-right" v-on:delete="delete_comment"
                     :item_id=comment.pk :item_name="comment_name(comment.text)" :item_model="'comment'"
                     :id_add="'comment' + comment.pk" :response=response></resource-action-icons>
 
@@ -60,9 +60,9 @@ export default {
                 return "Comment: '" + text + "'"
             }
         },
-        delete_comment(pk) {
-            this.deleteComment({ item_id: this.item_id, item_model: this.item_model, comment_pk: pk })
-            .then( response => { this.response = response })
+        delete_comment(extra_data) {
+            this.deleteComment({ item_id: this.item_id, item_model: this.item_model, pk: this.comment.pk,
+                extra_data : extra_data }).then( response => { this.response = response })
         }
     }
 }

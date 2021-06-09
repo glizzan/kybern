@@ -50,14 +50,16 @@ export default {
             field_selected: null,
             field_options: [],
             permission: null,
-            error_message: null
+            error_message: null,
+            dependency_scope: null
         }
     },
-    inject: ['dependency_scope'],
+    inject: ['dependent_field_info'],
     created () {
         this.model_selected = this.initial_model_selected
         this.field_selected = this.initial_field_selected
-        this.permission = this.$parent.$parent.$parent.$parent.$parent.$parent.permission // Wish provide/inject was working!!
+        if (this.dependent_field_info.dependency_scope) { this.dependency_scope = this.dependent_field_info.dependency_scope }
+        if (this.dependent_field_info.permission_option) { this.permission = this.dependent_field_info.permission_option }
     },
     watch: {
         initial_model_selected: function(val) { this.model_selected = val },
@@ -65,10 +67,15 @@ export default {
         model_selected: function(val) {
             this.field_options = this.get_field_options(val)
             this.field_selected = null  // always wipe field when model changes
+        },
+        dependent_field_info: function(val) {
+            if (val.dependency_scope) { this.dependency_scope = val.dependency_scope }
+            if (val.permission_option) { this.permission = val.permission_option }
         }
     },
     computed: {
-        ...Vuex.mapState({model_and_field_options_unprocessed: state => state.permissions.dependent_field_options }),
+        ...Vuex.mapState({
+            model_and_field_options_unprocessed: state => state.permissions.dependent_field_options }),
         model_options: function () {
             var options = []
             this.permission.dependent_field_options.forEach(option =>{

@@ -2,6 +2,8 @@
 
     <b-container class="permission-container">
 
+        <permission-editor-component :mode="'add'"></permission-editor-component>
+
         <b-row no-gutters>
 
             <b-col cols=2 class="py-3 pr-3">
@@ -30,18 +32,8 @@
                 <span class="big-text mr-2">All Group Permissions</span>
 
                 <b-icon-plus-circle v-b-tooltip.hover title="Add permission" class="mx-2" variant=warning
-                    font-scale=1.5 :id="'add_permission_button'" v-b-modal="'add_permission_modal_'  + modal">
+                    font-scale=1.5 :id="'add_permission_button'" v-b-modal.add_permission_modal>
                 </b-icon-plus-circle>
-                <add-permission-modal-component :item_name=item_name :item_id=item_id :item_model=item_model
-                    :modal_id="'add_permission_modal_'  + modal">
-                </add-permission-modal-component>
-
-                <b-icon-pencil-fill v-b-tooltip.hover title="Edit permissions" class="mr-2" variant="warning"
-                    font-scale=1.5 :id="'edit_permissions_button'" v-b-modal="'edit_permissions_modal_'  + modal">
-                </b-icon-pencil-fill>
-                <edit-permissions-modal-component :permissions=permissions :item_name=item_name
-                    :item_id=item_id :item_model=item_model :modal_id="'edit_permissions_modal_'  + modal">
-                </edit-permissions-modal-component>
 
                 <b-icon-grid3x3-gap-fill v-b-tooltip.hover title="Apply templates" variant=warning font-scale=1.5
                     v-if="user_permissions.apply_template" id="apply_templates" class="mr-2"
@@ -77,18 +69,16 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
-import AddPermissionModalComponent from '../permissions/AddPermissionModalComponent'
-import EditPermissionsModalComponent from '../permissions/EditPermissionsModalComponent'
 import PermissionsTableComponent from '../permissions/PermissionsTableComponent'
 import TemplateModal from '../templates/TemplateModal'
 import AdvancedPermissionsModal from '../permissions/AdvancedPermissionsModal'
+import PermissionEditorComponent from '../permissions/PermissionEditorComponent'
 
 
 export default {
 
     props: ['permissions', 'item_id', 'item_model', 'item_name'],
-    components: { AddPermissionModalComponent, EditPermissionsModalComponent, PermissionsTableComponent,
-                  TemplateModal, AdvancedPermissionsModal },
+    components: { PermissionsTableComponent, TemplateModal, AdvancedPermissionsModal, PermissionEditorComponent },
     store,
     data: function() {
         return {

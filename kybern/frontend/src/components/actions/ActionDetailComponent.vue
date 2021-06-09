@@ -16,7 +16,6 @@
                     <div class="info"><span class="label">Actor's note</span>:
                         <span v-if=action.note>{{ action.note }}</span><span v-else>none</span></div>
 
-                    {{ response }}
                     <b-button v-if="user_is_actor && action.status == 'propose-vol'" variant="outline-secondary"
                         class="my-2" @click="retake_proposed_action">Take your action</b-button>
 
@@ -84,7 +83,7 @@
 
                                 <!-- Summary -->
 
-                                <b-button v-b-modal="condition.type + condition.pk" class="mt-2" variant="info">
+                                <b-button v-b-modal="condition.type + condition.pk" class="mt-2 action-condition" variant="info">
                                     {{condition.passing_description }}</b-button>
 
                                 <!-- Linked Modal -->

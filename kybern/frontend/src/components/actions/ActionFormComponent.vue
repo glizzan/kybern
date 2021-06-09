@@ -5,8 +5,8 @@
         <span v-if="!complete">
 
             <b-form-group>
-                <b-form-radio-group id="action-mode-buttons" v-model="mode" :options="options"
-                    button-variant="outline-info" name="action-mode-buttons" buttons>
+                <b-form-radio-group id="action-mode-buttons" class="action-mode-options" v-model="mode"
+                    :options="options" button-variant="outline-secondary" name="action-mode-buttons" buttons>
                 </b-form-radio-group>
             </b-form-group>
 
@@ -23,7 +23,7 @@
         <div v-if="warning" class="text-danger mb-2">{{ warning }}</div>
         <action-response-component :response=response></action-response-component>
 
-        <b-button v-if="!complete" variant="info" id="submit_action" @click="submit">submit</b-button>
+        <b-button v-if="!complete" variant="info" class="take-action" id="submit_action" @click="submit">submit</b-button>
         <b-spinner v-if="action_sent && !response" small label="Spinner" class="ml-2"></b-spinner>
 
     </div>
@@ -51,24 +51,19 @@ export default {
             action_sent: false
         }
     },
-    created () { if (!this.actor_can_take) { this.mode = "propose"} },
+    created () {
+        if (!this.actor_can_take) { this.mode = "propose" } else { this.mode = "take" }
+    },
     watch: {
-        response: function(val) {
-            if (val && val.data.action_status && val.data.action_status != "invalid") {
-                if (this.action_note_text != "") {
-                    this.addNoteToAction({action_pk: val.data.action_pk, note: this.action_note_text})
-                }
-                this.complete = true
-            }
-        }
+        actor_can_take: function(val) { if (val) { this.mode = "take" } }
     },
     computed: {
         actor_can_take: function() { return this.has_permission && !this.has_condition },
         note_required: function() { return !this.has_permission },
         options: function() {
             var options = []
-            options.push({text: 'Take action ' + this.verb, value: "take", disabled: !this.actor_can_take})
-            options.push({text: 'Propose action ' + this.verb, value: "propose", disabled: false})
+            options.push({text: 'Take', value: "take", disabled: !this.actor_can_take})
+            options.push({text: 'Propose', value: "propose", disabled: false})
             return options
         },
         prompt_text: function() {
@@ -104,9 +99,9 @@ export default {
 
             if (this.mode == "propose") {
                 var proposed = this.actor_can_take ? "propose-vol" : "propose-req"
-                this.$emit('take-action', {proposed: proposed})
+                this.$emit('take-action', {proposed: proposed, note: this.action_note_text})
             } else {
-                this.$emit('take-action', {})  // may need more data passed back
+                this.$emit('take-action', {note: this.action_note_text})  // may need more data passed back
             }
         }
     }

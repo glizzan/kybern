@@ -45,6 +45,10 @@ var fields_dict = {
     "list": [
         {field_name: "name", label: "Name", type: "CharField", required: false, value: null},
         {field_name: "description", label: "Description", type: "CharField", required: false, value: null},
+    ],
+    "group": [
+        {field_name: "name", label: "Name", type: "CharField", required: false, value: null},
+        {field_name: "description", label: "Description", type: "CharField", required: false, value: null},
     ]
 }
 
@@ -57,7 +61,8 @@ import TakeActionComponent from '../actions/TakeActionComponent'
 
 export default {
 
-    props: ['item_id', 'item_model', 'button_text', 'supplied_variant', 'supplied_classes', 'supplied_params', 'id_add', 'alt_target'],
+    props: ['item_id', 'item_model', 'button_text', 'supplied_variant', 'supplied_classes', 'supplied_params',
+        'id_add', 'alt_target'],
     components: { TakeActionComponent, FieldComponent },
     mixins: [ConfiguredFieldsMixin],
     store,
@@ -79,7 +84,7 @@ export default {
         item_instance: function(val) { if (val) { this.initialize_configuration_fields() } }
     },
     computed: {
-        ...Vuex.mapGetters(['getDocumentData', 'getForumData', 'getPostData', 'getCommentData', 'getListData']),
+        ...Vuex.mapGetters(['getDocumentData', 'getForumData', 'getPostData', 'getCommentData', 'getListData', 'getGroupData']),
         mode: function() { if (this.item_id) { return "edit"}  else { return "add" } },
         to_add: function() { if (this.id_add) { return this.id_add } else { return "default"} },
         id_preface: function() { return this.mode + "_" + this.item_model + "_" + this.to_add },
@@ -99,7 +104,7 @@ export default {
     },
     methods: {
         ...Vuex.mapActions(['addDocument', 'editDocument', 'addForum', 'editForum', 'addPost', 'editPost',
-            'addComment', 'editComment', 'addList', 'editList']),
+            'addComment', 'editComment', 'addList', 'editList', 'editGroup']),
         capitalize(text) { return text.charAt(0).toUpperCase() + text.slice(1) },
         initialize_configuration_fields() {
             if (this.item_instance) {

@@ -13,16 +13,16 @@
                 <template-info-component :template=selected_template :create_group=create_group :display_select=false>
                 </template-info-component>
 
-                <span v-if="configuration_fields.length > 0">
+                <div v-if="configuration_fields.length > 0" class="my-4">
                     <h5 class="mt-3 font-weight-bold">Configure fields for template: {{ this.selected_template.name }}.</h5>
 
                     <field-component v-for="field in configuration_fields" v-on:field-changed="change_field"
                         :initial_field=field v-bind:key=field.field_name></field-component>
 
-                </span>
-                <span v-else>
+                </div>
+                <div v-else class="my-4">
                     <b>There are no fields to configure.</b>
-                </span>
+                </div>
 
 
                 <action-response-component :response=apply_template_response></action-response-component>

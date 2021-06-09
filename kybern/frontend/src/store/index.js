@@ -35,6 +35,9 @@ export default new Vuex.Store({
         urls: {},
     },
     getters: {
+        getGroupData: (state, getters) => (group_pk) => {
+            return {pk: state.group_pk , name: state.group_name, description: state.group_description }
+        },
         url_lookup: (state, getters) => (url_name) => {
 
             return new Promise((resolve, reject) => {
@@ -82,22 +85,13 @@ export default new Vuex.Store({
             .catch(error => { console.log(error); throw error })
         },
 
-        // Group info actions
-
-        async changeGroupName({ commit, getters, state, dispatch }, payload) {
-            var url = await getters.url_lookup('change_group_name')
-            var params = { group_pk : payload.group_pk, new_name : payload.new_name }
+        async editGroup({ commit, getters, state, dispatch }, payload) {
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "edit_group", name: payload.name, description: payload.description,
+                extra_data: payload.extra_data }
             var implementationCallback = (response) => {
-                commit('UPDATE_GROUP_NAME', { group_name : response.data.group_name })
-            }
-            return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
-        },
-
-        async changeGroupDescription({ commit, getters, state, dispatch }, payload) {
-            var url = await getters.url_lookup('change_group_description')
-            var params = { group_pk : payload.group_pk, group_description : payload.group_description }
-            var implementationCallback = (response) => {
-                commit('UPDATE_GROUP_DESCRIPTION', { group_description : response.data.group_description })
+                if (payload.name) { commit('UPDATE_GROUP_NAME', { group_name : payload.name }) }
+                if (payload.description) { commit('UPDATE_GROUP_DESCRIPTION', { group_description : payload.description }) }
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },

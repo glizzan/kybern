@@ -7,7 +7,7 @@
 
         <!-- Default display button -->
         <b-button-group v-if="!button_template_provided">
-            <b-button id="take_action" :disabled=!has_permission @click="shortcut">{{ verb }}</b-button>
+            <b-button id="take_action" class="take-action" :disabled=!has_permission @click="shortcut">{{ verb }}</b-button>
             <b-button id="propose_action"  @click="open_extra">
                 <b-icon-caret-up v-if="show_inline_interface"></b-icon-caret-up>
                 <b-icon-caret-down v-else></b-icon-caret-down>
@@ -26,7 +26,8 @@
         </b-card>
 
         <!-- Or view as separate modal -->
-        <b-modal v-else :id=modal_id title="Take Action" hide-footer>
+        <b-modal v-else :id=modal_id :title="'Take action: ' + verb" hide-footer
+                v-on:close="$emit('close-modal', modal_id)">
             <action-form-component v-on:take-action="pass_along" :response=response :verb=verb
                 :has_permission=has_permission :has_condition=has_condition></action-form-component>
         </b-modal>
@@ -87,10 +88,12 @@ export default {
             this.action_sent = true
         },
         open_extra() {
+            this.$emit('open-extra')
             if (this.inline) {
-                if (this.show_inline_interface == true )
+                if (this.show_inline_interface == true ) {
+                    this.$emit('close-extra')
                     this.show_inline_interface = false
-                else {
+                } else {
                     this.show_inline_interface = true
                 }
             } else {

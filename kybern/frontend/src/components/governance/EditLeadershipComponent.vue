@@ -6,7 +6,7 @@
             <b-input-group prepend="Roles" class="mb-2 mr-sm-2 mb-sm-0 flex-nowrap">
                 <vue-multiselect v-model="roles_selected" :options="rolesAsOptions" :multiple="true"
                 :close-on-select="true" :clear-on-select="false" placeholder="No roles selected"
-                :disabled="!has_permission" label="name" track-by="name">
+                label="name" track-by="name">
                 </vue-multiselect>
             </b-input-group>
         </div>
@@ -15,15 +15,14 @@
             <b-input-group prepend="Individuals" class="mb-2 mr-sm-2 mb-sm-0 flex-nowrap">
                 <vue-multiselect v-model="actors_selected" :options="groupMembersAsOptions" :multiple="true"
                 :close-on-select="true" :clear-on-select="true" placeholder="No individuals selected"
-                :disabled="!has_permission" label="name" track-by="pk" prepend="Individuals">
+                label="name" track-by="pk" prepend="Individuals">
                 </vue-multiselect>
             </b-input-group>
         </div>
 
         <div class="mb-3">
-            <action-response-component :response=update_leadership_response></action-response-component>
-            <b-button v-if="has_permission" variant="outline-secondary" @click="update_leadership()">
-                Update {{this.leadership_type}}s</b-button>
+            <take-action-component v-on:take-action=update_leadership :response=response :verb="'change ' + leadership_type + 's'"
+                :action_name="'change_' + leadership_type + 's_of_community'"></take-action-component>
          </div>
 
     </b-form>
@@ -35,69 +34,60 @@
 import Vuex from 'vuex'
 import store from '../../store'
 import Multiselect from 'vue-multiselect'
-import ActionResponseComponent from '../actions/ActionResponseComponent'
+import TakeActionComponent from '../actions/TakeActionComponent'
 
 
 export default {
 
     props: ['leadership_type'],
-    components: { "vue-multiselect": Multiselect, ActionResponseComponent },
+    components: { "vue-multiselect": Multiselect, TakeActionComponent },
     store,
     data: function() {
         return {
-            update_leadership_response: null,
+            response: null,
+            initial_actors: [],
+            initial_roles: [],
             actors_selected: [],
             roles_selected: []
         }
     },
     created (){
-        this.checkPermissions({permissions: {
-            "add_owner_to_community": null, "remove_owner_from_community": null,
-            "add_owner_role_to_community": null, "remove_owner_role_from_community": null,
-            "add_governor_to_community": null, "remove_governor_from_community": null,
-            "add_governor_role_to_community": null, "remove_governor_role_from_community": null
-        }}).catch(error => {this.error_message = error})
         this.get_existing_roles_and_actors()
     },
     computed: {
-        ...Vuex.mapState({user_permissions: state => state.permissions.current_user_permissions}),
         ...Vuex.mapGetters(['rolesAsOptions', 'groupMembersAsOptions', 'leadershipAsOptions']),
         edit_leadership_id: function() { return this.leadership_type + "_actors_and_roles" },
-        has_permission: function() {
-            if (this.leadership_type == "owner" && this.user_permissions) { return this.permission_to_update_owners() }
-            if (this.leadership_type == "governor" && this.user_permissions) { return this.permission_to_update_governors() }
-            return false
-        }
     },
     watch: {  leadershipAsOptions: function (val) { this.get_existing_roles_and_actors() } },
     methods: {
-        ...Vuex.mapActions(['checkPermissions', 'updateOwners', 'updateGovernors']),
-        permission_to_update_owners: function() {
-            return this.user_permissions.add_owner_to_community || this.user_permissions.remove_owner_from_community ||
-                   this.user_permissions.add_owner_role_to_community || this.user_permissions.remove_owner_role_from_community
-        },
-        permission_to_update_governors: function() {
-            return this.user_permissions.add_governor_to_community || this.user_permissions.remove_governor_from_community ||
-                    this.user_permissions.add_governor_role_to_community || this.user_permissions.remove_governor_role_from_community
-        },
+        ...Vuex.mapActions(['updateOwners', 'updateGovernors']),
         get_existing_roles_and_actors() {
             if (this.leadership_type == "owner") {
                 this.roles_selected = this.leadershipAsOptions.owner_role_options
+                this.initial_roles = this.leadershipAsOptions.owner_role_options
                 this.actors_selected = this.leadershipAsOptions.owner_actor_options
+                this.initial_actors = this.leadershipAsOptions.owner_actor_options
             } else if (this.leadership_type == "governor") {
                 this.roles_selected = this.leadershipAsOptions.governor_role_options
+                this.initial_roles = this.leadershipAsOptions.governor_role_options
                 this.actors_selected = this.leadershipAsOptions.governor_actor_options
+                this.initial_actors = this.leadershipAsOptions.governor_actor_options
             }
         },
-        update_leadership(leadership_type) {
-            var roles = this.roles_selected.map(role => role.name)
-            var actors = this.actors_selected.map(actor => actor.pk)
+        update_leadership(extra_data) {
+
+            var roles_to_add = this.roles_selected.filter(x => !this.initial_roles.includes(x)).map(role => role.name)
+            var actors_to_add = this.actors_selected.filter(x => !this.initial_actors.includes(x)).map(actor => actor.pk)
+            var roles_to_remove = this.initial_roles.filter(x => !this.roles_selected.includes(x)).map(role => role.name)
+            var actors_to_remove = this.initial_actors.filter(x => !this.actors_selected.includes(x)).map(actor => actor.pk)
+
+            var params = { roles_to_add: roles_to_add, actors_to_add: actors_to_add, roles_to_remove: roles_to_remove,
+                actors_to_remove: actors_to_remove, extra_data: extra_data }
+
             if (this.leadership_type == "owner") {
-                this.updateOwners({roles: roles, actors:actors})
-                    .then(response => { this.update_leadership_response = response })
+                this.updateOwners(params).then(response => this.response = response)
             } else if (this.leadership_type == "governor") {
-                this.updateGovernors({ roles: roles, actors: actors})
-                    .then(response => { this.update_leadership_response = response })
+                this.updateGovernors(params).then(response => this.response = response)
             }
         }
     }

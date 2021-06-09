@@ -25,13 +25,13 @@
                         <div class="role_interactions text-right">
 
                             <div v-if="role.name != 'members'" class="d-inline-block" v-b-modal.role_membership_modal
-                                 v-on:click="role_selected = role.name; mode = 'add'" :id="role.name + '_remove_members'">
+                                 v-on:click="role_selected = role.name; mode = 'add'" :id="role.name + '_add_members'">
                                 <b-icon-person-plus v-b-tooltip.hover title="add members">
                                 </b-icon-person-plus>
                             </div>
 
                             <div v-if="role.name != 'members'" class="ml-3 d-inline-block" v-b-modal.role_membership_modal
-                                 v-on:click="role_selected = role.name; mode = 'remove'" :id="role.name + '_add_members'" :mode="'remove'">
+                                 v-on:click="role_selected = role.name; mode = 'remove'" :id="role.name + '_remove_members'" :mode="'remove'">
                                 <b-icon-person-dash v-b-tooltip.hover title="remove members">
                                 </b-icon-person-dash>
                             </div>

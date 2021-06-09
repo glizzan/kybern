@@ -78,15 +78,6 @@ const ActionsVuexModule = {
 
         },
 
-        async addNoteToAction ({ state, commit, rootState, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('add_note_to_action')
-            var params = { action_pk : payload.action_pk, note : payload.note }
-            var implementationCallback = (response) => {
-                dispatch('addOrUpdateAction', { action_pk: payload.action_pk })
-            }
-            return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
-        },
-
         async retakeAction ({ state, commit, rootState, dispatch, getters }, payload) {
             var url = await getters.url_lookup('take_proposed_action')
             var params = { action_pk : payload.action_pk }

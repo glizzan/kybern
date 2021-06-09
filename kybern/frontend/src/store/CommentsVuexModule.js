@@ -64,33 +64,37 @@ const CommentsVuexModule = {
             return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async addComment({ commit, state, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('add_comment')
-            var params = { item_id: payload.item_id, item_model: payload.item_model, text: payload.text }
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "add_comment", data_to_return: "created_instance", extra_data: payload.extra_data,
+                alt_target: payload.item_model + "_" + payload.item_id, text: payload.text }
+            console.log("Sending with params: ", params)
             var implementationCallback = (response) => {
-                var pk = Object.keys(response.data.comment)[0]
-                var data = response.data.comment[pk]
+                var pk = Object.keys(response.data.created_instance)[0]
+                var data = response.data.created_instance[pk]
                 commit('ADD_OR_UPDATE_COMMENT', { pk: pk, data: data })
                 commit('ADD_COMMENT_TO_ITEM', { comment_pk: pk, item_id: payload.item_id, item_model: payload.item_model })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async editComment({ commit, state, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('edit_comment')
-            var params = { text: payload.text, comment_pk: payload.pk }
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "edit_comment", data_to_return: "edited_instance", extra_data: payload.extra_data,
+                alt_target: "comment_" + payload.pk, text: payload.text }
             var implementationCallback = (response) => {
-                var pk = Object.keys(response.data.comment)[0]
-                var data = response.data.comment[pk]
+                var pk = Object.keys(response.data.edited_instance)[0]
+                var data = response.data.edited_instance[pk]
                 commit('ADD_OR_UPDATE_COMMENT', { pk: pk, data: data })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async deleteComment({ commit, state, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('delete_comment')
-            var params = { comment_pk: payload.comment_pk }
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "delete_comment", data_to_return: "deleted_item_pk", extra_data: payload.extra_data,
+                alt_target: "comment_" + payload.pk }
             var implementationCallback = (response) => {
                 commit('REMOVE_COMMENT_FROM_ITEM', { item_id: payload.item_id, item_model: payload.item_model,
-                    comment_pk:response.data.deleted_comment_pk })
-                commit('DELETE_COMMENT', { pk: response.data.deleted_comment_pk })
+                    comment_pk:response.data.deleted_item_pk })
+                commit('DELETE_COMMENT', { pk: response.data.deleted_item_pk })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         }

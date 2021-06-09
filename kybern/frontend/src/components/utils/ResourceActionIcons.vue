@@ -4,8 +4,8 @@
 
         <form-button-and-modal :id_add=id_to_add :item_id=item_id :item_model=item_model></form-button-and-modal>
 
-        <take-action-component v-on:take-action="delete_item" :verb="'delete ' + item_model"
-            :alt_target="item_model + '_' + item_id" :response=response :unique=item_id>
+        <take-action-component v-if="!hide_delete" v-on:take-action="delete_item" :verb="'delete ' + item_model" :response=response :unique=item_id
+            :alt_target=alt_target>
             <b-icon-trash :id="'delete_' + item_model + '_button'" class="mr-2" v-b-tooltip.hover
                 :title="'delete ' + item_model"></b-icon-trash>
         </take-action-component>
@@ -42,10 +42,14 @@ import TakeActionComponent from '../actions/TakeActionComponent'
 export default {
 
     components: { ItemPermissionsModal, FormButtonAndModal, TakeActionComponent },
-    props: ['item_id', 'item_model', 'item_name', 'id_add', 'export_url', 'export_text', 'response'],
+    props: ['item_id', 'item_model', 'item_name', 'id_add', 'export_url', 'export_text', 'response', 'hide_delete'],
     computed: {
         export_prompt: function() { if (this.export_text) { return this.export_text } else { return "export" } },
-        id_to_add: function() { if (this.id_add) { return this.id_add } else { return "main" } }
+        id_to_add: function() { if (this.id_add) { return this.id_add } else { return "main" } },
+        alt_target: function() {
+            if (this.item_model == "list") { return "simplelist_" + this.item_id }   // hack for weird use case
+            else { return this.item_model + "_" + this.item_id }
+        }
     },
     methods: {
         delete_item(extra_data) {
