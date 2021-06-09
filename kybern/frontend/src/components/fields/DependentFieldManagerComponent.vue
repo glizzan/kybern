@@ -5,7 +5,7 @@
         <span v-if="model_selected">
             <span v-if="field.display">{{ field.display }}</span>
             <span v-if="field.label">{{ field.label }}</span>
-            <b-button class="btn-sm btn-info">
+            <b-button class="btn-sm btn-info ml-2">
                 <small><b>set as: {{model_selected}}<span v-if="field_selected">'s {{field_selected}}</span></b></small>
                 <span class="badge badge-info ml-1 edit-dependent-field" v-b-modal="dependent_field_modal_id">🖉</span>
                 <span class="badge badge-info ml-1 delete-dependent-field" @click="remove_dependent_field()">🗑</span>

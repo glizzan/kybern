@@ -2,20 +2,10 @@
 
     <span>
 
-        <b-button class="mr-1 mb-4 btn-sm outline-secondary" :id="'add_permission_button_' + modal" variant="outline-secondary"
-            v-b-modal="'add_permission_modal_'  + modal">Add Permission</b-button>
-
-        <add-permission-modal-component :default_selection=default_selection :role_to_edit=role_to_edit
-            :item_name=item_name :item_id=item_id :item_model=item_model
-            :modal_id="'add_permission_modal_'  + modal">
-        </add-permission-modal-component>
-
-        <b-button class="mr-1 mb-4 btn-sm" :id="'edit_permissions_button_' + modal" variant="outline-secondary"
-            v-b-modal="'edit_permissions_modal_'  + modal">Edit Permissions</b-button>
-
-        <edit-permissions-modal-component :permissions=permissions :item_name=item_name
-            :item_id=item_id :item_model=item_model :modal_id="'edit_permissions_modal_'  + modal">
-        </edit-permissions-modal-component>
+        <b-button class="mr-1 mb-4 btn-sm outline-secondary add-permission" :id="'add_permission_button'" variant="outline-secondary"
+            v-b-modal="'add_permission_modal_' + add_target + '_' + default_selection">Add Permission</b-button>
+        <permission-editor-component :mode="'add'" :edit_target=add_target :edit_change=default_selection>
+        </permission-editor-component>
 
         <b-button class="mr-1 mb-4 btn-sm"  v-if="user_permissions.apply_template" id="apply_templates"
             variant="outline-secondary" v-b-modal="'apply_template_modal_' + item_model">Apply Templates</b-button>
@@ -35,16 +25,15 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
-import AddPermissionModalComponent from '../permissions/AddPermissionModalComponent'
-import EditPermissionsModalComponent from '../permissions/EditPermissionsModalComponent'
+import PermissionEditorComponent from '../permissions/PermissionEditorComponent'
 import PermissionsTableComponent from '../permissions/PermissionsTableComponent'
 import TemplateModal from '../templates/TemplateModal'
 
 
 export default {
 
-    components: { AddPermissionModalComponent, EditPermissionsModalComponent, PermissionsTableComponent, TemplateModal },
-    props: ['permissions', 'item_id', 'item_model', 'item_name', 'modal_id', 'default_selection', 'role_to_edit'],
+    components: { PermissionEditorComponent, PermissionsTableComponent, TemplateModal },
+    props: ['permissions', 'item_id', 'item_model', 'item_name', 'default_selection', 'role_to_edit'],
     created: function () {
         var alt_target = this.item_model + "_" + this.item_id
         this.checkPermissions({permissions: {"apply_template": {alt_target:alt_target} } })
@@ -55,7 +44,9 @@ export default {
             group_pk: state => state.group_pk,
             user_permissions: state => state.permissions.current_user_permissions
         }),
-        modal: function() { if (this.modal_id) { return this.modal_id } else {return "default" } },
+        add_target: function() {
+            return this.item_model == "group" ? "community" : this.item_model + " '" + this.item_name + "'"
+        }
     },
     methods: {
         ...Vuex.mapActions(['checkPermissions'])

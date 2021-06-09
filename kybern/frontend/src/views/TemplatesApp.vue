@@ -37,12 +37,22 @@
 
                 <span v-if=selected_template>
 
-                    <p>{{ selected_template.action_breakdown.foundational }}</p>
-
-                    <ol class="mt-3">
-                        <li v-for="action in selected_template.action_breakdown.actions"
-                            v-bind:key=action.pk>{{action}}</li>
-                    </ol>
+                      <b-tabs content-class="mt-3 p-2">
+                        <b-tab title="Description" active>
+                            {{selected_template.description}}
+                        </b-tab>
+                        <b-tab title="Details">
+                                <p>{{ selected_template.action_breakdown.foundational }}</p>
+                                <ol class="mt-3">
+                                    <li v-for="action in selected_template.action_breakdown.actions"
+                                        v-bind:key=action.pk>{{action}}</li>
+                                </ol>
+                        </b-tab>
+                        <b-tab title="Discussion">
+                            <CommentListComponent :item_id=selected_template.pk
+                                :item_model="'TemplateModel'" class="my-3"> </CommentListComponent>
+                        </b-tab>
+                      </b-tabs>
 
                 </span>
 
@@ -64,10 +74,12 @@ let initialState = JSON.parse(window.__INITIAL_STATE__);
 import store from '../store'
 import axios from '../store/axios_instance'
 import NavbarComponent from '../components/utils/NavbarComponent'
+import CommentListComponent from '../components/comments/CommentListComponent'
+
 
 export default {
 
-    components: { NavbarComponent },
+    components: { NavbarComponent, CommentListComponent },
     store,
     data: function() {
         return {
@@ -80,6 +92,10 @@ export default {
         }
     },
     created () {
+        this.initialize_group_data({urls: initialState.urls, user_pk: initialState.user_pk,
+                                    user_name: initialState.user_name, group_pk: initialState.group_pk,
+                                    group_name: initialState.group_name,
+                                    group_description: initialState.group_description })
     },
     computed: {
         scopes: function() {
@@ -109,6 +125,7 @@ export default {
         }
     },
     methods: {
+        ...Vuex.mapActions(['initialize_group_data']),
         show_modal(template) { this.selected_template = template },
         close_modal() { this.selected_template = null }
     }

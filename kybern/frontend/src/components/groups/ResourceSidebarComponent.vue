@@ -8,17 +8,14 @@
 
                 {{ display }}
 
-                <form-button-and-modal v-if="model == 'simplelist' && user_permissions.add_list"
-                    :item_model="'list'" :button_text="'+ add new'" :supplied_variant="'light'"
-                    :supplied_classes="'btn-sm ml-3'"></form-button-and-modal>
+                <form-button-and-modal v-if="model == 'simplelist'" :item_model="'list'" :button_text="'+ add new'"
+                    :supplied_variant="'light'" :supplied_classes="'btn-sm ml-3'"></form-button-and-modal>
 
-                <form-button-and-modal v-if="model == 'forum' && user_permissions.add_forum"
-                    :item_model="'forum'" :button_text="'+ add new'" :supplied_variant="'light'"
-                    :supplied_classes="'btn-sm ml-3'"></form-button-and-modal>
+                <form-button-and-modal v-if="model == 'forum'" :item_model="'forum'" :button_text="'+ add new'"
+                    :supplied_variant="'light'" :supplied_classes="'btn-sm ml-3'"></form-button-and-modal>
 
-                <form-button-and-modal v-if="model == 'document' && user_permissions.add_document"
-                    :item_model="'document'" :button_text="'+ add new'" :supplied_variant="'light'"
-                    :supplied_classes="'btn-sm ml-3'"></form-button-and-modal>
+                <form-button-and-modal v-if="model == 'document'" :item_model="'document'" :button_text="'+ add new'"
+                    :supplied_variant="'light'" :supplied_classes="'btn-sm ml-3'"></form-button-and-modal>
 
             </h5>
 
@@ -58,15 +55,12 @@ export default {
         if (this.lists.length == 0) { this.getLists() }
         if (this.forums.length == 0) { this.getForums() }
         if (this.documents.length == 0) { this.getDocuments() }
-        this.checkPermissions({permissions: {"add_forum": null, "add_list": null, "add_document": null}})
-            .catch(error => {  this.error_message = error; console.log(error) })
     },
     computed: {
         ...Vuex.mapState({
             lists: state => state.simplelists.lists,
             forums: state => state.forums.forums,
             documents: state => state.documents.documents,
-            user_permissions: state => state.permissions.current_user_permissions,
         }),
         resources: function() {
 
@@ -78,7 +72,7 @@ export default {
         }
     },
     methods: {
-        ...Vuex.mapActions(['checkPermissions', 'getLists', 'getForums', 'getDocuments']),
+        ...Vuex.mapActions(['getLists', 'getForums', 'getDocuments']),
         get_router_ref(model, item) {
             if (model == "simplelist") {
                 return { name: "list-detail", params: {list_id: item.pk}}

@@ -2,11 +2,11 @@
 
     <div class="mt-3">
 
-        <b-button v-if="user_permissions.add_members_to_community || user_permissions.remove_members_from_community"
-            class="btn-sm btn-info mr-3 mb-3" v-b-modal.group_membership_display id="group_membership_display_button">
-            change members</b-button>
-
-        <edit-membership-modal></edit-membership-modal>
+        <b-button class="btn-sm btn-info mr-3 mb-3" v-b-modal.group_membership_display
+            id="add_members_display_button" @click="mode='add'">add members</b-button>
+        <b-button class="btn-sm btn-info mr-3 mb-3" v-b-modal.group_membership_display
+            id="remove_members_display_button" @click="mode='remove'">remove members</b-button>
+        <edit-membership-modal :mode=mode></edit-membership-modal>
 
         <b-button class="btn-sm btn-info mb-3" v-b-modal.group_membership_settings_display
             id="group_membership_settings_button">
@@ -52,12 +52,12 @@ export default {
 
     components: { EditMembershipModal, MembershipSettingsModal },
     store,
-    created () {
-        this.checkPermissions({permissions: {"add_members_to_community": null, "remove_members_from_community": null }})
-            .catch(error => {  this.error_message = error; console.log(error) })
+    data: function() {
+        return {
+            mode: null
+        }
     },
     computed: {
-        ...Vuex.mapState({ user_permissions: state => state.permissions.current_user_permissions }),
         ...Vuex.mapGetters(['groupMembersAsOptions', 'allRoleNames', 'rolesForMember']),
         members_and_roles: function() {
             var vue_data = this
@@ -79,9 +79,6 @@ export default {
             })
             return ["member"].concat(role_names)
         }
-    },
-    methods: {
-        ...Vuex.mapActions(['checkPermissions'])
     }
 
 }

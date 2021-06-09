@@ -10,14 +10,14 @@ from concord.utils.helpers import Client
 from concord.actions.models import TemplateModel
 
 from groups.models import Group
-from groups.views import serialize_template_for_vue, process_action
+from groups.views import serialize_template_for_vue, process_action, get_urls
 
 from accounts.models import Profile, NotificationsSettings, Notification
-from accounts.forms import RegistrationFormWithCode
+from accounts.forms import RegistrationFormCleanEmail
 
 
 class RegistrationViewWithCode(RegistrationView):
-    form_class = RegistrationFormWithCode
+    form_class = RegistrationFormCleanEmail
     success_url = "/register/complete/"
 
 
@@ -110,11 +110,16 @@ class TemplateLibraryView(generic.ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         templates = [serialize_template_for_vue(t, pk_as_key=False) for t in TemplateModel.objects.all()]
+        template_community = Client().Community.get_community(community_name="Kybern Template Community")
         initial_state = {
             "user_name": self.request.user.username,
             "user_pk": self.request.user.pk,
             "is_authenticated": self.request.user.is_authenticated,
-            "templates": templates
+            "templates": templates,
+            "group_pk": template_community.pk,
+            "group_name": template_community.name,
+            "group_description": template_community.group_description,
+            "urls": get_urls(target=template_community.pk),
         }
         context["initial_state"] = json.dumps(initial_state)
         return context

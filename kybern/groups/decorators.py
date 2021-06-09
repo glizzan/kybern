@@ -161,18 +161,36 @@ def reformat_input_data(function=None, expect_target=True):
         request_data = json.loads(request.body.decode('utf-8'))  # loaded, we can now use this as our kwargs
 
         if "permission_roles" in request_data:
-            request_data["permission_roles"] = reformat_role_select(request_data["permission_roles"])
+            request_data["roles"] = reformat_role_select(request_data["permission_roles"])
+            del(request_data["permission_roles"])
 
         if "permission_actors" in request_data:
-            request_data["permission_actors"] = reformat_actor_select(request_data["permission_actors"])
+            request_data["actors"] = reformat_actor_select(request_data["permission_actors"])
+            del(request_data["permission_actors"])
 
         if "combined_condition_data" in request_data:
             request_data["condition_data"], request_data["permission_data"] = \
                 reformat_combined_permission_and_condition_data(request_data["combined_condition_data"])
             del(request_data["combined_condition_data"])
 
+        if "list_of_condition_data" in request_data:
+            condition_list = []
+            for condition in request_data["list_of_condition_data"]:
+                condition_data, permission_data = reformat_combined_permission_and_condition_data(
+                    condition["combined_condition_data"])
+                condition_list.append({
+                    "condition_type": condition["condition_type"],
+                    "condition_data": condition_data,
+                    "permission_data": permission_data
+                })
+            request_data["condition_data"] = condition_list
+            del(request_data["list_of_condition_data"])
+
         if "supplied_fields" in request_data:
             request_data["supplied_fields"] = reformat_supplied_fields(request_data["supplied_fields"])
+
+        if function.__name__ == "take_action":
+            return function(request, target, request_data)
 
         return function(request, target, **request_data)
 

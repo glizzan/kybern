@@ -1,6 +1,6 @@
 <template>
 
-        <b-modal id="column_modal" :title=title size="md" @show="onShow">
+        <b-modal id="column_modal" :title=title size="md" @show="onShow" @close="clear">
 
             <!-- Data -->
             <b-input-group prepend="Column Name" class="my-2">
@@ -14,18 +14,18 @@
 
             <!-- Messages -->
             <span v-if="validation_error" class="text-danger">{{validation_error}}</span>
-            <action-response-component :response=column_response class="mt-4"></action-response-component>
 
-            <template #modal-footer>
             <!-- Actions -->
-            <b-button v-if="can_add && mode == 'add'" variant="info" class="btn-sm mr-2 my-2" id='add_column_submit'
-                @click='add_column'>Save</b-button>
-            <b-button v-if="can_edit && mode == 'edit'" variant="info" class="btn-sm mr-2 my-2" id='edit_column_submit'
-                @click='edit_column'>
-                Save</b-button>
-            <b-button variant="outline-secondary" class="btn-sm my-2" @click='reset_column'>Reset</b-button>
-            <b-button v-if="can_delete && mode == 'edit'" variant="danger" class="float-right btn-sm my-2"
-                id='delete_column_submit' @click='delete_column'>Delete</b-button>
+            <template #modal-footer>
+                <take-action-component v-if="mode == 'add'" v-on:take-action=add_column :response=add_response
+                    :inline="'true'" :verb="'add column'" :action_name="'add_column_to_list'" :alt_target=alt_target>
+                </take-action-component>
+                <take-action-component v-if="mode == 'edit' && not_deleted" v-on:take-action=edit_column :response=edit_response
+                    :inline="'true'" :verb="'edit column'" :action_name="'edit_column_in_list'" :alt_target=alt_target>
+                </take-action-component>
+                <take-action-component v-if="mode == 'edit'" v-on:take-action=delete_column :response=delete_response
+                    :inline="'true'" :verb="'delete column'" :action_name="'delete_column_from_list'" :alt_target=alt_target>
+                </take-action-component>
             </template>
 
         </b-modal>
@@ -36,20 +36,24 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
-import ActionResponseComponent from '../actions/ActionResponseComponent'
+import TakeActionComponent from '../actions/TakeActionComponent'
+
 
 export default {
 
-    components: { ActionResponseComponent },
-    props: ['list_id', 'column_data', 'can_add', 'can_edit', 'can_delete', 'mode', 'has_rows'],
+    components: { TakeActionComponent },
+    props: ['alt_target', 'column_data', 'mode', 'has_rows'],
     store,
     data: function() {
             return {
                 validation_error: null,
-                column_response: null,
+                add_response: null,
+                edit_response: null,
+                delete_response: null,
                 column_name: null,
                 column_required: null,
-                column_default: null
+                column_default: null,
+                not_deleted: true
             }
         },
     computed: {
@@ -58,6 +62,7 @@ export default {
     methods: {
         ...Vuex.mapActions(['addColumn', 'editColumn', 'deleteColumn']),
         onShow() { this.reset_column() },
+        clear() { this.validation_error = null; this.add_response = null; this.edit_response = null, this.delete_response = null },
         reset_column() {
             this.column_name = this.column_data.key
             this.column_default = this.column_data.default_value
@@ -81,27 +86,27 @@ export default {
             }
             return true
         },
-        add_column() {
+        add_column(extra_data) {
             if (this.validate() == false) { return }
-            this.addColumn({list_pk: this.list_id, column_name: this.column_name, required: this.column_required,
-                default_value: this.column_default})
-            .then(response => { this.column_response = response })
+            this.addColumn({alt_target: this.alt_target, column_name: this.column_name, required: this.column_required,
+                default_value: this.column_default, extra_data: extra_data})
+            .then(response => { this.add_response = response })
         },
-        edit_column() {
+        edit_column(extra_data) {
             if (this.validate() == false) { return }
-            var params = {list_pk: this.list_id, required: this.column_required, default_value: this.column_default }
+            var params = {alt_target: this.alt_target, required: this.column_required, default_value: this.column_default, extra_data: extra_data }
             if (this.column_name != this.column_data.key) {
                 params["column_name"] = this.column_data.key
                 params["new_name"] = this.column_name
             } else {
                 params["column_name"] = this.column_name
             }
-            this.editColumn(params).then(response => { this.column_response = response })
+            this.editColumn(params).then(response => { this.edit_response = response })
         },
-        delete_column() {
+        delete_column(extra_data) {
             var name = this.column_name == this.column_data.key ? this.column_name : this.column_data.key
-            this.deleteColumn({list_pk: this.list_id, column_name: name})
-            .then(response => { this.column_response = response })
+            this.deleteColumn({alt_target: this.alt_target, column_name: name, extra_data: extra_data})
+            .then(response => { this.delete_response = response })
         }
     }
 }

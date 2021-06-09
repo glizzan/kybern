@@ -2,34 +2,21 @@
 
     <div class="bg-white p-3" v-if="list">
 
-        <h3>{{ list.name }}</h3>
+        <div class="title-and-actions mb-4">
+
+            <span class="h3 font-weight-bold">{{ list.name }}</span>
+
+            <resource-action-icons class="float-right" v-on:delete="delete_list" :response=list_response :item_id=list_id
+                :item_model="'list'" :item_name=list.name :export_url=csv_export_url :export_text="'export as csv'">
+                </resource-action-icons>
+
+        </div>
+
         <p>{{ list.description }}</p>
 
-        <form-button-and-modal v-if="user_permissions.edit_list" :id_add="'main'" :item_id=list_id
-            :item_model="'list'" :button_text="'edit metadata'"></form-button-and-modal>
-
-        <action-response-component :response=delete_list_response></action-response-component>
-        <b-button v-if="user_permissions.delete_list" variant="outline-secondary" class="btn-sm mr-2"
-            id="delete_list_button" @click="delete_list(list_id)">delete list</b-button>
-
-        <router-link :to="{ name: 'action-history', params: {item_id: list_id, item_model: 'simplelist', item_name: list.name }}">
-                <b-button variant="outline-secondary" class="btn-sm mr-2" id="list_history_button">
-                    list history</b-button>
-        </router-link>
-
-        <b-button variant="outline-secondary" id="list_permissions" v-b-modal.item_permissions_modal
-            class="btn-sm mr-2">list permissions</b-button>
-        <item-permissions-modal :item_id=list_id :item_model="'simplelist'" :item_name=list.name>
-        </item-permissions-modal>
-
-        <b-button :href=csv_export_url variant="outline-secondary" class="btn-sm  mr-2" download>
-            export as csv</b-button>
-
-        <action-response-component :response=row_response class="mt-4"></action-response-component>
-
         <b-form inline id="table_controls" class="my-4">
-            <b-button variant="info" class="btn-sm mr-2" v-if="user_permissions.add_column_to_list"
-                id="add_column_button" @click="prep_modal('add', null)" v-b-modal.column_modal>new column</b-button>
+            <b-button variant="info" class="btn-sm mr-2" id="add_column_button" @click="prep_modal('add', null)"
+                v-b-modal.column_modal>new column</b-button>
             <b-button variant="info" class="btn-sm mr-2" v-if="user_permissions.add_row_to_list"
                 id="add_row_button" @click="new_item = true; edit_item = 'new_row'">new row</b-button>
             <b-input-group size="sm">
@@ -48,22 +35,30 @@
                     <b-form inline>
 
                         <span v-if="edit_item == data.item.unique_id">
-                            <b-icon-check v-if="new_item" class="mx-1" id="submit_add_row"
-                                @click="add_row"></b-icon-check>
-                            <b-icon-check v-else class="mx-1" id="submit_edit_row"
-                                @click="edit_row(data.item)"></b-icon-check>
-                            <b-icon-x v-if="new_item" class="mx-1" id="discard_edit_row"
-                                @click="edit_item = null; new_item = null"></b-icon-x>
-                            <b-icon-x v-else class="mx-1" id="discard_edit_row" @click="edit_item = null">
-                                </b-icon-x>
+                            <span v-if="new_item">
+                                <take-action-component v-on:take-action="add_row" v-on:close-modal="modal_closed('add')"
+                                    :response=add_row_response :alt_target=alt_target :verb="'add row to list'">
+                                    <b-icon-check class="mx-1" id="submit_add_row"></b-icon-check>
+                                </take-action-component>
+                                <b-icon-x class="mx-1" id="discard_edit_row" @click="edit_item = null; new_item = null"></b-icon-x>
+                            </span>
+                            <span v-else>
+                                <take-action-component v-on:take-action="edit_row(data.item, $event)" :response=edit_row_response
+                                    v-on:close-modal="modal_closed('edit')" :alt_target=alt_target :verb="'edit row in list'">
+                                    <b-icon-check class="mx-1" id="submit_edit_row"></b-icon-check>
+                                </take-action-component>
+                                <b-icon-x class="mx-1" id="discard_edit_row" @click="edit_item = null"></b-icon-x>
+                            </span>
                         </span>
+
                         <span v-else>
-                            <b-icon-pencil-square v-if="user_permissions.edit_row_in_list" class="mx-1"
-                                @click="edit_item = data.item.unique_id" :id="'edit_row_' + data.index">
-                            </b-icon-pencil-square>
-                            <b-icon-trash v-if="user_permissions.delete_row_in_list" class="mx-1"
-                                @click="delete_row(data.item)" :id="'delete_row_' + data.index">
-                            </b-icon-trash>
+                            <b-icon-pencil-square class="mx-1" @click="edit_item = data.item.unique_id"
+                                :id="'edit_row_' + data.index"></b-icon-pencil-square>
+                            <take-action-component v-on:take-action="delete_row(data.item, $event)" :alt_target=alt_target
+                                v-on:close-modal="modal_closed('delete')" :response=delete_row_response
+                                :verb="'delete row in list'" :unique=data.index>
+                                <b-icon-trash class="mx-1" :id="'delete_row_' + data.index"></b-icon-trash>
+                            </take-action-component>
                         </span>
 
                     </b-form>
@@ -97,9 +92,7 @@
 
         <span v-if="Object.keys(list.rows).length === 0">There are no items yet in this list.</span>
 
-        <column-modal-component :mode=mode :column_data=column_data :has_rows="list_data.length > 0" :list_id=list_id
-            :can_add=user_permissions.add_column_to_list
-            :can_edit=user_permissions.edit_column_in_list :can_delete=user_permissions.delete_column_from_list>
+        <column-modal-component :mode=mode :column_data=column_data :has_rows="list_data.length > 0" :alt_target=alt_target>
         </column-modal-component>
 
     </div>
@@ -111,22 +104,23 @@
 import Vuex from 'vuex'
 import store from '../../store'
 import { UtilityMixin } from '../utils/Mixins'
-import ItemPermissionsModal from '../permissions/ItemPermissionsModal'
-import ActionResponseComponent from '../actions/ActionResponseComponent'
 import ColumnModalComponent from './ColumnModalComponent'
-import FormButtonAndModal from '../utils/FormButtonAndModal'
+import ResourceActionIcons from '../utils/ResourceActionIcons'
+import TakeActionComponent from '../actions/TakeActionComponent'
 
 
 export default {
 
-    components: { ItemPermissionsModal, ActionResponseComponent, ColumnModalComponent, FormButtonAndModal},
+    components: { TakeActionComponent, ColumnModalComponent, ResourceActionIcons },
     props: ['list_id'],
     store,
     mixins: [UtilityMixin],
     data: function() {
             return {
-                delete_list_response: null,
-                row_response: null,
+                list_response: null,
+                add_row_response: null,
+                edit_row_response: null,
+                delete_row_response: null,
                 base_export_url: "",
                 edit_item: null,
                 new_item: null,
@@ -141,14 +135,10 @@ export default {
             var alt_target = "simplelist_" + this.list_id
             this.checkPermissions({
                 permissions:
-                    { edit_list: {alt_target : alt_target},
-                        delete_list: {alt_target : alt_target},
+                    {
                         add_row_to_list: {alt_target : alt_target},
                         edit_row_in_list: {alt_target : alt_target},
-                        delete_row_in_list: {alt_target : alt_target},
-                        add_column_to_list: {alt_target: alt_target},
-                        edit_column_in_list: {alt_target: alt_target},
-                        delete_column_from_list: {alt_target: alt_target}}
+                        delete_row_in_list: {alt_target : alt_target}}
             }).catch(error => { console.log(error) })
         } else {
             console.log("Missing list_id in SimpleListComponent")
@@ -161,6 +151,7 @@ export default {
             user_permissions: state => state.permissions.current_user_permissions
         }),
         ...Vuex.mapGetters(['getListData', 'getUserName', 'url_lookup']),
+        alt_target: function() { return "simplelist_" + this.list_id },
         lists_loaded: function() { if (this.lists.length == 0) { return false } else { return true }},
         list: function() { if (this.lists_loaded) { return this.getListData(this.list_id) } else { return null }},
         list_fields: function() {
@@ -198,38 +189,39 @@ export default {
             this.mode = mode
             this.column_data = data ? data : { key: "", required: false, default_value: "" }
         },
-        delete_list(list_id) {
-            this.deleteList({list_pk: list_id})
+        modal_closed(mode) {
+            if (mode == "edit") { this.edit_item = null }
+            if (mode == "add") { this.new_item = null; this.edit_item = null }
+            this.add_row_response = null
+            this.edit_row_response = null
+            this.delete_row_response = null
+        },
+        delete_list(extra_data) {
+            this.deleteList({pk: this.list_id, extra_data: extra_data })
             .then(response => {
                 if (response.data.action_status == "implemented") { this.$router.push({name: 'home'}) }
-                else { this.delete_list_response = response }
+                else { this.list_response = response }
             })
         },
-        add_row() {
+        add_row(extra_data) {
             var row_content = {}
             for (let field in this.list.columns) {
                 row_content[field] = document.getElementById("new_row_" + field).value
             }
-            this.addRow({list_pk: this.list_id, row_content: row_content})
-            .then(response => {
-                if (response.data.action_status == "implemented") { this.new_item = null; this.edit_item = null }
-                this.row_response = response
-            })
+            this.addRow({list_pk: this.list_id, row_content: row_content, extra_data: extra_data })
+            .then(response => { this.add_row_response = response })
         },
-        edit_row(item) {
+        edit_row(item, extra_data) {
             var row_content = {}
             for (let field in this.list.columns) {
                 row_content[field] = document.getElementById(item.unique_id + "_" + field).value
             }
-            this.editRow({list_pk: this.list_id, row_content: row_content, unique_id: item.unique_id})
-            .then(response => {
-                if (response.data.action_status == "implemented") { this.edit_item = null }
-                this.row_response = response
-            })
+            this.editRow({list_pk: this.list_id, row_content: row_content, unique_id: item.unique_id, extra_data: extra_data})
+            .then(response => { this.edit_row_response = response })
         },
-        delete_row(item) {
-            this.deleteRow({list_pk: this.list_id, unique_id: item.unique_id})
-            .then(response => { this.row_response = response })
+        delete_row(item, extra_data) {
+            this.deleteRow({list_pk: this.list_id, unique_id: item.unique_id, extra_data: extra_data})
+            .then(response => { this.delete_row_response = response })
         }
     }
 

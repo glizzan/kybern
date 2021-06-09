@@ -59,65 +59,69 @@ const SimplelistVuexModule = {
             return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async addList({ commit, state, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('add_list')
-            var params = { name: payload.name, description: payload.description }
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "add_list", data_to_return: "created_instance", extra_data: payload.extra_data,
+                name: payload.name, description: payload.description }
             var implementationCallback = (response) => {
-                commit('ADD_OR_UPDATE_LIST', { list_data : response.data.list_data })
+                commit('ADD_OR_UPDATE_LIST', { list_data : response.data.created_instance })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async editList({ commit, state, dispatch, getters }, payload) {
-            console.log("Editing list with payload: ", payload)
-            var url = await getters.url_lookup('edit_list')
-            var params = { name: payload.name, description: payload.description, list_pk: payload.pk}
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "edit_list", data_to_return: "edited_instance", extra_data: payload.extra_data,
+                alt_target: "simplelist_" + payload.pk, name: payload.name, description: payload.description }
             var implementationCallback = (response) => {
-                commit('ADD_OR_UPDATE_LIST', { list_data : response.data.list_data })
+                commit('ADD_OR_UPDATE_LIST', { list_data : response.data.edited_instance })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async deleteList({ commit, state, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('delete_list')
-            var params = { list_pk: payload.list_pk }
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "delete_list", data_to_return: "deleted_item_pk", extra_data: payload.extra_data,
+                alt_target: "simplelist_" + payload.pk }
             var implementationCallback = (response) => {
-                commit('DELETE_LIST', { deleted_list_pk : response.data.deleted_list_pk })
+                commit('DELETE_LIST', { deleted_list_pk : response.data.deleted_item_pk })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async addColumn({ commit, state, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('add_column')
-            var params = { list_pk: payload.list_pk, column_name: payload.column_name, required: payload.required,
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "add_column_to_list", extra_data: payload.extra_data, alt_target: payload.alt_target,
+                data_to_return: "target_pk", column_name: payload.column_name, required: payload.required,
                 default_value: payload.default_value }
             var implementationCallback = (response) => {
-                // not very performant, but for now just refresh the list so we don't need to apply logic to the
-                // rows
-                dispatch('getList', { list_pk: payload.list_pk })
+                // not very performant, but for now just refresh the list so we don't need to apply logic to the rows
+                dispatch('getList', { list_pk: response.data.target_pk })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async editColumn({ commit, state, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('edit_column')
-            var params = { list_pk: payload.list_pk, column_name: payload.column_name, required: payload.required,
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "edit_column_in_list", extra_data: payload.extra_data, alt_target: payload.alt_target,
+                data_to_return: "target_pk", column_name: payload.column_name, required: payload.required,
                 default_value: payload.default_value, new_name: payload.new_name }
             var implementationCallback = (response) => {
-                // not very performant, but for now just refresh the list so we don't need to apply logic to the
-                // rows
-                dispatch('getList', { list_pk: payload.list_pk })
+                // not very performant, but for now just refresh the list so we don't need to apply logic to the rows
+                dispatch('getList', { list_pk: response.data.target_pk })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async deleteColumn({ commit, state, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('delete_column')
-            var params = { list_pk: payload.list_pk, column_name: payload.column_name}
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "delete_column_from_list", extra_data: payload.extra_data, alt_target: payload.alt_target,
+                data_to_return: "target_pk", column_name: payload.column_name}
             var implementationCallback = (response) => {
-                // not very performant, but for now just refresh the list so we don't need to apply logic to the
-                // rows
-                dispatch('getList', { list_pk: payload.list_pk })
+                // not very performant, but for now just refresh the list so we don't need to apply logic to the rows
+                dispatch('getList', { list_pk: response.data.target_pk })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async addRow({ commit, state, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('add_row')
-            var params = { list_pk: payload.list_pk, row_content: payload.row_content }
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "add_row_to_list", extra_data: payload.extra_data,
+                alt_target: "simplelist_" + payload.list_pk, data_to_return: "unique_id", row_content: payload.row_content,
+                list_pk: payload.list_pk }
             var implementationCallback = (response) => {
                 commit('ADD_OR_EDIT_ROW', { list_pk : payload.list_pk, row_content: payload.row_content,
                                             unique_id: response.data.unique_id })
@@ -125,9 +129,10 @@ const SimplelistVuexModule = {
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async editRow({ commit, state, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('edit_row')
-            var params = { list_pk: payload.list_pk, row_content: payload.row_content,
-                unique_id: payload.unique_id }
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "edit_row_in_list", extra_data: payload.extra_data,
+                row_content: payload.row_content, unique_id: payload.unique_id, list_pk: payload.list_pk,
+                alt_target: "simplelist_" + payload.list_pk }
             var implementationCallback = (response) => {
                 commit('ADD_OR_EDIT_ROW', { list_pk : payload.list_pk, row_content: payload.row_content,
                                             unique_id: payload.unique_id })
@@ -135,8 +140,9 @@ const SimplelistVuexModule = {
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
         async deleteRow({ commit, state, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('delete_row')
-            var params = { list_pk: payload.list_pk, unique_id: payload.unique_id }
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "delete_row_in_list", extra_data: payload.extra_data, list_pk: payload.list_pk,
+                alt_target: "simplelist_" + payload.list_pk, unique_id: payload.unique_id }
             var implementationCallback = (response) => {
                 commit('DELETE_ROW', { list_pk: payload.list_pk, unique_id: payload.unique_id })
             }

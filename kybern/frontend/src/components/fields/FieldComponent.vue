@@ -1,38 +1,32 @@
 <template>
 
-    <span>
+    <div class="mb-2">
 
-        <div v-if="field.type=='CharField'" class="d-block">
-            <div class="input-group-prepend">
-                <span class="input-group-text" :id="field.field_name + '_label'">{{ label(field) }}</span>
-            </div>
-            <input type="text" class="form-control" :id=field.field_name :name=field.field_name
-                :aria-label=field.field_name :aria-describedby="field.field_name + '_label'"
-                v-model=field.value :required=field.required>
-        </div>
+        <div v-if="field.type == 'CharField' || field.type =='PermissionedModelField'">
 
-        <!-- NOTE: should display differently  -->
-        <div v-if="field.type=='PermissionedModelField'" class="d-block">
-            <div class="input-group-prepend">
-                <span class="input-group-text" :id="field.field_name + '_label'">{{ label(field) }}</span>
-            </div>
-            <input type="text" class="form-control" :id=field.field_name :name=field.field_name
-                :aria-label=field.field_name aria-describedby="field.field_name + '_label'"
-                v-model=field.value :required=field.required>
+            <b-input-group :prepend="label(field)" class="mb-2 mr-sm-2 mb-sm-0">
+                <b-form-input :id=field.field_name :name=field.field_name :aria-label=field.field_name
+                    :aria-describedby="field.field_name + '_label'" v-model=field.value :required=field.required>
+                </b-form-input>
+            </b-input-group>
+
         </div>
 
         <span v-if="field.type=='BooleanField'">
-            <b-form-checkbox v-model=field.value name="checkbox-1" value="true" unchecked-value="false">
-                {{ label(field) }}
-            </b-form-checkbox>
+
+            <b-form-checkbox v-model=field.value :name=field.field_name value="true" unchecked-value="false"
+                class="ml-3" variant="info" switch>{{ label(field) }}</b-form-checkbox>
+
         </span>
 
-        <div v-if="field.type=='IntegerField'" class="d-block">
-            <div class="input-group-prepend">
-                <span class="input-group-text" :id="field.field_name + '_label'">{{ label(field) }}</span>
-            </div>
-            <input type="number" class="form-control" :aria-label="field.field_name + '_label'"
-                :aria-describedby="field.field_name + '_label'" v-model=field.value :required=field.required>
+        <div v-if="field.type=='IntegerField'" >
+
+            <b-input-group :prepend="label(field)" class="mb-2 mr-sm-2 mb-sm-0">
+                <b-form-input type="number" :id=field.field_name :name=field.field_name :aria-label=field.field_name
+                    :aria-describedby="field.field_name + '_label'" v-model=field.value :required=field.required>
+                </b-form-input>
+            </b-input-group>
+
         </div>
 
         <!-- Should be a choice field populated by current roles -->
@@ -59,7 +53,7 @@
 
         </div>
 
-    </span>
+    </div>
 
 </template>
 

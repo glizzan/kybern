@@ -4,31 +4,33 @@
 
         <!-- Information about the discussion. -->
 
-        <h5 class="my-2">Discussion Status</h5>
+        <b-card bg-variant="white" class="mb-3">
+            <div class="mb-2 font-weight-bold">Discussion Status</div>
 
-        <span v-if="is_resolved">The condition was resolved with resolution {{ condition_resolution_status}}.
-            <span v-if="response_selected">Your response was <b>{{response_selected}}</b>.</span>
-        </span>
-        <span v-else>
-            <span v-if="can_be_resolved">The minimum duration of {{ minimum_duration }} has passed. If the discussion
-                was resolved right now, the result would be: {{ current_result }}.
-                <b-button v-if="can_resolve" class="btn-sm" variant="outline-secondary" id="resolve_button"
-                    @click="resolve_condition()">Resolve this discussion?</b-button>
+            <span v-if="is_resolved">The condition was resolved with resolution {{ condition_resolution_status}}.
+                <span v-if="response_selected">Your response was <b>{{response_selected}}</b>.</span>
             </span>
-            <span v-else>The discussion cannot be resolved until the minimum duration of {{ minimum_duration}} has passed.
-                This will happen in {{ time_remaining }}.
+            <span v-else>
+                <span v-if="can_be_resolved">The minimum duration of {{ minimum_duration }} has passed. If the discussion
+                    was resolved right now, the result would be: {{ current_result }}.
+                    <b-button v-if="can_resolve" class="btn-sm d-block mt-2" variant="outline-info" id="resolve_button"
+                        @click="resolve_condition()">Resolve this discussion?</b-button>
+                </span>
+                <span v-else>The discussion cannot be resolved until the minimum duration of {{ minimum_duration}} has passed.
+                    This will happen in {{ time_remaining }}.
+                </span>
             </span>
-        </span>
+        </b-card>
 
-        <b-container class="bv-example-row border border-info my-2 p-2" id="consensus_responses">
-            <b-row><b-col class="text-center my-2">Current Responses</b-col></b-row>
-            <b-row class="font-weight-bold">
-                <b-col>Support</b-col><b-col>Support With Reservations</b-col><b-col>Stand Aside</b-col><b-col>Block</b-col>
+        <b-container class="bg-white light-border my-2 py-2 px-4" id="consensus_responses">
+            <b-row><b-col class="text-center my-2 font-weight-bold">Current Responses</b-col></b-row>
+            <b-row class="font-weight-bold text-secondary mb-3">
+                <b-col>Support</b-col><b-col cols="3">Support With Reservations</b-col><b-col>Stand Aside</b-col><b-col>Block</b-col>
                 <b-col>No Response</b-col>
             </b-row>
             <b-row>
                 <b-col id="support_names">{{get_names(response_data.support)}}</b-col>
-                <b-col id="reservatiions_names">{{get_names(response_data.support_with_reservations)}}</b-col>
+                <b-col cols="3" id="reservatiions_names">{{get_names(response_data.support_with_reservations)}}</b-col>
                 <b-col id="stand_aside_names">{{get_names(response_data.stand_aside)}}</b-col>
                 <b-col id="block_names">{{get_names(response_data.block)}}</b-col>
                 <b-col id="no_response_names">{{get_names(response_data.no_response)}}</b-col>
@@ -37,18 +39,22 @@
 
         <!-- Interface for changes -->
 
-        <div v-if="!is_resolved" class="my-3">
-            <span v-if="can_respond">
-                <b-form-group label="Your Response">
-                    <b-form-radio-group id="user_response_radio_buttons" v-model="response_selected" :options="response_options"
-                        button-variant="outline-info" buttons name="user_response_radio_buttons"></b-form-radio-group>
-                </b-form-group>
-                <b-button class="btn-sm" id="submit_response" @click="submit_response()">Submit</b-button>
-            </span>
-            <span v-else>You are not a participant in this consensus decision.</span>
-        </div>
+        <b-card bg-variant="white" class="mb-3">
+            <div v-if="!is_resolved" class="my-3">
+                <span v-if="can_respond">
+                    <b-form-group>
+                        <b-form-radio-group id="user_response_radio_buttons" v-model="response_selected" :options="response_options"
+                            button-variant="outline-info" buttons name="user_response_radio_buttons"></b-form-radio-group>
+                    </b-form-group>
+                    <b-button class="btn-sm" id="submit_response" @click="submit_response()">Submit Your Response</b-button>
+                </span>
+                <span v-else>You are not a participant in this consensus decision.</span>
+            </div>
 
-        <span v-if="error_message" class="text-danger">{{ error_message }}</span>
+            <span v-if="error_message" class="text-danger">{{ error_message }}</span>
+
+        </b-card>
+
 
     </span>
 </template>
@@ -187,3 +193,11 @@ export default {
 }
 
 </script>
+
+<style scoped>
+
+    .light-border {
+        border: 1px solid rgba(0,0,0,.125);
+    }
+
+</style>

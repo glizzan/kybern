@@ -3,7 +3,6 @@ import VueRouter from 'vue-router'
 // groups
 import GroupConfigComponent from '../components/groups/GroupConfigComponent'
 import GroupResourcesComponent from '../components/groups/GroupResourcesComponent'
-import EditGroupComponent from '../components/groups/EditGroupComponent'
 // actions
 import ActionHistoryComponent from '../components/actions/ActionHistoryComponent'
 import ActionDetailComponent from '../components/actions/ActionDetailComponent'
@@ -37,18 +36,6 @@ const routes = [
         components: {
             sidebar: GroupConfigComponent,
             main: GroupResourcesComponent
-        }
-    },
-
-    // Group
-    {
-        name: 'edit-group',
-        path: '/edit group',
-        meta: { tab: 'none' },
-        components: {
-            sidebar: GroupConfigComponent,
-            main: GroupResourcesComponent,
-            modal: EditGroupComponent
         }
     },
 

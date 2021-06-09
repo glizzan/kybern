@@ -147,6 +147,7 @@ const PermissionsVuexModule = {
             Vue.set(state.permissions, data.pk, data.data) // { name: x, display: x, change_type: x } }
         },
         ADD_PERMISSION_TO_ROLE (state, data ) {
+            if (!state.role_permissions[data.role]) { Vue.set(state.role_permissions, data.role, [])}
             var permission_index = state.role_permissions[data.role].indexOf(data.pk)
             if (permission_index == -1) { state.role_permissions[data.role].push(data.pk) }
         },
@@ -185,6 +186,7 @@ const PermissionsVuexModule = {
         },
         ADD_PERMISSION_TO_ITEM (state, data ) {
             var item_key = data.item_id + "_" + data.item_model
+            if (!state.item_permissions[item_key]) { Vue.set(state.item_permissions, item_key, []) }
             var permission_index = state.item_permissions[item_key].indexOf(data.permission_pk)
             if (permission_index == -1) { state.item_permissions[item_key].push(data.permission_pk) }
         },
@@ -260,19 +262,18 @@ const PermissionsVuexModule = {
         // Permission Actions
 
         async addPermission ({ commit, state, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('add_permission')
-            var params = { item_or_role: payload.item_or_role, item_id: payload.item_id,
-                item_model: payload.item_model, permission_type : payload.permission_selected,
-                permission_roles : payload.roles, permission_actors : payload.actors }
-
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "add_permission", alt_target: payload.alt_target,
+                data_to_return: "created_instance", change_type: payload.change_type,
+                permission_roles : payload.roles, permission_actors : payload.actors,
+                list_of_condition_data: payload.condition_data, extra_data: payload.extra_data }
             var implementationCallback = (response) => {
-                var pk = response.data.permission.pk
-                var permission_data = response.data.permission.permission_data[0]
-                commit('ADD_OR_UPDATE_PERMISSION', { pk : pk, data : permission_data })
+                var permission = response.data.created_instance
+                commit('ADD_OR_UPDATE_PERMISSION', { pk : permission.pk, data : permission })
                 if (payload.item_or_role == "role") {
-                    commit('ADD_PERMISSION_TO_ROLE', { pk : pk, role: payload.roles })
+                    commit('ADD_PERMISSION_TO_ROLE', { pk : permission.pk, role: payload.roles })
                 } else {
-                    commit('ADD_PERMISSION_TO_ITEM', { permission_pk: pk, item_id: payload.item_id,
+                    commit('ADD_PERMISSION_TO_ITEM', { permission_pk: permission.pk, item_id: payload.item_id,
                         item_model: payload.item_model })
                 }
             }
@@ -280,105 +281,121 @@ const PermissionsVuexModule = {
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
 
-        async updatePermission ({ commit, state, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('update_permission')
-            var params = { permission_id : payload.permission_id, permission_roles : payload.roles,
-                permission_actors : payload.actors }
+        async editPermission ({ commit, state, dispatch, getters }, payload) {
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "edit_permission", extra_data: payload.extra_data, alt_target: payload.alt_target,
+                anyone: payload.anyone, permission_actors: payload.permission_actors,
+                permission_roles: payload.permission_roles, data_to_return: "edited_instance" }
             var implementationCallback = (response) => {
-                pk = response.data.permission.pk
-                permission_data = response.data.permission.permission_data[0]
-                commit('ADD_OR_UPDATE_PERMISSION', { pk : pk, data : permission_data })
+                commit('ADD_OR_UPDATE_PERMISSION', { pk : response.data.edited_instance.pk,
+                    data : response.data.edited_instance })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
 
         async removePermission ({ commit, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('delete_permission')
-            var params = { permission_id : payload.permission_id }
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "remove_permission", extra_data: payload.extra_data,
+                alt_target: payload.item_model + "_ " + payload.item_id, data_to_return: "deleted_item_pk" }
             var implementationCallback = (response) => {
-
-                commit('REMOVE_PERMISSION_FROM_ROLES', { pk: response.data.removed_permission_pk } )
-
-                if (payload.item_or_role == "item") {
-                    commit('REMOVE_PERMISSION_FROM_ITEM', { pk: response.data.removed_permission_pk,
-                    item_id : payload.item_id, item_model: payload.item_model })
-                } else {
-                    // TODO: if removed from role interface, may still be set on item - check for
-                    // permission pk in group
+                commit('REMOVE_PERMISSION_FROM_ROLES', { pk: response.data.deleted_item_pk } )
+                if (payload.alt_target) {
+                    commit('REMOVE_PERMISSION_FROM_ITEM', { pk: response.data.deleted_item_pk,
+                        item_id : payload.item_id, item_model: payload.item_model })
                 }
-
-                commit('DELETE_PERMISSION', { pk: response.data.removed_permission_pk })
+                commit('DELETE_PERMISSION', { pk: response.data.deleted_item_pk })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
 
         // Condition Actions
 
-        async addCondition ({ commit, state, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('add_condition')
-            var params = { condition_type: payload.condition_type, permission_or_leadership: payload.permission_or_leadership,
-                target_permission_id: payload.permission_id, leadership_type: payload.leadership_type,
-                combined_condition_data : payload.combined_condition_data }
-
+        async addConditionToPermission ({ commit, state, dispatch, getters }, payload) {
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "add_condition", alt_target: payload.alt_target, extra_data: payload.extra_data,
+                condition_type: payload.condition_type, combined_condition_data : payload.combined_condition_data,
+                data_to_return: "condition_data" }
             var implementationCallback = (response) => {
-                if (response.data.permission_or_leadership == "permission") {
-                    commit('SET_PERMISSION_CONDITION', { pk: response.data.target_permission_id,
-                        condition_data: response.data.condition_info })
-                } else {
-                    commit('SET_LEADERSHIP_CONDITION', { 'leadership_type': response.data.leadership_type,
-                        condition_data: response.data.condition_info })
-                }
+                commit('SET_PERMISSION_CONDITION', { pk: payload.permission_pk,
+                    condition_data: response.data.condition_data })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback })
         },
 
-        async editCondition ({ commit, state, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('edit_condition')
-            var params = { permission_or_leadership: payload.permission_or_leadership, element_id: payload.element_id,
-                target_permission_id: payload.permission_id, leadership_type: payload.leadership_type,
-                combined_condition_data : payload.combined_condition_data }
-
+        async editConditionOnPermission ({ commit, state, dispatch, getters }, payload) {
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "edit_condition", alt_target: payload.alt_target, extra_data: payload.extra_data,
+                element_id: payload.element_id, combined_condition_data : payload.combined_condition_data,
+                data_to_return: "condition_data" }
             var implementationCallback = (response) => {
-                if (response.data.permission_or_leadership == "permission") {
-                    commit('SET_PERMISSION_CONDITION', { pk: response.data.target_permission_id,
-                        condition_data: response.data.condition_info })
-                } else {
-                    commit('SET_LEADERSHIP_CONDITION', { 'leadership_type': response.data.leadership_type,
-                        condition_data: response.data.condition_info })
-                }
+                commit('SET_PERMISSION_CONDITION', { pk: payload.permission_pk,
+                    condition_data: response.data.condition_data })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback })
         },
 
-        async removeCondition ({ commit, state, dispatch, getters }, payload) {
-            var url = await getters.url_lookup('remove_condition')
-            var params = { permission_or_leadership: payload.permission_or_leadership,
-                target_permission_id : payload.permission_id, leadership_type: payload.leadership_type,
-                element_id: payload.element_id }
+        async removeConditionFromPermission ({ commit, state, dispatch, getters }, payload) {
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "remove_condition", alt_target: payload.alt_target, extra_data: payload.extra_data,
+                element_id: payload.element_id, data_to_return: "condition_data" }
             var implementationCallback = (response) => {
-                if (response.data.permission_or_leadership == "permission") {
-                    commit('SET_PERMISSION_CONDITION', { pk: response.data.target_permission_id,
-                        condition_data: response.data.condition_info })
-                } else {
-                    commit('SET_LEADERSHIP_CONDITION', { 'leadership_type': response.data.leadership_type,
-                        condition_data: response.data.condition_info })
-                }
+                commit('SET_PERMISSION_CONDITION', { pk: payload.permission_pk,
+                    condition_data: response.data.condition_data })
+            }
+            return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+        },
+
+        async addLeadershipCondition ({ commit, state, dispatch, getters }, payload) {
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "add_condition", extra_data: payload.extra_data,
+                data_to_return: "condition_data", leadership_type: payload.leadership_type,
+                condition_type: payload.condition_type, combined_condition_data : payload.combined_condition_data }
+            var implementationCallback = (response) => {
+                commit('SET_LEADERSHIP_CONDITION', { 'leadership_type': payload.leadership_type,
+                    condition_data: response.data[payload.leadership_type] })
+            }
+            return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback })
+        },
+
+        async editLeadershipCondition ({ commit, state, dispatch, getters }, payload) {
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "edit_condition", extra_data: payload.extra_data, element_id: payload.element_id,
+                data_to_return: "condition_data", leadership_type: payload.leadership_type,
+                condition_type: payload.condition_type, combined_condition_data : payload.combined_condition_data }
+            var implementationCallback = (response) => {
+                commit('SET_LEADERSHIP_CONDITION', { 'leadership_type': payload.leadership_type,
+                    condition_data: response.data[payload.leadership_type] })
+            }
+            return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback })
+        },
+
+        async removeLeadershipCondition ({ commit, state, dispatch, getters }, payload) {
+            var url = await getters.url_lookup('take_action')
+            var params = { action_name: "remove_condition", extra_data: payload.extra_data, element_id: payload.element_id,
+                data_to_return: "condition_data", leadership_type: payload.leadership_type }
+            var implementationCallback = (response) => {
+                commit('SET_LEADERSHIP_CONDITION', { 'leadership_type': payload.leadership_type,
+                    condition_data: response.data[payload.leadership_type] })
             }
             return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
 
         // Misc other actions
+
         async getPermission({ commit, state, dispatch, getters}, payload) {
             var url = await getters.url_lookup('get_permission')
             var params = { permission_pk: payload.permission_pk }
             var implementationCallback = (response) => {
                 commit('ADD_OR_UPDATE_PERMISSION', { pk : payload.permission_pk, data : response.data.permission_data })
+                commit('UPDATE_ROLE_WITH_PERMISSION', { permission: response.data.permission_data })
             }
             return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
+
         async getPermissionsForItem({ commit, state, dispatch, getters }, payload) {
             var url = await getters.url_lookup('get_permissions')
-            var params = { item_id: payload.item_id, item_model: payload.item_model }
+            var item_model = payload.item_model == "list" ? "simplelist" : payload.item_model
+            var params = { item_id: payload.item_id, item_model: item_model }
             var implementationCallback = (response) => {
                 commit('REPLACE_ITEM_PERMISSIONS', { item_id: response.data.item_id,
                                                      item_model: response.data.item_model,
@@ -426,6 +443,22 @@ const PermissionsVuexModule = {
         return dispatch('actionAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
         },
 
+        // TODO: simplify implementation callback, possibly (copied from checkPermissions)
+        async checkPermission ({ commit, state, dispatch, getters }, payload) {
+            var url = await getters.url_lookup('check_permission')
+            var params = { permission_name: payload.name, alt_target: payload.alt_target, params: payload.params }
+            var implementationCallback = (response) => {
+                var permissions = null
+                if (payload.aliases) {
+                    permissions = swap_aliases(payload.aliases, response.data.user_permissions)
+                } else {
+                    permissions = response.data.user_permissions
+                }
+                commit('ADD_OR_UPDATE_CURRENT_USER_PERMISSIONS', { user_permissions: permissions })
+            }
+            return dispatch('getAPIcall', { url: url, params: params, implementationCallback: implementationCallback})
+        },
+
         async checkPermissions ({ commit, state, dispatch, getters }, payload) {
             var url = await getters.url_lookup('check_permissions')
             var params = { permissions: payload.permissions }
@@ -445,8 +478,8 @@ const PermissionsVuexModule = {
             var url = await getters.url_lookup('get_data_for_role')
             var params = { role_name : payload.role }
             var implementationCallback = (response) => {
-                commit('REPLACE_ROLE_PERMISSIONS', { role: payload.role, pks: response.data.role_permissions })
                 for (let key in response.data.permissions) {
+                    commit('ADD_PERMISSION_TO_ROLE', { pk: key, role: payload.role } )
                     commit('ADD_OR_UPDATE_PERMISSION', { pk : key, data : response.data.permissions[key] })
                 }
             }

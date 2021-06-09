@@ -10,9 +10,9 @@
                 aria-describedby="role_name_prompt" v-model="new_role_name" name="role_name">
         </div>
 
-        <action-response-component :response=add_role_response></action-response-component>
-        <b-button size="sm" variant="success" @click="submitRoleName()" id="save_role_button">
-            Save</b-button>
+        <take-action-component v-on:take-action=submitRoleName :response=response :verb="'add role'"
+            :inline=true :action_name="'add_role_to_community'">
+        </take-action-component>
 
     </b-modal>
 
@@ -22,16 +22,16 @@
 
 import Vuex from 'vuex'
 import store from '../../store'
-import ActionResponseComponent from '../actions/ActionResponseComponent'
+import TakeActionComponent from '../actions/TakeActionComponent'
 
 export default {
 
     store,
-    components: { ActionResponseComponent },
+    components: { TakeActionComponent },
     data: function() {
         return {
-            add_role_response: null,
-            new_role_name: '',
+            response: null,
+            new_role_name: ''
         }
     },
     computed: {
@@ -39,9 +39,9 @@ export default {
     },
     methods: {
         ...Vuex.mapActions(['addRole']),
-        submitRoleName() {
-            this.addRole({ role_name: this.new_role_name })
-            .then(response => { this.add_role_response = response })
+        submitRoleName(extra_data) {
+            this.addRole({ role_name: this.new_role_name, extra_data: extra_data })
+            .then(response => { this.response = response })
         }
     }
 

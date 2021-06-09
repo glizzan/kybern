@@ -18,7 +18,7 @@
 
                 <simple-permissions-display-component :permissions=addmember_permissions :item_id=item_id
                     :item_model=item_model :item_name="'Adding Members'"
-                    :default_selection=add_member_state_change :modal_id="'addmember'">
+                    :default_selection="'add members to community'">
                 </simple-permissions-display-component>
 
             </span>
@@ -29,7 +29,7 @@
 
                 <simple-permissions-display-component :permissions=removemember_permissions :item_id=item_id
                     :item_model=item_model :item_name="'Removing Members'"
-                    :default_selection=remove_member_state_change :modal_id="'removemember'">
+                    :default_selection="'remove members from community'">
                 </simple-permissions-display-component>
 
             </span>

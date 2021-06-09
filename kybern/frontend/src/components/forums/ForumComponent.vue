@@ -1,40 +1,32 @@
 <template>
 
-    <div v-if="forum" class="bg-white p-3">
+    <div v-if="forum" class="bg-white p-3 rounded">
 
-        <h3 class="mt-3">{{ forum.name }}</h3>
+        <div class="title-and-actions mb-4">
+
+            <span class="h3 font-weight-bold">{{ forum.name }}</span>
+
+            <resource-action-icons class="float-right" v-on:delete="delete_forum" :item_id=item_id
+                :item_model="'forum'" :item_name=forum.name :export_url=json_export_url
+                :export_text="'export as json'" :response=response :hide_delete=is_governance_forum>
+            </resource-action-icons>
+
+        </div>
+
         <p>{{ forum.description }}</p>
-
-        <form-button-and-modal v-if="user_permissions.edit_forum" :id_add="'main'" :item_id=item_id
-            :item_model="'forum'" :button_text="'edit metadata'"></form-button-and-modal>
-
-        <action-response-component :response=delete_forum_response></action-response-component>
-        <b-button v-if="user_permissions.delete_forum && !is_governance_forum" variant="outline-secondary"
-            class="btn-sm mr-2" id="delete_forum_button" @click="delete_forum">delete forum</b-button>
-
-        <router-link :to="{ name: 'action-history', params: {item_id: item_id, item_model: 'forum', item_name: forum.name }}">
-            <b-button variant="outline-secondary" class="btn-sm mr-2" id="forum_history_button">forum history</b-button>
-        </router-link>
-
-        <b-button variant="outline-secondary" id="forum_permissions_button" v-b-modal.item_permissions_modal
-            class="btn-sm mr-2">forum permissions</b-button>
-        <item-permissions-modal :item_id=item_id :item_model="'forum'" :item_name=forum.name>
-        </item-permissions-modal>
-
-        <b-button :href=json_export_url variant="outline-secondary" class="btn-sm" download>
-            export as json</b-button>
 
         <hr >
 
-        <form-button-and-modal v-if="user_permissions.add_post" :item_model="'post'"
-            :button_text="'+ add post'" :supplied_params="{'forum_id':item_id}"></form-button-and-modal>
+        <form-button-and-modal :item_model="'post'" :button_text="'+ add post'" :supplied_params="{'forum_id':item_id}"
+            :alt_target="'forum_'+item_id"></form-button-and-modal>
 
-        <b-card v-for="{ pk, title, content, author, created } in posts" v-bind:key=pk
-                                            class="bg-light text-info border-secondary mt-3">
+        <b-card v-for="{ pk, title, content, author, created } in posts_for_forum" v-bind:key=pk
+                                            class="bg-light text-info mt-3 rounded">
             <router-link :to="{ name: 'post-detail', params: { forum_id: item_id, item_id: pk } }">
-                <b-card-title class="post-link">{{ title }}</b-card-title></router-link>
-            <p class="mb-1 text-secondary post-content">  {{ shorten_text(content, 100) }} </p>
-            <small class="text-muted">Posted by {{ author }} on {{ display_date(created) }}</small>
+                <span class="post-link text-info pb-1">{{ title }} </span>
+            </router-link>
+            <p class="mb-1 post-content text-dark">  {{ shorten_text(content, 100) }} </p>
+            <small class="text-muted">posted by {{ getUserName(author) }} on {{ display_date(created) }}</small>
         </b-card>
 
         <span v-if="Object.keys(posts).length === 0">There are no posts yet in this forum.</span>
@@ -48,48 +40,31 @@
 import Vuex from 'vuex'
 import store from '../../store'
 import { UtilityMixin } from '../utils/Mixins'
-import ItemPermissionsModal from '../permissions/ItemPermissionsModal'
 import FormButtonAndModal from '../utils/FormButtonAndModal'
-import ActionResponseComponent from '../actions/ActionResponseComponent'
+import ResourceActionIcons from '../utils/ResourceActionIcons'
 
 
 export default {
 
     props: ['item_id'],
     store,
-    components: { ItemPermissionsModal, FormButtonAndModal, ActionResponseComponent },
+    components: { FormButtonAndModal, ResourceActionIcons },
     mixins: [UtilityMixin],
     data: function() {
             return {
                 forum: null,
-                posts: null,
-                delete_forum_response: null,
+                response: null,
                 base_export_url: ""
             }
         },
     created (){
-
         this.forum = this.getForumData(this.item_id)
         if (!this.forum) {
             this.getForum({ forum_pk: parseInt(this.item_id) }).then( response => {
                 this.forum = this.getForumData(this.item_id)
             })
         }
-
-        this.posts = this.getPostsDataForForum(this.item_id)
-        if (!this.posts || this.posts.length == 0) {
-            this.getPosts({ forum_pk: parseInt(this.item_id) }).then( response => {
-                this.posts = this.getPostsDataForForum(this.item_id)
-            })
-        }
-
-        var alt_target = "forum_" + this.item_id
-        this.checkPermissions({ permissions:
-                {edit_forum: {alt_target : alt_target},
-                delete_forum: {alt_target : alt_target},
-                add_post: {alt_target : alt_target}}
-        })
-
+        this.getPosts({ forum_pk: parseInt(this.item_id) })
         this.url_lookup('export_as_json').then(response => this.base_export_url = response)
     },
     watch: {
@@ -97,10 +72,16 @@ export default {
     },
     computed: {
         ...Vuex.mapState({
-            user_permissions: state => state.permissions.current_user_permissions,
-            forums: state => state.forums.forums
+            forums: state => state.forums.forums,
+            posts: state => state.forums.posts
         }),
         ...Vuex.mapGetters(['getForumData', 'getPostsDataForForum', 'getUserName', 'url_lookup']),
+        posts_for_forum: function() {
+            if (this.forum && this.posts ) {
+                return this.posts.filter(post => post.forum_pk == this.forum.pk)
+            }
+            return []
+        },
         is_governance_forum: function() {
             if (this.forum) { return this.forum.special == "Gov" } return undefined
         },
@@ -109,13 +90,13 @@ export default {
         }
     },
     methods: {
-        ...Vuex.mapActions(['checkPermissions', 'getForum', 'getPosts', 'deleteForum']),
-        display_date(date) { return Date(date) },
-        delete_forum() {
-            this.deleteForum({ pk: this.item_id })
+        ...Vuex.mapActions(['getForum', 'getPosts', 'deleteForum']),
+        display_date(date) { return new Date(date).toUTCString() },
+        delete_forum(extra_data) {
+            this.deleteForum({ pk: this.item_id, extra_data: extra_data })
             .then(response => {
                 if (response.data.action_status == "implemented") { this.$router.push({name: 'home'}) }
-                else { this.delete_forum_response = response }
+                else { this.response = response }
             })
         }
     }
@@ -123,3 +104,21 @@ export default {
 }
 
 </script>
+
+<style scoped>
+
+ .text-info {
+     border: none;
+ }
+
+ a {
+     font-size: 120%;
+     font-weight: bold;
+ }
+
+ a:hover {
+     text-decoration: none;
+ }
+
+
+</style>

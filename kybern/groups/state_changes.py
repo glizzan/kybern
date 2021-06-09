@@ -12,22 +12,29 @@ from .models import Group, Forum, Post
 ###########################
 
 
-class ChangeGroupDescriptionStateChange(BaseStateChange):
+class EditGroupStateChange(BaseStateChange):
 
     descriptive_text = {
-        "verb": "change",
-        "default_string": "group description",
-        "detail_string": "group description to {group_description}",
+        "verb": "edit",
+        "default_string": "group",
         "preposition": "for"
     }
 
     section = "Community"
     allowable_targets = [Group]
 
-    group_description = field_utils.CharField(label="Group description", required=True)
+    name = field_utils.CharField(label="Group name", required=False)
+    description = field_utils.CharField(label="Group description", required=False)
+
+    def validate(self, actor, target):
+        if not self.name and not self.description:
+            raise ValidationError("Must provide either a new name or a new description")
 
     def implement(self, actor, target, action):
-        target.group_description = self.group_description
+        if self.description:
+            target.group_description = self.description
+        if self.name:
+            target.name = self.name
         target.save()
         return target
 

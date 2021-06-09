@@ -2,18 +2,18 @@
 
     <span>
 
-        <b-button :id=button_id :variant=variant :class=classes v-b-modal="modal_id">
+        <b-button v-if="button_text" :id=button_id :variant=variant :class=classes v-b-modal="modal_id">
             {{ button_text }}</b-button>
+        <b-icon-pencil v-else v-b-modal="modal_id" class="mr-2" :id=button_id
+            v-b-tooltip.hover :title="'edit ' + item_model"></b-icon-pencil>
 
-        <b-modal :id=modal_id :title=title_string size="lg" hide-footer>
+        <b-modal :id=modal_id :title=title_string size="lg" hide-footer @hide="refresh">
 
             <field-component v-for="field in configuration_fields" v-bind:key=field.field_name
                 :initial_field=field v-on:field-changed="change_field"></field-component>
 
-            <action-response-component class="my-2" :response=action_response></action-response-component>
-
-            <b-button variant="outline-secondary" class="btn-sm" :id="submit_button_id"
-                 @click="takeAction">submit</b-button>
+            <take-action-component v-on:take-action=takeAction :response=response :inline="'true'"
+                :verb="verb" :alt_target=alt_target></take-action-component>
 
         </b-modal>
 
@@ -28,43 +28,48 @@
 
 var fields_dict = {
     "document": [
-        {field_name: "name", label: "Document name:", type: "CharField", required: false, value: null},
-        {field_name: "description", label: "Document description:", type: "CharField", required: false, value: null},
+        {field_name: "name", label: "Name", type: "CharField", required: false, value: null},
+        {field_name: "description", label: "Description", type: "CharField", required: false, value: null},
     ],
     "forum": [
-        {field_name: "name", label: "Forum name:", type: "CharField", required: false, value: null},
-        {field_name: "description", label: "Forum description:", type: "CharField", required: false, value: null},
+        {field_name: "name", label: "Name", type: "CharField", required: false, value: null},
+        {field_name: "description", label: "Description", type: "CharField", required: false, value: null},
     ],
     "post": [
-        {field_name: "title", label: "Post title:", type: "CharField", required: false, value: null},
-        {field_name: "content", label: "Post content:", type: "CharField", required: false, value: null},
+        {field_name: "title", label: "Title", type: "CharField", required: false, value: null},
+        {field_name: "content", label: "Content", type: "CharField", required: false, value: null},
     ],
     "comment": [
-        {field_name: "text", label: "Comment text:", type: "CharField", required: false, value: null},
+        {field_name: "text", label: "Content", type: "CharField", required: false, value: null},
     ],
     "list": [
-        {field_name: "name", label: "List name:", type: "CharField", required: false, value: null},
-        {field_name: "description", label: "List description:", type: "CharField", required: false, value: null},
+        {field_name: "name", label: "Name", type: "CharField", required: false, value: null},
+        {field_name: "description", label: "Description", type: "CharField", required: false, value: null},
+    ],
+    "group": [
+        {field_name: "name", label: "Name", type: "CharField", required: false, value: null},
+        {field_name: "description", label: "Description", type: "CharField", required: false, value: null},
     ]
 }
 
 import Vuex from 'vuex'
 import store from '../../store'
 import { ConfiguredFieldsMixin } from '../utils/Mixins'
-import ActionResponseComponent from '../actions/ActionResponseComponent'
 import FieldComponent from '../fields/FieldComponent'
+import TakeActionComponent from '../actions/TakeActionComponent'
 
 
 export default {
 
-    props: ['item_id', 'item_model', 'button_text', 'supplied_variant', 'supplied_classes', 'supplied_params', 'id_add'],
-    components: { ActionResponseComponent, FieldComponent },
+    props: ['item_id', 'item_model', 'button_text', 'supplied_variant', 'supplied_classes', 'supplied_params',
+        'id_add', 'alt_target'],
+    components: { TakeActionComponent, FieldComponent },
     mixins: [ConfiguredFieldsMixin],
     store,
     data: function() {
         return {
             item_instance: null,
-            action_response: null,
+            response: null,
             configuration_fields: []
         }
     },
@@ -79,7 +84,7 @@ export default {
         item_instance: function(val) { if (val) { this.initialize_configuration_fields() } }
     },
     computed: {
-        ...Vuex.mapGetters(['getDocumentData', 'getForumData', 'getPostData', 'getCommentData', 'getListData']),
+        ...Vuex.mapGetters(['getDocumentData', 'getForumData', 'getPostData', 'getCommentData', 'getListData', 'getGroupData']),
         mode: function() { if (this.item_id) { return "edit"}  else { return "add" } },
         to_add: function() { if (this.id_add) { return this.id_add } else { return "default"} },
         id_preface: function() { return this.mode + "_" + this.item_model + "_" + this.to_add },
@@ -92,11 +97,14 @@ export default {
         },
         classes: function() {
             if (this.supplied_classes) { return this.supplied_classes } else { return "btn-sm mr-2" }
+        },
+        verb: function() {
+            return this.mode + " " + this.item_model
         }
     },
     methods: {
         ...Vuex.mapActions(['addDocument', 'editDocument', 'addForum', 'editForum', 'addPost', 'editPost',
-            'addComment', 'editComment', 'addList', 'editList']),
+            'addComment', 'editComment', 'addList', 'editList', 'editGroup']),
         capitalize(text) { return text.charAt(0).toUpperCase() + text.slice(1) },
         initialize_configuration_fields() {
             if (this.item_instance) {
@@ -106,8 +114,8 @@ export default {
                 }
             }
         },
-        get_params() {
-            var params_dict = {}
+        get_params(extra_data) {
+            var params_dict = {extra_data: extra_data}
             if (this.item_id) { params_dict["pk"] = this.item_id }
             if (this.supplied_params) { params_dict = Object.assign({}, params_dict, this.supplied_params) }
             for (let i in this.configuration_fields) {
@@ -118,16 +126,13 @@ export default {
             }
             return params_dict
         },
-        takeAction() {
+        takeAction(extra_data) {
             var actionMethodName = this.mode + this.capitalize(this.item_model)
-            this[actionMethodName](this.get_params()).then( response => {
-                this.action_response = response
-                if (this.mode == "add" && response.data.action_status == "implemented" && this.item_model != 'comment') {
-                    var params_dict = {item_id: response.data.created_instance.pk}
-                    if (this.supplied_params) { params_dict = Object.assign({}, params_dict, this.supplied_params) }
-                    this.$router.push({name: this.item_model + '-detail', params: params_dict})
-                }
-            })
+            this[actionMethodName](this.get_params(extra_data))
+                .then( response => { this.response = response })
+        },
+        refresh() {
+            this.response = null
         }
     }
 
